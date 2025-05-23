@@ -33,11 +33,76 @@ function broadcastEvent(eventType: string, data: any) {
 
 const MemoryStoreSession = MemoryStore(session);
 
+// GoogleニュースのURLからリダイレクト先URLを抽出する関数
+async function extractRealURLFromGoogleNews(url: string) {
+  try {
+    // GoogleニュースのURLパターンかどうかをチェック
+    if (url.includes('news.google.com')) {
+      const response = await fetch(url);
+      const html = await response.text();
+      const dom = new JSDOM(html);
+      const document = dom.window.document;
+      
+      // GoogleニュースページからリンクされているURLを探す
+      const links = document.querySelectorAll('a[href]:not([href^="javascript:"]):not([href^="#"])');
+      
+      // 記事に関連する最初の外部リンクを探す
+      for (const link of Array.from(links)) {
+        const href = link.getAttribute('href');
+        if (href && !href.includes('news.google.com') && !href.includes('javascript:') && !href.includes('#')) {
+          // 相対URLと絶対URLを処理
+          if (href.startsWith('http')) {
+            return href;
+          } else if (href.startsWith('/')) {
+            // 相対URLを絶対URLに変換
+            const baseUrl = new URL(url);
+            return `${baseUrl.protocol}//${baseUrl.host}${href}`;
+          }
+        }
+      }
+      
+      // ページ内にcanonicalリンクがある場合はそれを使用
+      const canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (canonicalLink && canonicalLink.getAttribute('href')) {
+        const canonicalUrl = canonicalLink.getAttribute('href');
+        if (canonicalUrl && !canonicalUrl.includes('news.google.com')) {
+          return canonicalUrl;
+        }
+      }
+      
+      // メタタグからリダイレクト先URLを探す
+      const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+      if (metaRefresh) {
+        const content = metaRefresh.getAttribute('content');
+        if (content) {
+          const match = content.match(/URL=([^'"\s]+)/i);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+      }
+    }
+    
+    // Googleニュースではない場合や、リンクが見つからなかった場合は元のURLを返す
+    return url;
+  } catch (error) {
+    console.error('Error extracting URL from Google News:', error);
+    return url;
+  }
+}
+
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
   try {
+    // GoogleニュースのURLの場合、実際の記事URLを抽出
+    let targetUrl = url;
+    if (url.includes('news.google.com')) {
+      targetUrl = await extractRealURLFromGoogleNews(url);
+      console.log('Extracted URL from Google News:', targetUrl);
+    }
+    
     // リダイレクトを追跡して最終的なURLを取得
-    const response = await fetch(url, { redirect: 'follow' });
+    const response = await fetch(targetUrl, { redirect: 'follow' });
     
     // 最終的なURL（リダイレクト後のURL）を取得
     const finalUrl = response.url;
@@ -53,15 +118,20 @@ async function fetchArticleInfo(url: string) {
     const description = document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ||
                         document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.trim() || '';
     
-    // 返り値に最終的なURLも含める
+    // OGイメージの取得を試みる
+    const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute('content')?.trim() || '';
+    
+    // 返り値に最終的なURLと追加情報を含める
     return { 
       title, 
       description,
-      finalUrl
+      finalUrl: finalUrl || targetUrl,
+      originalUrl: url,
+      ogImage
     };
   } catch (error) {
     console.error('Error fetching article info:', error);
-    return { title: '', description: '', finalUrl: url };
+    return { title: '', description: '', finalUrl: url, originalUrl: url, ogImage: '' };
   }
 }
 
