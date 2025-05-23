@@ -9,6 +9,12 @@ import CommentForm from "./comment-form";
 import AdminControls from "../admin-controls";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars } from "@shared/schema";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 
 interface TopicCardProps {
   topic: TopicWithCommentsAndStars;
@@ -236,21 +242,31 @@ const TopicCard: React.FC<TopicCardProps> = ({
           />
         )}
 
-        {/* Comments section */}
+        {/* Comments section - Accordion style */}
         <div className="mt-6 border-t border-gray-100 pt-4">
-          <h3 className="text-sm font-medium text-gray-900">
-            コメント ({topic.comments?.length || 0})
-          </h3>
-          <CommentsList
-            topicId={topic.id}
-            comments={topic.comments || []}
-          />
-
-          {/* Comment form */}
-          <CommentForm
-            topicId={topic.id}
-            onCommentAdded={refetchTopics}
-          />
+          <Accordion type="single" collapsible className="border-none">
+            <AccordionItem value="comments" className="border-none">
+              <AccordionTrigger className="py-2 hover:no-underline">
+                <span className="text-sm font-medium text-gray-900">
+                  コメント ({topic.comments?.length || 0})
+                </span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="mb-4">
+                  <CommentsList
+                    topicId={topic.id}
+                    comments={topic.comments || []}
+                  />
+                </div>
+                
+                {/* Comment form */}
+                <CommentForm
+                  topicId={topic.id}
+                  onCommentAdded={refetchTopics}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </CardContent>
     </Card>
