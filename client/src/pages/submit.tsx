@@ -19,7 +19,7 @@ const Submit: React.FC = () => {
   const queryClient = useQueryClient();
   
   // Fetch active week
-  const { data: activeWeek } = useQuery({
+  const { data: activeWeek, isLoading: isLoadingWeek } = useQuery({
     queryKey: ["/api/weeks/active"],
   });
 
@@ -202,7 +202,14 @@ const Submit: React.FC = () => {
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          {!activeWeek ? (
+          {isLoadingWeek ? (
+            <div className="text-center py-6">
+              <div className="flex justify-center items-center space-x-2 mb-4">
+                <div className="animate-spin h-5 w-5 border-2 border-primary rounded-full border-t-transparent"></div>
+                <p className="text-gray-500">データを読み込み中...</p>
+              </div>
+            </div>
+          ) : !activeWeek ? (
             <div className="text-center py-6">
               <p className="text-gray-500 mb-4">
                 現在アクティブな週がありません。管理者がアクティブな週を設定するまでお待ちください。
