@@ -86,15 +86,12 @@ const Submit: React.FC = () => {
         
         const data = await response.json();
         
-        // Googleニュースリンクで変換に失敗した場合（gstaticなどへの変換）
-        if (isGoogleNews && data.finalUrl && (
-            data.finalUrl.includes('gstatic.com') || 
-            data.finalUrl.includes('googleusercontent.com') ||
-            data.finalUrl.includes('news.google.com')
-        )) {
+        // Googleニュースのリンクの場合は、サーバーからの応答を確認
+        if (data.isGoogleNews) {
+          // Googleニュースリンクであることがサーバーから通知された場合
           toast({
             title: "元の記事URLを使用してください",
-            description: "Googleニュースのリンクからは元の記事URLへの変換に失敗しました。元の記事URLを直接入力してください。",
+            description: "Googleニュースのリンクからは元の記事情報を取得できません。元の記事URLを直接入力してください。",
             variant: "destructive",
             duration: 7000
           });

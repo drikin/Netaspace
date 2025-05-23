@@ -33,241 +33,31 @@ function broadcastEvent(eventType: string, data: any) {
 
 const MemoryStoreSession = MemoryStore(session);
 
-// GoogleニュースのURLからリダイレクト先URLを抽出する関数
-async function extractRealURLFromGoogleNews(url: string) {
-  try {
-    // GoogleニュースのURLパターンかどうかをチェック
-    if (url.includes('news.google.com')) {
-      console.log('Extracting from Google News URL:', url);
-      
-      // Google Newsの特殊リンクの場合、ヘッドレスブラウザのような動作で追跡
-      // クッキーなしのリクエストを送信
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
-        redirect: 'follow',
-      });
-      
-      // 最終的なURLを取得（リダイレクトがあった場合）
-      const finalUrl = response.url;
-      console.log('Redirected URL from initial fetch:', finalUrl);
-      
-      // 最終URLがGoogle Newsのものでない場合は成功
-      if (finalUrl && !finalUrl.includes('news.google.com')) {
-        return finalUrl;
-      }
-      
-      // HTMLを取得して解析
-      const html = await response.text();
-      const dom = new JSDOM(html);
-      const document = dom.window.document;
-      
-      // スクリプトタグを探してリダイレクト情報を見つける
-      const scripts = document.querySelectorAll('script');
-      for (const script of Array.from(scripts)) {
-        const content = script.textContent || '';
-        // Google Newsは記事のURLを含むJSONを埋め込むことがある
-        if (content.includes('originalUrl') || content.includes('url')) {
-          try {
-            // JSON形式のデータを探す
-            const matches = content.match(/\{.*?\}/g);
-            if (matches) {
-              for (const match of matches) {
-                try {
-                  const data = JSON.parse(match);
-                  if (data.originalUrl && !data.originalUrl.includes('news.google.com')) {
-                    console.log('Found originalUrl in script:', data.originalUrl);
-                    return data.originalUrl;
-                  }
-                  if (data.url && typeof data.url === 'string' && !data.url.includes('news.google.com')) {
-                    console.log('Found url in script:', data.url);
-                    return data.url;
-                  }
-                } catch (e) {
-                  // JSON解析エラーは無視
-                }
-              }
-            }
-          } catch (e) {
-            // エラーは無視して次のスクリプトへ
-          }
-        }
-      }
-      
-      // アンカータグからの抽出 - 最も可能性の高いものを特定
-      const links = Array.from(document.querySelectorAll('a[href]'))
-        .filter(link => {
-          const href = link.getAttribute('href') || '';
-          return !href.includes('news.google.com') && 
-                 !href.includes('support.google.com') && 
-                 !href.includes('accounts.google.com') && 
-                 !href.includes('javascript:') && 
-                 !href.includes('#') &&
-                 href.startsWith('http');
-        });
-      
-      // メインコンテンツリンクを見つける
-      if (links.length > 0) {
-        // テキスト内容があるリンクを優先
-        const contentLinks = links.filter(link => link.textContent && link.textContent.trim().length > 20);
-        if (contentLinks.length > 0) {
-          const href = contentLinks[0].getAttribute('href');
-          console.log('Found content link:', href);
-          return href || url;
-        }
-        
-        // その他のリンク
-        const href = links[0].getAttribute('href');
-        console.log('Found external link:', href);
-        return href || url;
-      }
-      
-      // データ属性にURLが含まれている場合
-      const elementsWithData = document.querySelectorAll('[data-url], [data-href], [data-link]');
-      for (const element of Array.from(elementsWithData)) {
-        const dataUrl = element.getAttribute('data-url') || 
-                      element.getAttribute('data-href') || 
-                      element.getAttribute('data-link');
-        if (dataUrl && dataUrl.startsWith('http') && !dataUrl.includes('news.google.com')) {
-          console.log('Found URL in data attribute:', dataUrl);
-          return dataUrl;
-        }
-      }
-      
-      // ページ内にcanonicalリンクがある場合はそれを使用
-      const canonicalLink = document.querySelector('link[rel="canonical"]');
-      if (canonicalLink && canonicalLink.getAttribute('href')) {
-        const canonicalUrl = canonicalLink.getAttribute('href');
-        if (canonicalUrl && !canonicalUrl.includes('news.google.com')) {
-          console.log('Found canonical link:', canonicalUrl);
-          return canonicalUrl;
-        }
-      }
-      
-      // メタタグからリダイレクト先URLを探す
-      const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
-      if (metaRefresh) {
-        const content = metaRefresh.getAttribute('content');
-        if (content) {
-          const match = content.match(/URL=([^'"\s]+)/i);
-          if (match && match[1]) {
-            console.log('Found meta refresh URL:', match[1]);
-            return match[1];
-          }
-        }
-      }
-      
-      // OGURLを探す
-      const ogUrl = document.querySelector('meta[property="og:url"]');
-      if (ogUrl) {
-        const content = ogUrl.getAttribute('content');
-        if (content && !content.includes('news.google.com')) {
-          console.log('Found og:url:', content);
-          return content;
-        }
-      }
-      
-      // パラメータから直接記事URLを抽出する（最後の手段）
-      // news.google.comのURLは時々、元の記事URLをパラメータとして含むことがある
-      try {
-        const urlObj = new URL(url);
-        const urlParams = new URLSearchParams(urlObj.search);
-        for (const [key, value] of urlParams.entries()) {
-          if (value.startsWith('http') && !value.includes('news.google.com')) {
-            console.log('Found URL in params:', value);
-            return value;
-          }
-        }
-      } catch (e) {
-        // URL解析エラーは無視
-      }
-    }
-    
-    // Googleニュースではない場合や、リンクが見つからなかった場合は元のURLを返す
-    return url;
-  } catch (error) {
-    console.error('Error extracting URL from Google News:', error);
-    return url;
-  }
+// GoogleニュースのURLかどうかを確認する関数
+function isGoogleNewsURL(url: string): boolean {
+  return url.includes('news.google.com');
 }
 
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
   try {
-    // GoogleニュースのURLの場合、実際の記事URLを抽出
-    let targetUrl = url;
-    if (url.includes('news.google.com')) {
-      // 手動パターン認識を試みる - サーバー側だけでは限界がある
-      // Google News URLから直接パターンで元の記事URLを取得しようとする
-      const pattern1 = /CBMi([A-Za-z0-9_\-]{50,})/;
-      const pattern2 = /url=([^&]+)/;
-      
-      // パターン1: CBMiで始まるBase64エンコードされたURLを探す
-      if (pattern1.test(url)) {
-        const match = url.match(pattern1);
-        if (match && match[1]) {
-          try {
-            // Base64デコードを試みる - 完全なデコードは難しいがある程度の推測
-            const partial = match[1].replace(/_/g, '/').replace(/-/g, '+');
-            const decoded = Buffer.from(partial, 'base64').toString();
-            if (decoded.includes('http')) {
-              const urlMatch = decoded.match(/https?:\/\/[^"\s]+/);
-              if (urlMatch) {
-                console.log('Found URL via pattern1 decoding:', urlMatch[0]);
-                targetUrl = urlMatch[0];
-                // 元のURL抽出関数はもう実行しない
-                console.log('Using pattern-matched URL:', targetUrl);
-                return { 
-                  title: '', 
-                  description: '',
-                  finalUrl: targetUrl,
-                  originalUrl: url,
-                  ogImage: '',
-                  patternMatched: true
-                };
-              }
-            }
-          } catch (e) {
-            console.error('Error decoding pattern1:', e);
-          }
-        }
-      }
-      
-      // パターン2: URL=パラメータをチェック
-      if (pattern2.test(url)) {
-        const match = url.match(pattern2);
-        if (match && match[1]) {
-          try {
-            const decodedUrl = decodeURIComponent(match[1]);
-            if (decodedUrl.startsWith('http') && !decodedUrl.includes('news.google.com')) {
-              console.log('Found URL via pattern2:', decodedUrl);
-              targetUrl = decodedUrl;
-              // 元のURL抽出関数はもう実行しない
-              console.log('Using pattern-matched URL:', targetUrl);
-              return { 
-                title: '', 
-                description: '',
-                finalUrl: targetUrl,
-                originalUrl: url,
-                ogImage: '',
-                patternMatched: true
-              };
-            }
-          } catch (e) {
-            console.error('Error decoding pattern2:', e);
-          }
-        }
-      }
-      
-      // その他の抽出方法
-      targetUrl = await extractRealURLFromGoogleNews(url);
-      console.log('Extracted URL from Google News:', targetUrl);
+    // Googleニュースのリンクかチェック
+    if (isGoogleNewsURL(url)) {
+      console.log('Google News URL detected:', url);
+      // Googleニュースの場合は特別な処理をせず、
+      // クライアント側で警告を表示するためにフラグを返す
+      return {
+        title: 'Google ニュース', 
+        description: 'Googleニュースのリンクです。元の記事URLを入力してください。',
+        finalUrl: url,
+        originalUrl: url,
+        ogImage: '',
+        isGoogleNews: true
+      };
     }
+    
+    // 通常のURLの場合
+    let targetUrl = url;
     
     // リダイレクトを追跡して最終的なURLを取得
     const response = await fetch(targetUrl, { redirect: 'follow' });
