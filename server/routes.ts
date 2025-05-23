@@ -36,7 +36,12 @@ const MemoryStoreSession = MemoryStore(session);
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
   try {
-    const response = await fetch(url);
+    // リダイレクトを追跡して最終的なURLを取得
+    const response = await fetch(url, { redirect: 'follow' });
+    
+    // 最終的なURL（リダイレクト後のURL）を取得
+    const finalUrl = response.url;
+    
     const html = await response.text();
     const dom = new JSDOM(html);
     const document = dom.window.document;
@@ -48,10 +53,15 @@ async function fetchArticleInfo(url: string) {
     const description = document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ||
                         document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.trim() || '';
     
-    return { title, description };
+    // 返り値に最終的なURLも含める
+    return { 
+      title, 
+      description,
+      finalUrl
+    };
   } catch (error) {
     console.error('Error fetching article info:', error);
-    return { title: '', description: '' };
+    return { title: '', description: '', finalUrl: url };
   }
 }
 

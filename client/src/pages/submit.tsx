@@ -71,6 +71,11 @@ const Submit: React.FC = () => {
         
         const data = await response.json();
         
+        // リダイレクト先URLがある場合は、それに更新する
+        if (data.finalUrl && data.finalUrl !== url) {
+          form.setValue('url', data.finalUrl);
+        }
+        
         // タイトルと説明文が空の場合のみ自動設定
         if (!form.getValues('title')) {
           form.setValue('title', data.title);
