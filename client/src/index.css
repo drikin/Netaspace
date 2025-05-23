@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 98%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 326 78% 60%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 217 91% 60%;
+  --radius: 0.5rem;
+  
+  /* Chart colors for visualizations */
+  --chart-1: 217 91% 60%;
+  --chart-2: 326 78% 60%;
+  --chart-3: 130 60% 50%;
+  --chart-4: 40 94% 58%;
+  --chart-5: 260 90% 66%;
+  
+  /* Additional custom colors */
+  --yellow-light: 45 100% 90%;
+  --yellow-dark: 45 100% 45%;
+  --green-light: 142 76% 90%;
+  --green-dark: 142 76% 35%;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 326 78% 60%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Status badge styles */
+.status-badge {
+  @apply px-2 py-1 text-xs font-medium rounded-full;
+}
+
+.status-badge.pending {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-badge.approved {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-badge.featured {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-badge.rejected {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Star button styles */
+.star-button {
+  @apply flex flex-col items-center text-gray-400 hover:text-yellow-500 transition-colors;
+}
+
+.star-button.starred {
+  @apply text-yellow-500;
+}
