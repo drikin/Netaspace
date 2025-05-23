@@ -1,0 +1,39 @@
+[vite] connecting...
+[vite] connected.
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+    at a
+    at a
+    at https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=84d3eaa6:337:18
+    at nav
+    at div
+    at div
+    at div
+    at header
+    at Header (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/src/components/header.tsx:27:22)
+    at div
+    at Provider (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2BDLQ44K.js?v=84d3eaa6:35:15)
+    at TooltipProvider (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=84d3eaa6:2244:5)
+    at QueryClientProvider (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=84d3eaa6:2805:3)
+    at App (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/src/App.tsx?v=haAzFW3ue4IUDOW0JTIBF:67:41)
+Login failed: 
+Error {}
+message: "401: Unauthorized"
+stack: "Error: 401: Unauthorized↵ at throwIfResNotOk (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/src/lib/queryClient.ts:5:11)↵ at async apiRequest (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/src/lib/queryClient.ts:15:3)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+at t.value (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Login failed: 
+Error {}
+
+Login failed: 
+Error {}
+
+at t.value (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://3982670a-b0a3-4407-a7b6-ca27d6fabfdf-00-251j4hapqpj1y.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
