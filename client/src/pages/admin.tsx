@@ -36,12 +36,10 @@ const Admin: React.FC = () => {
     }
   }, [isAuthLoading, isAdmin]);
 
-  // Fetch active week with topics for the admin view - 自動更新を10秒ごとに行う
+  // Fetch active week with topics for the admin view
   const { data: activeWeek, isLoading: isWeekLoading, refetch: refetchActiveWeek } = useQuery({
     queryKey: ["/api/weeks/active"],
     enabled: !!isAdmin,
-    refetchInterval: 10000, // 10秒ごとに自動更新
-    refetchOnWindowFocus: true, // ウィンドウにフォーカスが戻ったとき更新
   });
 
   // Fetch all weeks for week management
