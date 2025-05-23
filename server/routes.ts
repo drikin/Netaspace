@@ -202,6 +202,69 @@ async function fetchArticleInfo(url: string) {
     // GoogleニュースのURLの場合、実際の記事URLを抽出
     let targetUrl = url;
     if (url.includes('news.google.com')) {
+      // 手動パターン認識を試みる - サーバー側だけでは限界がある
+      // Google News URLから直接パターンで元の記事URLを取得しようとする
+      const pattern1 = /CBMi([A-Za-z0-9_\-]{50,})/;
+      const pattern2 = /url=([^&]+)/;
+      
+      // パターン1: CBMiで始まるBase64エンコードされたURLを探す
+      if (pattern1.test(url)) {
+        const match = url.match(pattern1);
+        if (match && match[1]) {
+          try {
+            // Base64デコードを試みる - 完全なデコードは難しいがある程度の推測
+            const partial = match[1].replace(/_/g, '/').replace(/-/g, '+');
+            const decoded = Buffer.from(partial, 'base64').toString();
+            if (decoded.includes('http')) {
+              const urlMatch = decoded.match(/https?:\/\/[^"\s]+/);
+              if (urlMatch) {
+                console.log('Found URL via pattern1 decoding:', urlMatch[0]);
+                targetUrl = urlMatch[0];
+                // 元のURL抽出関数はもう実行しない
+                console.log('Using pattern-matched URL:', targetUrl);
+                return { 
+                  title: '', 
+                  description: '',
+                  finalUrl: targetUrl,
+                  originalUrl: url,
+                  ogImage: '',
+                  patternMatched: true
+                };
+              }
+            }
+          } catch (e) {
+            console.error('Error decoding pattern1:', e);
+          }
+        }
+      }
+      
+      // パターン2: URL=パラメータをチェック
+      if (pattern2.test(url)) {
+        const match = url.match(pattern2);
+        if (match && match[1]) {
+          try {
+            const decodedUrl = decodeURIComponent(match[1]);
+            if (decodedUrl.startsWith('http') && !decodedUrl.includes('news.google.com')) {
+              console.log('Found URL via pattern2:', decodedUrl);
+              targetUrl = decodedUrl;
+              // 元のURL抽出関数はもう実行しない
+              console.log('Using pattern-matched URL:', targetUrl);
+              return { 
+                title: '', 
+                description: '',
+                finalUrl: targetUrl,
+                originalUrl: url,
+                ogImage: '',
+                patternMatched: true
+              };
+            }
+          } catch (e) {
+            console.error('Error decoding pattern2:', e);
+          }
+        }
+      }
+      
+      // その他の抽出方法
       targetUrl = await extractRealURLFromGoogleNews(url);
       console.log('Extracted URL from Google News:', targetUrl);
     }
