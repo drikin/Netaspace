@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -16,6 +16,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import MemoryStore from 'memorystore';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
+import { WebSocketServer, WebSocket } from 'ws';
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -39,6 +40,19 @@ async function fetchArticleInfo(url: string) {
     console.error('Error fetching article info:', error);
     return { title: '', description: '' };
   }
+}
+
+// WebSocketクライアント管理
+const clients = new Set<WebSocket>();
+
+// WebSocketでイベントを全クライアントに送信する関数
+function broadcastEvent(eventType: string, data: any) {
+  const message = JSON.stringify({ type: eventType, data });
+  clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -366,6 +380,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // WebSocketサーバーをセットアップ
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  wss.on('connection', (ws) => {
+    // 新しいクライアント接続
+    clients.add(ws);
+    console.log('WebSocket client connected, total clients:', clients.size);
+    
+    // クライアント切断時の処理
+    ws.on('close', () => {
+      clients.delete(ws);
+      console.log('WebSocket client disconnected, remaining clients:', clients.size);
+    });
+  });
+  
   return httpServer;
 }
 
