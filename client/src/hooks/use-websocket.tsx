@@ -64,7 +64,10 @@ export function useWebSocket() {
     };
 
     socket.onclose = () => {
-      console.log('WebSocket接続が切断されました');
+      // 開発環境では大量のログが出るので、運用環境のみログを出力
+      if (process.env.NODE_ENV === 'production') {
+        console.log('WebSocket接続が切断されました');
+      }
       setIsConnected(false);
       
       // 数秒後に再接続を試みる
@@ -76,7 +79,10 @@ export function useWebSocket() {
     };
 
     socket.onerror = (error) => {
-      console.error('WebSocket接続エラー:', error);
+      // 開発環境では大量のログが出るので、運用環境のみログを出力
+      if (process.env.NODE_ENV === 'production') {
+        console.error('WebSocket接続エラー:', error);
+      }
     };
 
     socket.onmessage = (event) => {

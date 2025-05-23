@@ -12,6 +12,7 @@ import Archive from "@/pages/archive";
 import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { WelcomeNotification } from "@/components/welcome-notification";
 
 function Router() {
   return (
@@ -60,6 +61,8 @@ function App() {
             )}
           </main>
           <Footer />
+          {/* 新機能のお知らせコンポーネント */}
+          <WelcomeNotification />
         </div>
         <Toaster />
       </TooltipProvider>

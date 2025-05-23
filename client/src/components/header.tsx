@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "lucide-react";
+import { ReleaseNotesButton } from "@/components/ui/release-notes-dialog";
 
 const Header = () => {
   const [location] = useLocation();
@@ -72,28 +73,33 @@ const Header = () => {
             </nav>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            {isAdmin ? (
-              <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-3">
+              {/* リリースノートボタン */}
+              <ReleaseNotesButton />
+              
+              {isAdmin ? (
+                <div className="flex items-center space-x-4">
+                  <Link href="/admin">
+                    <a className={`inline-flex items-center px-3 py-1 rounded-md ${isActive("/admin") ? "bg-gray-100" : "hover:bg-gray-50"} text-gray-700 text-sm font-medium`}>
+                      管理ページ
+                    </a>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleLogout}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ログアウト
+                  </Button>
+                </div>
+              ) : (
                 <Link href="/admin">
-                  <a className={`inline-flex items-center px-3 py-1 rounded-md ${isActive("/admin") ? "bg-gray-100" : "hover:bg-gray-50"} text-gray-700 text-sm font-medium`}>
-                    管理ページ
+                  <a className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                    <User className="h-6 w-6" />
                   </a>
                 </Link>
-                <Button 
-                  variant="ghost" 
-                  onClick={handleLogout}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ログアウト
-                </Button>
-              </div>
-            ) : (
-              <Link href="/admin">
-                <a className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                  <User className="h-6 w-6" />
-                </a>
-              </Link>
-            )}
+              )}
+            </div>
           </div>
           <div className="-mr-2 flex items-center sm:hidden">
             <button
