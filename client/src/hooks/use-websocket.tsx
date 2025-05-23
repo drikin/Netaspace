@@ -10,6 +10,46 @@ export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
+  const handleWebSocketEvent = useCallback((event: WebSocketEvent) => {
+    console.log('WebSocketイベントを受信:', event);
+    
+    // イベントタイプに応じてReact Queryのキャッシュを無効化
+    switch (event.type) {
+      case 'topic_created':
+        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
+        queryClient.invalidateQueries();
+        break;
+        
+      case 'topic_status_changed':
+        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
+        queryClient.invalidateQueries();
+        break;
+        
+      case 'topic_deleted':
+        // トピックが削除された場合も、すべてのクエリをリフレッシュ
+        console.log('トピックが削除されました:', event.data);
+        queryClient.invalidateQueries();
+        break;
+        
+      case 'comment_added':
+        // トピックとその関連データを無効化
+        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+        break;
+        
+      case 'star_added':
+        // トピックとその関連データを無効化
+        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+        break;
+        
+      default:
+        console.log('未処理のWebSocketイベント:', event);
+        // 不明なイベントの場合は広範囲に更新
+        queryClient.invalidateQueries();
+    }
+  }, []);
+
   const connect = useCallback(() => {
     // WebSocketのプロトコルをHTTPプロトコルに合わせて設定
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -47,41 +87,7 @@ export function useWebSocket() {
         console.error('WebSocketメッセージの解析エラー:', error);
       }
     };
-  }, []);
-
-  const handleWebSocketEvent = useCallback((event: WebSocketEvent) => {
-    console.log('WebSocketイベントを受信:', event);
-    
-    // イベントタイプに応じてReact Queryのキャッシュを無効化
-    switch (event.type) {
-      case 'topic_created':
-        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
-        queryClient.invalidateQueries();
-        break;
-        
-      case 'topic_status_changed':
-        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
-        queryClient.invalidateQueries();
-        break;
-        
-      case 'comment_added':
-        // トピックとその関連データを無効化
-        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
-        break;
-        
-      case 'star_added':
-        // トピックとその関連データを無効化
-        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
-        break;
-        
-      default:
-        console.log('未処理のWebSocketイベント:', event);
-        // 不明なイベントの場合は広範囲に更新
-        queryClient.invalidateQueries();
-    }
-  }, []);
+  }, [handleWebSocketEvent]);
 
   useEffect(() => {
     // 接続を即時実行
