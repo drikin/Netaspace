@@ -10,10 +10,12 @@ const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const fingerprint = useFingerprint();
 
-  // Fetch active week with topics
+  // Fetch active week with topics - 自動更新を10秒ごとに行う
   const { data: week, isLoading, refetch } = useQuery({
     queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!fingerprint,
+    refetchInterval: 10000, // 10秒ごとに自動更新
+    refetchOnWindowFocus: true, // ウィンドウにフォーカスが戻ったとき更新
   });
 
   // Check if user is authenticated and is admin

@@ -11,15 +11,19 @@ const Archive: React.FC = () => {
   const fingerprint = useFingerprint();
   const [selectedWeekId, setSelectedWeekId] = useState<number | null>(null);
 
-  // Fetch all weeks
+  // Fetch all weeks - 自動更新を有効にする
   const { data: weeks, isLoading: isLoadingWeeks } = useQuery({
     queryKey: ["/api/weeks"],
+    refetchInterval: 30000, // 30秒ごとに自動更新
+    refetchOnWindowFocus: true, // ウィンドウにフォーカスが戻ったとき更新
   });
 
-  // Fetch selected week data with topics when a week is selected
+  // Fetch selected week data with topics when a week is selected - 自動更新を有効にする
   const { data: selectedWeek, refetch: refetchSelectedWeek } = useQuery({
     queryKey: ["/api/weeks", selectedWeekId, fingerprint],
     enabled: !!selectedWeekId && !!fingerprint,
+    refetchInterval: 10000, // 10秒ごとに自動更新
+    refetchOnWindowFocus: true, // ウィンドウにフォーカスが戻ったとき更新
   });
 
   // Check if user is authenticated and is admin
