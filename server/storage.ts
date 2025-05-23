@@ -26,6 +26,7 @@ export interface IStorage {
   getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined>;
   createTopic(topic: InsertTopic): Promise<Topic>;
   updateTopicStatus(id: number, status: string): Promise<Topic | undefined>;
+  deleteTopic(id: number): Promise<boolean>;
   
   // Comment operations
   getCommentsByTopicId(topicId: number): Promise<Comment[]>;
@@ -227,6 +228,27 @@ export class MemStorage implements IStorage {
     
     topic.status = status;
     return topic;
+  }
+  
+  async deleteTopic(id: number): Promise<boolean> {
+    if (!this.topics.has(id)) return false;
+    
+    // 関連するコメントを削除
+    const commentsToDelete = Array.from(this.comments.entries())
+      .filter(([_, comment]) => comment.topicId === id)
+      .map(([id]) => id);
+    
+    commentsToDelete.forEach(commentId => this.comments.delete(commentId));
+    
+    // 関連するスターを削除
+    const starsToDelete = Array.from(this.stars.entries())
+      .filter(([_, star]) => star.topicId === id)
+      .map(([id]) => id);
+    
+    starsToDelete.forEach(starId => this.stars.delete(starId));
+    
+    // トピックを削除
+    return this.topics.delete(id);
   }
   
   // Comment operations
@@ -487,6 +509,30 @@ export class PostgresStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+  
+  async deleteTopic(id: number): Promise<boolean> {
+    try {
+      // まず関連するスターとコメントを削除
+      await this.db
+        .delete(stars)
+        .where(eq(stars.topicId, id));
+        
+      await this.db
+        .delete(comments)
+        .where(eq(comments.topicId, id));
+      
+      // 次にトピック自体を削除
+      const result = await this.db
+        .delete(topics)
+        .where(eq(topics.id, id))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error('トピック削除エラー:', error);
+      return false;
+    }
   }
   
   // Comment operations

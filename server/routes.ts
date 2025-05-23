@@ -317,6 +317,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update topic status' });
     }
   });
+  
+  // トピック削除エンドポイント（管理者専用）
+  app.delete('/api/topics/:id', isAdmin, async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.id);
+      
+      if (isNaN(topicId)) {
+        return res.status(400).json({ message: 'Invalid topic ID' });
+      }
+      
+      // 削除前にトピック情報を取得（ブロードキャスト用）
+      const topic = await storage.getTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({ message: 'Topic not found' });
+      }
+      
+      const success = await storage.deleteTopic(topicId);
+      
+      if (!success) {
+        return res.status(500).json({ message: 'Failed to delete topic' });
+      }
+      
+      // トピックが削除されたことをブロードキャスト
+      broadcastEvent('topic_deleted', { 
+        topicId: topic.id,
+        weekId: topic.weekId
+      });
+      
+      res.json({ success: true, message: 'Topic deleted successfully' });
+    } catch (error) {
+      console.error('トピック削除エラー:', error);
+      res.status(500).json({ message: 'Failed to delete topic' });
+    }
+  });
 
   // Comment routes
   app.post('/api/topics/:id/comments', async (req, res) => {
