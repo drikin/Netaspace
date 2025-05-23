@@ -16,6 +16,8 @@ const Submit: React.FC = () => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isGoogleNewsLink, setIsGoogleNewsLink] = React.useState(false);
+  const [originalNewsUrl, setOriginalNewsUrl] = React.useState('');
   const queryClient = useQueryClient();
   
   // Fetch active week
@@ -64,12 +66,41 @@ const Submit: React.FC = () => {
     const fetchUrlInfo = async (url: string) => {
       if (!url || url.trim() === '') return;
       
+      // Googleニュースリンクかどうかをチェック
+      const isGoogleNews = url.includes('news.google.com');
+      setIsGoogleNewsLink(isGoogleNews);
+      
+      if (isGoogleNews) {
+        toast({
+          title: "Googleニュースリンクを検出しました",
+          description: "Googleニュースのリンクからは元の記事情報を正確に取得できない場合があります。可能であれば元の記事URLを使用してください。",
+          variant: "destructive",
+          duration: 7000
+        });
+      }
+      
       try {
         setIsLoading(true);
         const response = await fetch(`/api/fetch-url-info?url=${encodeURIComponent(url)}`);
         if (!response.ok) throw new Error('Failed to fetch URL info');
         
         const data = await response.json();
+        
+        // Googleニュースリンクで変換に失敗した場合（gstaticなどへの変換）
+        if (isGoogleNews && data.finalUrl && (
+            data.finalUrl.includes('gstatic.com') || 
+            data.finalUrl.includes('googleusercontent.com') ||
+            data.finalUrl.includes('news.google.com')
+        )) {
+          toast({
+            title: "元の記事URLを使用してください",
+            description: "Googleニュースのリンクからは元の記事URLへの変換に失敗しました。元の記事URLを直接入力してください。",
+            variant: "destructive",
+            duration: 7000
+          });
+          setIsLoading(false);
+          return;
+        }
         
         // リダイレクト先URLがある場合は、それに更新する
         if (data.finalUrl && data.finalUrl !== url) {
@@ -83,6 +114,11 @@ const Submit: React.FC = () => {
         
         if (!form.getValues('description')) {
           form.setValue('description', data.description);
+        }
+        
+        // 成功したらGoogleニュースリンクフラグをリセット
+        if (data.title || data.description) {
+          setIsGoogleNewsLink(false);
         }
       } catch (error) {
         console.error('Error fetching URL info:', error);
@@ -247,6 +283,64 @@ const Submit: React.FC = () => {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">URLを入力すると、タイトルと説明が自動的に取得されます</p>
+                      {isGoogleNewsLink && (
+                        <div className="mt-2 p-3 border border-yellow-300 bg-yellow-50 rounded-md">
+                          <h4 className="text-sm font-medium text-yellow-800">Googleニュースリンクを検出しました</h4>
+                          <p className="text-xs text-yellow-800 mt-1">
+                            Googleニュースのリンクからは元の記事情報を正確に取得できない場合があります。
+                            可能であれば元の記事URLを直接入力してください。
+                          </p>
+                          <div className="mt-2">
+                            <Input
+                              placeholder="元の記事のURL（例：https://www.sanspo.com/article/...）"
+                              value={originalNewsUrl}
+                              onChange={(e) => setOriginalNewsUrl(e.target.value)}
+                              className="text-sm mb-2"
+                            />
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (originalNewsUrl) {
+                                  form.setValue('url', originalNewsUrl);
+                                  setIsGoogleNewsLink(false);
+                                  setOriginalNewsUrl('');
+                                  
+                                  // 少し遅延させて新しいURLの情報を取得
+                                  setTimeout(() => {
+                                    const fetchUrl = async () => {
+                                      try {
+                                        setIsLoading(true);
+                                        const response = await fetch(`/api/fetch-url-info?url=${encodeURIComponent(originalNewsUrl)}`);
+                                        if (!response.ok) throw new Error('Failed to fetch URL info');
+                                        
+                                        const data = await response.json();
+                                        
+                                        // タイトルと説明文が空の場合のみ自動設定
+                                        if (!form.getValues('title')) {
+                                          form.setValue('title', data.title);
+                                        }
+                                        
+                                        if (!form.getValues('description')) {
+                                          form.setValue('description', data.description);
+                                        }
+                                      } catch (error) {
+                                        console.error('Error fetching info from original URL:', error);
+                                      } finally {
+                                        setIsLoading(false);
+                                      }
+                                    };
+                                    
+                                    fetchUrl();
+                                  }, 100);
+                                }
+                              }}
+                            >
+                              このURLを使用する
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
