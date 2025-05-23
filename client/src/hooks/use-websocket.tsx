@@ -13,40 +13,79 @@ export function useWebSocket() {
   const handleWebSocketEvent = useCallback((event: WebSocketEvent) => {
     console.log('WebSocketイベントを受信:', event);
     
-    // イベントタイプに応じてReact Queryのキャッシュを無効化
-    switch (event.type) {
+    // キャッシュ更新を最適化し、必要なクエリだけを更新
+    const { type, data } = event;
+    
+    // イベントデータから週IDを取り出す
+    const weekId = data?.weekId;
+    const topicId = data?.topicId;
+    
+    // アクティブウィークのエンドポイントのキャッシュキー
+    const activeWeekKey = ['/api/weeks/active'];
+    
+    // 週ごとのトピックスのキャッシュキー
+    const weekTopicsKey = weekId ? [`/api/weeks/${weekId}/topics`] : undefined;
+    
+    // 個別トピックのキャッシュキー
+    const topicKey = topicId ? [`/api/topics/${topicId}`] : undefined;
+    
+    // 対象のキャッシュを効率的に無効化
+    switch (type) {
       case 'topic_created':
-        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
-        queryClient.invalidateQueries();
+        // トピック作成時は、週のトピックリストとアクティブウィークを更新
+        if (weekTopicsKey) {
+          queryClient.invalidateQueries({ queryKey: weekTopicsKey });
+        }
+        queryClient.invalidateQueries({ queryKey: activeWeekKey });
+        
+        // 必要であれば、全トピックのリストも更新
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
         break;
         
       case 'topic_status_changed':
-        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
-        queryClient.invalidateQueries();
+        // ステータス変更時は該当トピックと週のトピックリストを更新
+        if (topicKey) {
+          queryClient.invalidateQueries({ queryKey: topicKey });
+        }
+        if (weekTopicsKey) {
+          queryClient.invalidateQueries({ queryKey: weekTopicsKey });
+        }
+        queryClient.invalidateQueries({ queryKey: activeWeekKey });
         break;
         
       case 'topic_deleted':
-        // トピックが削除された場合も、すべてのクエリをリフレッシュ
-        console.log('トピックが削除されました:', event.data);
-        queryClient.invalidateQueries();
+        // トピック削除時は週のトピックリストとアクティブウィークを更新
+        console.log('トピックが削除されました:', data);
+        if (weekTopicsKey) {
+          queryClient.invalidateQueries({ queryKey: weekTopicsKey });
+        }
+        queryClient.invalidateQueries({ queryKey: activeWeekKey });
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
         break;
         
       case 'comment_added':
-        // トピックとその関連データを無効化
-        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+        // コメント追加時は該当トピックのみ更新
+        if (topicKey) {
+          queryClient.invalidateQueries({ queryKey: topicKey });
+        }
         break;
         
       case 'star_added':
-        // トピックとその関連データを無効化
-        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+        // いいね追加時は該当トピックのみ更新
+        if (topicKey) {
+          queryClient.invalidateQueries({ queryKey: topicKey });
+        }
         break;
         
       default:
         console.log('未処理のWebSocketイベント:', event);
-        // 不明なイベントの場合は広範囲に更新
-        queryClient.invalidateQueries();
+        // 不明なイベントの場合は関連クエリのみ更新
+        if (topicKey) {
+          queryClient.invalidateQueries({ queryKey: topicKey });
+        }
+        if (weekTopicsKey) {
+          queryClient.invalidateQueries({ queryKey: weekTopicsKey });
+        }
     }
   }, []);
 
