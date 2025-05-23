@@ -258,7 +258,12 @@ export function useWebSocket() {
     
     // WebSocketのプロトコルをHTTPプロトコルに合わせて設定
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    
+    // Replitの環境ではwindow.location.hostを使用
+    // localhost:undefinedというエラーを避けるため、明示的にサーバーのホスト/パスを指定
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    console.log('Connecting to WebSocket URL:', wsUrl);
     
     try {
       const socket = new WebSocket(wsUrl);
