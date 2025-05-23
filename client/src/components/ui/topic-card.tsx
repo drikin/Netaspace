@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import CommentsList from "./comments-list";
 import CommentForm from "./comment-form";
 import AdminControls from "../admin-controls";
@@ -28,58 +28,122 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const [starsCount, setStarsCount] = useState(topic.starsCount);
   const [hasStarred, setHasStarred] = useState(topic.hasStarred || false);
 
-  const handleStarClick = async () => {
-    if (isStarring || !fingerprint) return;
-    
-    setIsStarring(true);
-    try {
+  // いいね追加のミューテーション（楽観的UI更新対応）
+  const addStarMutation = useMutation({
+    mutationFn: () => {
+      // 既にいいねしている場合は解除を行うシミュレーション（バックエンドAPIがあれば適切に実装）
       if (hasStarred) {
-        // いいねを解除する操作（現在のバックエンドAPIには解除用エンドポイントがないため、
-        // フロントエンドだけで解除処理をシミュレート。いいねカウントを減らし、状態を変更）
-        setStarsCount(prev => Math.max(0, prev - 1));
-        setHasStarred(false);
-        toast({
-          title: "いいねを解除しました",
-          description: "このトピックのいいねを解除しました。",
-        });
-      } else {
-        // 新しくいいねをつける
-        const response = await apiRequest("POST", `/api/topics/${topic.id}/star`, {
-          fingerprint,
-        });
-
-        if (!response.ok) {
-          // 既にいいね済みだった場合は状態を更新
-          if (response.status === 400) {
-            setHasStarred(true);
-            toast({
-              title: "既にいいねしています",
-              description: "このトピックには既にいいねしています。",
-            });
-            setIsStarring(false);
-            return;
-          }
-          throw new Error('Star request failed');
-        }
-
-        const data = await response.json();
-        setStarsCount(data.starsCount);
-        setHasStarred(true);
-        toast({
-          title: "いいねしました！",
-          description: "フィードバックありがとうございます。",
-        });
+        // シミュレートしたいいね解除処理の成功を返す
+        return Promise.resolve({ ok: true });
       }
-    } catch (error) {
-      console.error("Failed to star topic:", error);
+      
+      // 新しくいいねをつける
+      return apiRequest("POST", `/api/topics/${topic.id}/star`, {
+        fingerprint,
+      });
+    },
+    // 楽観的更新: APIレスポンスを待たずにUIを更新
+    onMutate: async () => {
+      // 既存のクエリをキャンセル
+      await queryClient.cancelQueries({ queryKey: [`/api/topics/${topic.id}`] });
+      await queryClient.cancelQueries({ queryKey: ["/api/weeks/active"] });
+      
+      // 現在のトピックデータをスナップショットとして保存
+      const previousTopicData = queryClient.getQueryData([`/api/topics/${topic.id}`]);
+      const previousWeekData = queryClient.getQueryData(["/api/weeks/active"]);
+      
+      // 新しいいいね数を計算
+      const newStarsCount = hasStarred 
+        ? Math.max(0, starsCount - 1)  // いいね解除の場合
+        : starsCount + 1;              // いいね追加の場合
+      
+      const newHasStarred = !hasStarred;
+      
+      // キャッシュを楽観的に更新（いいね状態とカウントを更新）
+      queryClient.setQueryData([`/api/topics/${topic.id}`], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        return {
+          ...oldData,
+          starsCount: newStarsCount,
+          hasStarred: newHasStarred
+        };
+      });
+      
+      // アクティブウィークのデータも更新
+      queryClient.setQueryData(["/api/weeks/active"], (oldData: any) => {
+        if (!oldData || !oldData.topics) return oldData;
+        
+        return {
+          ...oldData,
+          topics: oldData.topics.map((t: TopicWithCommentsAndStars) => 
+            t.id === topic.id 
+              ? { ...t, starsCount: newStarsCount, hasStarred: newHasStarred }
+              : t
+          )
+        };
+      });
+      
+      // UIステートを即座に更新
+      setStarsCount(newStarsCount);
+      setHasStarred(newHasStarred);
+      
+      // ロールバック用に前の状態を返す
+      return { previousTopicData, previousWeekData };
+    },
+    onError: (err, _, context) => {
+      // エラー時は以前の状態に戻す
+      if (context?.previousTopicData) {
+        queryClient.setQueryData([`/api/topics/${topic.id}`], context.previousTopicData);
+      }
+      if (context?.previousWeekData) {
+        queryClient.setQueryData(["/api/weeks/active"], context.previousWeekData);
+      }
+      
+      // UIステートも元に戻す
+      setStarsCount(topic.starsCount);
+      setHasStarred(topic.hasStarred || false);
+      
+      console.error("Failed to star topic:", err);
       toast({
         title: "操作できませんでした",
         description: "問題が発生しました。後でもう一度お試しください。",
         variant: "destructive",
       });
-    } finally {
+    },
+    onSuccess: (response) => {
+      // レスポンスがOKでない場合（400エラーなど）の処理
+      if (response && !response.ok && response.status === 400) {
+        toast({
+          title: "既にいいねしています",
+          description: "このトピックには既にいいねしています。",
+        });
+        return;
+      }
+      
+      // 正常に処理されたときのメッセージ
+      toast({
+        title: hasStarred ? "いいねを解除しました" : "いいねしました！",
+        description: hasStarred 
+          ? "このトピックのいいねを解除しました。" 
+          : "フィードバックありがとうございます。",
+      });
+      
+      // 必要なクエリを無効化して最新データを再取得
+      queryClient.invalidateQueries({ queryKey: [`/api/topics/${topic.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+    },
+    onSettled: () => {
       setIsStarring(false);
     }
+  });
+
+  const handleStarClick = () => {
+    if (isStarring || !fingerprint) return;
+    
+    setIsStarring(true);
+    // 楽観的UI更新を使ったミューテーション実行
+    addStarMutation.mutate();
   };
 
   const getStatusBadge = () => {

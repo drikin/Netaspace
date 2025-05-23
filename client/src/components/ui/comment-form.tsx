@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { submitCommentSchema } from "@shared/schema";
+import { submitCommentSchema, Comment } from "@shared/schema";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 
 interface CommentFormProps {
   topicId: number;
@@ -32,13 +33,58 @@ const CommentForm: React.FC<CommentFormProps> = ({ topicId, onCommentAdded }) =>
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      await apiRequest("POST", `/api/topics/${topicId}/comments`, {
-        name: values.name,
-        content: values.content,
+  // コメント追加のミューテーション（楽観的UI更新対応）
+  const addCommentMutation = useMutation({
+    mutationFn: (data: z.infer<typeof formSchema>) => {
+      return apiRequest("POST", `/api/topics/${topicId}/comments`, {
+        name: data.name,
+        content: data.content,
       });
-
+    },
+    // 楽観的更新: APIレスポンスを待たずにUIを更新
+    onMutate: async (newComment) => {
+      // 既存のクエリをキャンセル
+      await queryClient.cancelQueries({ queryKey: [`/api/topics/${topicId}`] });
+      
+      // 現在のトピックデータをスナップショットとして保存
+      const previousTopicData = queryClient.getQueryData([`/api/topics/${topicId}`]);
+      
+      // キャッシュを楽観的に更新（新しいコメントを追加）
+      queryClient.setQueryData([`/api/topics/${topicId}`], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // 楽観的に作成される新しいコメント（仮のID等を設定）
+        const optimisticComment: Comment = {
+          id: Math.floor(Math.random() * -1000000), // 一時的な負のID
+          topicId: topicId,
+          name: newComment.name,
+          content: newComment.content,
+          createdAt: new Date(),
+        };
+        
+        // 新しいコメントを追加したトピックデータを返す
+        return {
+          ...oldData,
+          comments: [...(oldData.comments || []), optimisticComment]
+        };
+      });
+      
+      // ロールバック用に前の状態を返す
+      return { previousTopicData };
+    },
+    onError: (err, newComment, context) => {
+      // エラー時は以前の状態に戻す
+      if (context?.previousTopicData) {
+        queryClient.setQueryData([`/api/topics/${topicId}`], context.previousTopicData);
+      }
+      console.error("Failed to submit comment:", err);
+      toast({
+        title: "エラー",
+        description: "コメントの投稿に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
       form.reset();
       onCommentAdded();
       
@@ -46,14 +92,15 @@ const CommentForm: React.FC<CommentFormProps> = ({ topicId, onCommentAdded }) =>
         title: "コメントを投稿しました",
         description: "コメントありがとうございます！",
       });
-    } catch (error) {
-      console.error("Failed to submit comment:", error);
-      toast({
-        title: "エラー",
-        description: "コメントの投稿に失敗しました。もう一度お試しください。",
-        variant: "destructive",
-      });
+      
+      // 必要なクエリを無効化して再フェッチする
+      queryClient.invalidateQueries({ queryKey: [`/api/topics/${topicId}`] });
     }
+  });
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // 楽観的UI更新を使ったミューテーション実行
+    addCommentMutation.mutate(values);
   };
 
   return (

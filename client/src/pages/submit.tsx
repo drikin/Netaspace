@@ -1,12 +1,12 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { submitTopicSchema } from "@shared/schema";
+import { submitTopicSchema, TopicWithCommentsAndStars } from "@shared/schema";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ const Submit: React.FC = () => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const queryClient = useQueryClient();
   
   // Fetch active week
   const { data: activeWeek } = useQuery({
@@ -100,6 +101,77 @@ const Submit: React.FC = () => {
     return () => clearTimeout(timer);
   }, [watchedUrl, form]);
 
+  // トピック投稿のミューテーション（楽観的UI更新対応）
+  const createTopicMutation = useMutation({
+    mutationFn: (data: z.infer<typeof formSchema>) => {
+      return apiRequest("POST", "/api/topics", data);
+    },
+    // 楽観的更新: APIレスポンスを待たずにUIを更新
+    onMutate: async (newTopic) => {
+      if (!activeWeek) return;
+      
+      // 既存のクエリをキャンセル
+      await queryClient.cancelQueries({ queryKey: ["/api/weeks/active"] });
+      
+      // 現在のweekデータをスナップショットとして保存
+      const previousWeekData = queryClient.getQueryData(["/api/weeks/active"]);
+      
+      // キャッシュを楽観的に更新（新しいトピックを追加）
+      queryClient.setQueryData(["/api/weeks/active"], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // 楽観的に作成される新しいトピック（仮のID等を設定）
+        const optimisticTopic: TopicWithCommentsAndStars = {
+          id: Math.floor(Math.random() * -1000000), // 一時的な負のID
+          title: newTopic.title,
+          url: newTopic.url,
+          description: newTopic.description,
+          submitter: newTopic.submitter,
+          weekId: activeWeek.id,
+          status: "pending",
+          createdAt: new Date(),
+          stars: 0,
+          comments: [],
+          starsCount: 0,
+          hasStarred: false
+        };
+        
+        // 新しいトピックを追加したweekデータを返す
+        return {
+          ...oldData,
+          topics: [optimisticTopic, ...(oldData.topics || [])]
+        };
+      });
+      
+      // ロールバック用に前の状態を返す
+      return { previousWeekData };
+    },
+    onError: (err, newTopic, context) => {
+      // エラー時は以前の状態に戻す
+      if (context?.previousWeekData) {
+        queryClient.setQueryData(["/api/weeks/active"], context.previousWeekData);
+      }
+      console.error("Failed to submit topic:", err);
+      toast({
+        title: "エラー",
+        description: "トピックの投稿に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "トピックを投稿しました",
+        description: "トピックの投稿ありがとうございます！",
+      });
+      
+      // 必要なクエリを無効化して再フェッチする
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+      
+      // ホームページに移動
+      navigate("/");
+    }
+  });
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!activeWeek) {
       toast({
@@ -115,24 +187,8 @@ const Submit: React.FC = () => {
       localStorage.setItem('submitterName', values.submitter);
     }
 
-    try {
-      await apiRequest("POST", "/api/topics", values);
-      
-      toast({
-        title: "トピックを投稿しました",
-        description: "トピックの投稿ありがとうございます！",
-      });
-      
-      // Redirect to home page
-      navigate("/");
-    } catch (error) {
-      console.error("Failed to submit topic:", error);
-      toast({
-        title: "エラー",
-        description: "トピックの投稿に失敗しました。もう一度お試しください。",
-        variant: "destructive",
-      });
-    }
+    // 楽観的UI更新を使ったミューテーション実行
+    createTopicMutation.mutate(values);
   };
 
   return (
