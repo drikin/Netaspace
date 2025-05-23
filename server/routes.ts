@@ -273,6 +273,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const topic = await storage.createTopic(topicData);
+      
+      // 新しいトピックが作成されたことをブロードキャスト
+      broadcastEvent('topic_created', { topicId: topic.id, weekId: topic.weekId });
+      
       res.status(201).json(topic);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -300,6 +304,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!topic) {
         return res.status(404).json({ message: 'Topic not found' });
       }
+      
+      // トピックのステータスが変更されたことをブロードキャスト
+      broadcastEvent('topic_status_changed', { 
+        topicId: topic.id, 
+        weekId: topic.weekId, 
+        status: topic.status 
+      });
       
       res.json(topic);
     } catch (error) {
@@ -329,6 +340,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comment = await storage.createComment({
         ...commentData,
         topicId
+      });
+      
+      // 新しいコメントが追加されたことをブロードキャスト
+      broadcastEvent('comment_added', { 
+        commentId: comment.id, 
+        topicId: comment.topicId 
       });
       
       res.status(201).json(comment);
@@ -372,6 +389,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get the updated star count
       const starsCount = await storage.getStarsCountByTopicId(topicId);
+      
+      // スターが追加されたことをブロードキャスト
+      broadcastEvent('star_added', { 
+        topicId, 
+        starsCount 
+      });
       
       res.json({ success: true, starsCount });
     } catch (error) {

@@ -11,6 +11,7 @@ import Submit from "@/pages/submit";
 import Archive from "@/pages/archive";
 import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 function Router() {
   return (
@@ -26,6 +27,14 @@ function Router() {
 
 function App() {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
+  
+  // WebSocketのリアルタイム接続を設定
+  const { isConnected } = useWebSocket();
+
+  useEffect(() => {
+    // WebSocket接続状態をコンソールに表示（開発用）
+    console.log('WebSocket connection status:', isConnected);
+  }, [isConnected]);
 
   useEffect(() => {
     // Create a simple fingerprint using a random ID that persists in localStorage
