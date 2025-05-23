@@ -14,8 +14,32 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import MemoryStore from 'memorystore';
+import fetch from 'node-fetch';
+import { JSDOM } from 'jsdom';
 
 const MemoryStoreSession = MemoryStore(session);
+
+// URLから記事情報を取得する関数
+async function fetchArticleInfo(url: string) {
+  try {
+    const response = await fetch(url);
+    const html = await response.text();
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
+    
+    // タイトルを取得
+    const title = document.querySelector('title')?.textContent?.trim() || '';
+    
+    // 説明（メタディスクリプション）を取得
+    const description = document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ||
+                        document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.trim() || '';
+    
+    return { title, description };
+  } catch (error) {
+    console.error('Error fetching article info:', error);
+    return { title: '', description: '' };
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session setup
@@ -196,6 +220,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(topic);
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch topic' });
+    }
+  });
+
+  // URLから記事情報を取得するAPI
+  app.get('/api/fetch-url-info', async (req, res) => {
+    try {
+      const url = req.query.url as string;
+      
+      if (!url) {
+        return res.status(400).json({ message: 'URL is required' });
+      }
+      
+      const articleInfo = await fetchArticleInfo(url);
+      res.json(articleInfo);
+    } catch (error) {
+      console.error('Error fetching URL info:', error);
+      res.status(500).json({ message: 'Failed to fetch URL info' });
     }
   });
 

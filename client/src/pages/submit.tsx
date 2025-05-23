@@ -15,6 +15,7 @@ import { Link, useLocation } from "wouter";
 const Submit: React.FC = () => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const [isLoading, setIsLoading] = React.useState(false);
   
   // Fetch active week
   const { data: activeWeek } = useQuery({
@@ -37,15 +38,67 @@ const Submit: React.FC = () => {
     }),
   });
 
+  // ローカルストレージから投稿者名を取得
+  const getSavedSubmitter = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('submitterName') || '';
+    }
+    return '';
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       url: "",
       description: "",
-      submitter: "",
+      submitter: getSavedSubmitter(),
     },
   });
+
+  // URLが変更されたときに記事情報を自動取得
+  const watchedUrl = form.watch('url');
+  
+  React.useEffect(() => {
+    const fetchUrlInfo = async (url: string) => {
+      if (!url || url.trim() === '') return;
+      
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/fetch-url-info?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error('Failed to fetch URL info');
+        
+        const data = await response.json();
+        
+        // タイトルと説明文が空の場合のみ自動設定
+        if (!form.getValues('title')) {
+          form.setValue('title', data.title);
+        }
+        
+        if (!form.getValues('description')) {
+          form.setValue('description', data.description);
+        }
+      } catch (error) {
+        console.error('Error fetching URL info:', error);
+        toast({
+          title: "情報取得エラー",
+          description: "URLから情報を取得できませんでした。手動で入力してください。",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // URLが変更されたら500msディレイで情報取得（タイピング中の連続APIコールを防ぐ）
+    const timer = setTimeout(() => {
+      if (watchedUrl && watchedUrl.startsWith('http')) {
+        fetchUrlInfo(watchedUrl);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [watchedUrl, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!activeWeek) {
@@ -55,6 +108,11 @@ const Submit: React.FC = () => {
         variant: "destructive",
       });
       return;
+    }
+    
+    // 投稿者名をローカルストレージに保存
+    if (typeof window !== 'undefined' && values.submitter) {
+      localStorage.setItem('submitterName', values.submitter);
     }
 
     try {
