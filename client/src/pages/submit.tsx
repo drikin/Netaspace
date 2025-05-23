@@ -182,13 +182,21 @@ const Submit: React.FC = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/article"
-                          {...field}
-                          className="max-w-2xl"
-                        />
-                      </FormControl>
+                      <div className="relative max-w-2xl">
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com/article"
+                            {...field}
+                            className="pr-8"
+                          />
+                        </FormControl>
+                        {isLoading && (
+                          <div className="absolute right-3 top-2">
+                            <div className="animate-spin h-5 w-5 border-2 border-gray-500 rounded-full border-t-transparent"></div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">URLを入力すると、タイトルと説明が自動的に取得されます</p>
                       <FormMessage />
                     </FormItem>
                   )}
