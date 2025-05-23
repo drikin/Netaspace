@@ -13,6 +13,21 @@ export interface ReleaseNote {
 // リリース履歴データ（新しい順）
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "2025-05-25",
+    version: "1.4.0",
+    date: "2025年5月25日",
+    title: "Googleニュース対応とURL処理の強化",
+    description: "Googleニュースのリンクを検出して元記事のURLを入力できる機能を追加しました。また、リダイレクトURLの処理を改善し、より正確なコンテンツ情報の取得が可能になりました。",
+    features: [
+      "Googleニュースリンクの検出機能",
+      "元記事URLを手動入力できるインターフェース",
+      "リダイレクトURL対応の強化",
+      "URL情報取得の安定性向上",
+      "エラーメッセージの改善"
+    ],
+    isNew: true
+  },
+  {
     id: "2025-05-24",
     version: "1.3.0",
     date: "2025年5月24日",
@@ -24,8 +39,7 @@ export const releaseNotes: ReleaseNote[] = [
       "HTML5標準に準拠したページ構造に修正",
       "エラーハンドリングの強化",
       "全体的なパフォーマンスの向上"
-    ],
-    isNew: true
+    ]
   },
   {
     id: "2025-05-23",
