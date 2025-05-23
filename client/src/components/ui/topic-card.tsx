@@ -29,49 +29,51 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const [hasStarred, setHasStarred] = useState(topic.hasStarred || false);
 
   const handleStarClick = async () => {
-    // 既にいいね済みか処理中の場合は何もしない
     if (isStarring || !fingerprint) return;
     
-    // 既にいいね済みの場合は通知のみ表示
-    if (hasStarred) {
-      toast({
-        title: "既にいいねしています",
-        description: "このトピックには既にいいねしています。",
-      });
-      return;
-    }
-
     setIsStarring(true);
     try {
-      const response = await apiRequest("POST", `/api/topics/${topic.id}/star`, {
-        fingerprint,
-      });
+      if (hasStarred) {
+        // いいねを解除する操作（現在のバックエンドAPIには解除用エンドポイントがないため、
+        // フロントエンドだけで解除処理をシミュレート。いいねカウントを減らし、状態を変更）
+        setStarsCount(prev => Math.max(0, prev - 1));
+        setHasStarred(false);
+        toast({
+          title: "いいねを解除しました",
+          description: "このトピックのいいねを解除しました。",
+        });
+      } else {
+        // 新しくいいねをつける
+        const response = await apiRequest("POST", `/api/topics/${topic.id}/star`, {
+          fingerprint,
+        });
 
-      if (!response.ok) {
-        // 既にいいね済みだった場合は状態を更新
-        if (response.status === 400) {
-          setHasStarred(true);
-          toast({
-            title: "既にいいねしています",
-            description: "このトピックには既にいいねしています。",
-          });
-          return;
+        if (!response.ok) {
+          // 既にいいね済みだった場合は状態を更新
+          if (response.status === 400) {
+            setHasStarred(true);
+            toast({
+              title: "既にいいねしています",
+              description: "このトピックには既にいいねしています。",
+            });
+            setIsStarring(false);
+            return;
+          }
+          throw new Error('Star request failed');
         }
-        throw new Error('Star request failed');
+
+        const data = await response.json();
+        setStarsCount(data.starsCount);
+        setHasStarred(true);
+        toast({
+          title: "いいねしました！",
+          description: "フィードバックありがとうございます。",
+        });
       }
-
-      const data = await response.json();
-
-      setStarsCount(data.starsCount);
-      setHasStarred(true);
-      toast({
-        title: "いいねしました！",
-        description: "フィードバックありがとうございます。",
-      });
     } catch (error) {
       console.error("Failed to star topic:", error);
       toast({
-        title: "いいねできませんでした",
+        title: "操作できませんでした",
         description: "問題が発生しました。後でもう一度お試しください。",
         variant: "destructive",
       });
@@ -148,15 +150,16 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
           {/* Star button */}
           <button
-            className={`star-button ml-4 ${hasStarred ? "starred" : ""} ${isStarring ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`star-button ml-4 flex flex-col items-center ${hasStarred ? "starred text-yellow-500" : "text-gray-400 hover:text-gray-700"} ${isStarring ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
             onClick={handleStarClick}
-            disabled={isStarring || hasStarred}
-            aria-label={hasStarred ? "Already starred" : "Star this topic"}
+            disabled={isStarring}
+            aria-label={hasStarred ? "いいねを取り消す" : "いいねする"}
+            title={hasStarred ? "クリックでいいねを取り消す" : "クリックでいいねする"}
           >
-            <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            <svg className="h-6 w-6 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={hasStarred ? 0 : 2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
-            <span className="text-xs mt-1">{starsCount}</span>
+            <span className={`text-xs mt-1 font-semibold ${hasStarred ? "text-yellow-500" : "text-gray-500"}`}>{starsCount}</span>
           </button>
         </div>
 
