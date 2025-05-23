@@ -23,12 +23,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     store: new MemoryStoreSession({
       checkPeriod: 86400000 // prune expired entries every 24h
     }),
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
+    secret: process.env.SESSION_SECRET || 'backspace-fm-podcast-topics-app',
+    resave: true,
+    saveUninitialized: true,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 86400000 // 24 hours
+      secure: false, // デプロイ環境でもHTTPSが確実でない場合はfalseに設定
+      maxAge: 86400000, // 24 hours
+      sameSite: 'lax'
     }
   }));
 
