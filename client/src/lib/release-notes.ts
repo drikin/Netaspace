@@ -13,6 +13,21 @@ export interface ReleaseNote {
 // リリース履歴データ（新しい順）
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "2025-05-24",
+    version: "1.3.0",
+    date: "2025年5月24日",
+    title: "リアルタイム通信の安定性向上とHTML構造の最適化",
+    description: "WebSocket接続の安定性を大幅に向上させました。また、HTML5標準に準拠するようページ構造を修正し、より高速で安定したブラウザ表示を実現しています。",
+    features: [
+      "WebSocket接続の安定性を強化",
+      "リアルタイムデータ同期の最適化",
+      "HTML5標準に準拠したページ構造に修正",
+      "エラーハンドリングの強化",
+      "全体的なパフォーマンスの向上"
+    ],
+    isNew: true
+  },
+  {
     id: "2025-05-23",
     version: "1.2.0",
     date: "2025年5月23日",
@@ -24,8 +39,7 @@ export const releaseNotes: ReleaseNote[] = [
       "関連するコメントといいねを一括削除",
       "WebSocketでリアルタイム反映",
       "お知らせ機能の追加"
-    ],
-    isNew: true
+    ]
   },
   {
     id: "2025-05-15",
