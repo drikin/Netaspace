@@ -6,7 +6,7 @@ type WebSocketEvent = {
   data: any;
 };
 
-export const useWebSocket = () => {
+export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -55,42 +55,54 @@ export const useWebSocket = () => {
     // イベントタイプに応じてReact Queryのキャッシュを無効化
     switch (event.type) {
       case 'topic_created':
-        // トピック一覧と週のデータを再取得
-        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
+        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
+        queryClient.invalidateQueries();
         break;
         
       case 'topic_status_changed':
-        // 対象トピックと関連データを再取得
-        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
-        queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
+        // より広範なクエリの無効化 - すべてのトピック関連クエリを更新
+        queryClient.invalidateQueries();
         break;
         
       case 'comment_added':
-        // 対象トピックとコメントを再取得
+        // トピックとその関連データを無効化
         queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
         break;
         
       case 'star_added':
-        // 対象トピックのスター状態を再取得
+        // トピックとその関連データを無効化
         queryClient.invalidateQueries({ queryKey: [`/api/topics/${event.data.topicId}`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
         break;
         
       default:
         console.log('未処理のWebSocketイベント:', event);
+        // 不明なイベントの場合は広範囲に更新
+        queryClient.invalidateQueries();
     }
   }, []);
 
   useEffect(() => {
+    // 接続を即時実行
     connect();
     
+    // 定期的に接続状態を確認し、切断されていれば再接続
+    const checkInterval = setInterval(() => {
+      if (!isConnected && (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)) {
+        console.log('WebSocket再接続を試みます...');
+        connect();
+      }
+    }, 5000);
+    
     return () => {
-      // コンポーネントアンマウント時にWebSocket接続を閉じる
+      // クリーンアップ
+      clearInterval(checkInterval);
       if (socketRef.current) {
         socketRef.current.close();
       }
     };
-  }, [connect]);
+  }, [connect, isConnected]);
 
   return { isConnected };
 };

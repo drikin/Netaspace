@@ -29,7 +29,17 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const [hasStarred, setHasStarred] = useState(topic.hasStarred || false);
 
   const handleStarClick = async () => {
-    if (hasStarred || isStarring || !fingerprint) return;
+    // 既にいいね済みか処理中の場合は何もしない
+    if (isStarring || !fingerprint) return;
+    
+    // 既にいいね済みの場合は通知のみ表示
+    if (hasStarred) {
+      toast({
+        title: "既にいいねしています",
+        description: "このトピックには既にいいねしています。",
+      });
+      return;
+    }
 
     setIsStarring(true);
     try {
@@ -37,19 +47,32 @@ const TopicCard: React.FC<TopicCardProps> = ({
         fingerprint,
       });
 
+      if (!response.ok) {
+        // 既にいいね済みだった場合は状態を更新
+        if (response.status === 400) {
+          setHasStarred(true);
+          toast({
+            title: "既にいいねしています",
+            description: "このトピックには既にいいねしています。",
+          });
+          return;
+        }
+        throw new Error('Star request failed');
+      }
+
       const data = await response.json();
 
       setStarsCount(data.starsCount);
       setHasStarred(true);
       toast({
-        title: "Topic starred!",
-        description: "Thanks for your feedback.",
+        title: "いいねしました！",
+        description: "フィードバックありがとうございます。",
       });
     } catch (error) {
       console.error("Failed to star topic:", error);
       toast({
-        title: "Could not star topic",
-        description: "You may have already starred this topic.",
+        title: "いいねできませんでした",
+        description: "問題が発生しました。後でもう一度お試しください。",
         variant: "destructive",
       });
     } finally {
