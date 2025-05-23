@@ -202,14 +202,58 @@ export function useWebSocket() {
     }
   }, []);
 
+  // 接続試行中フラグを追加
+  const [connecting, setConnecting] = useState(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const connect = useCallback(() => {
-    // 既存の接続があれば閉じる
+    // 既に接続中または接続試行中なら、新たに接続を試みない
+    if (isConnected || connecting) {
+      return;
+    }
+    
+    // 接続試行中フラグをセット
+    setConnecting(true);
+    
+    // 既存の接続を適切にクリーンアップ
     if (socketRef.current) {
-      if (socketRef.current.readyState === WebSocket.OPEN || 
-          socketRef.current.readyState === WebSocket.CONNECTING) {
-        return; // 既に接続中または接続試行中なら新たに接続しない
+      try {
+        if (socketRef.current.readyState === WebSocket.OPEN) {
+          // 正常に接続されているのにここに来た場合は状態の矛盾なのでフラグを修正
+          setIsConnected(true);
+          setConnecting(false);
+          return;
+        }
+        
+        // 接続待ちの状態なら少し待ってみる
+        if (socketRef.current.readyState === WebSocket.CONNECTING) {
+          // 既に接続試行中なら、タイムアウトを設定して様子を見る
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            // 3秒経っても接続できなければ再接続を試みる
+            if (socketRef.current && socketRef.current.readyState !== WebSocket.OPEN) {
+              try {
+                socketRef.current.close();
+              } catch (e) {
+                // エラーは無視
+              }
+              socketRef.current = null;
+              setConnecting(false);
+              connect(); // 再接続
+            }
+          }, 3000);
+          
+          return;
+        }
+        
+        // クローズ済みまたはクローズ中の場合は改めて閉じる
+        socketRef.current.close();
+      } catch (e) {
+        // エラーは無視して新しい接続を試みる
       }
-      socketRef.current.close();
     }
     
     // WebSocketのプロトコルをHTTPプロトコルに合わせて設定
@@ -221,24 +265,34 @@ export function useWebSocket() {
       socketRef.current = socket;
 
       socket.onopen = () => {
-        console.log('WebSocket接続が確立されました');
+        // 接続が確立された - ログを最小限に
+        if (!isConnected) {
+          console.log('WebSocket接続が確立されました');
+        }
         setIsConnected(true);
+        setConnecting(false);
         
-        // 接続成功時に状態を同期するためのping-pongを送信
-        socket.send(JSON.stringify({ type: 'ping' }));
+        // 接続成功時にハートビートを開始
+        if (socket.readyState === WebSocket.OPEN) {
+          // ハートビートを送信（サーバーがping-pongに対応していることを前提）
+          try {
+            socket.send(JSON.stringify({ type: 'ping' }));
+          } catch (e) {
+            // 送信エラーは無視
+          }
+        }
       };
 
-      socket.onclose = (event) => {
-        // 予期しない切断のみログ出力
-        if (!event.wasClean) {
-          console.log('WebSocket connection status:', socket.readyState === WebSocket.OPEN);
-        }
+      socket.onclose = () => {
+        // 接続が閉じられた - 状態変更のみ行い、ログは出さない
         setIsConnected(false);
+        setConnecting(false);
       };
 
       socket.onerror = () => {
-        // エラー発生時は接続状態をリセット
+        // エラーが発生した - 状態変更のみ行い、ログは出さない
         setIsConnected(false);
+        setConnecting(false);
       };
 
       socket.onmessage = (event) => {
@@ -246,50 +300,71 @@ export function useWebSocket() {
           const message: WebSocketEvent = JSON.parse(event.data);
           handleWebSocketEvent(message);
         } catch (error) {
-          console.error('WebSocketメッセージの解析エラー:', error);
+          // パース失敗は無視
         }
       };
     } catch (error) {
-      console.error('WebSocket初期化エラー:', error);
+      // 初期化エラー
       setIsConnected(false);
+      setConnecting(false);
     }
-  }, [handleWebSocketEvent]);
+  }, [handleWebSocketEvent, isConnected, connecting]);
 
   // 最適化された接続管理
   useEffect(() => {
     // 初期接続
     connect();
     
-    // 短い間隔での接続チェック（アプリの応答性向上のため）
-    const quickReconnectCheck = setInterval(() => {
-      if (!isConnected) {
+    // 接続状態の定期チェック（負荷を抑えるため間隔を長めにする）
+    const reconnectCheck = setInterval(() => {
+      // 接続していない、かつ接続試行中でもない場合に再接続
+      if (!isConnected && !connecting) {
         connect();
       }
-    }, 2000);
+    }, 5000);
     
-    // 定期的な接続チェック（バックグラウンドでの安定性のため）
-    const stableReconnectCheck = setInterval(() => {
-      // 接続中だが、実際は切断されているケースに対応
-      if (socketRef.current?.readyState !== WebSocket.OPEN) {
-        setIsConnected(false);
-        connect();
-      }
-    }, 10000);
-    
-    // ネットワーク状態の変化を監視
-    window.addEventListener('online', connect);
+    // 視認性向上のため、状態をコンソールに表示するのは開発時のみ
+    if (process.env.NODE_ENV === 'development') {
+      const statusCheck = setInterval(() => {
+        const status = socketRef.current?.readyState === WebSocket.OPEN;
+        if (status !== isConnected) {
+          // 状態の不一致がある場合は修正
+          setIsConnected(status);
+        }
+      }, 10000);
+      
+      return () => {
+        clearInterval(statusCheck);
+        clearInterval(reconnectCheck);
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
+        
+        if (socketRef.current) {
+          try {
+            socketRef.current.close();
+          } catch (e) {
+            // エラーは無視
+          }
+        }
+      };
+    }
     
     return () => {
-      // クリーンアップ
-      clearInterval(quickReconnectCheck);
-      clearInterval(stableReconnectCheck);
-      window.removeEventListener('online', connect);
+      clearInterval(reconnectCheck);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       
       if (socketRef.current) {
-        socketRef.current.close();
+        try {
+          socketRef.current.close();
+        } catch (e) {
+          // エラーは無視
+        }
       }
     };
-  }, [connect, isConnected]);
+  }, [connect, isConnected, connecting]);
 
   return { isConnected };
 };
