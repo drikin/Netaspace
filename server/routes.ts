@@ -18,6 +18,19 @@ import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import { WebSocketServer, WebSocket } from 'ws';
 
+// WebSocketクライアント管理
+const clients = new Set<WebSocket>();
+
+// WebSocketでイベントを全クライアントに送信する関数
+function broadcastEvent(eventType: string, data: any) {
+  const message = JSON.stringify({ type: eventType, data });
+  clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
 const MemoryStoreSession = MemoryStore(session);
 
 // URLから記事情報を取得する関数
@@ -40,19 +53,6 @@ async function fetchArticleInfo(url: string) {
     console.error('Error fetching article info:', error);
     return { title: '', description: '' };
   }
-}
-
-// WebSocketクライアント管理
-const clients = new Set<WebSocket>();
-
-// WebSocketでイベントを全クライアントに送信する関数
-function broadcastEvent(eventType: string, data: any) {
-  const message = JSON.stringify({ type: eventType, data });
-  clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
-  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
