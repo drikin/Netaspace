@@ -274,8 +274,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const topic = await storage.createTopic(topicData);
       
-      // 新しいトピックが作成されたことをブロードキャスト
-      broadcastEvent('topic_created', { topicId: topic.id, weekId: topic.weekId });
+      // 新しいトピックが作成されたことをブロードキャスト（完全なトピックデータを含める）
+      const topicWithDetails = await storage.getTopic(topic.id);
+      broadcastEvent('topic_created', { 
+        topicId: topic.id, 
+        weekId: topic.weekId,
+        topic: topicWithDetails
+      });
       
       res.status(201).json(topic);
     } catch (error) {
@@ -305,11 +310,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Topic not found' });
       }
       
-      // トピックのステータスが変更されたことをブロードキャスト
+      // トピックのステータスが変更されたことをブロードキャスト（完全なトピックデータを含める）
+      const fullTopic = await storage.getTopic(topic.id);
       broadcastEvent('topic_status_changed', { 
         topicId: topic.id, 
         weekId: topic.weekId, 
-        status: topic.status 
+        status: topic.status,
+        topic: fullTopic
       });
       
       res.json(topic);
