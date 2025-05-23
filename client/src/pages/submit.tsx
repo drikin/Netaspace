@@ -216,24 +216,6 @@ const Submit: React.FC = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>タイトル</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="記事やニュースのタイトルを入力"
-                          {...field}
-                          className="max-w-2xl"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="url"
                   render={({ field }) => (
                     <FormItem>
@@ -253,6 +235,24 @@ const Submit: React.FC = () => {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">URLを入力すると、タイトルと説明が自動的に取得されます</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>タイトル</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="記事やニュースのタイトルを入力"
+                          {...field}
+                          className="max-w-2xl"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -113,7 +113,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
     },
     onSuccess: (response) => {
       // レスポンスがOKでない場合（400エラーなど）の処理
-      if (response && !response.ok && response.status === 400) {
+      if (response && typeof response === 'object' && 'ok' in response && !response.ok && 'status' in response && response.status === 400) {
         toast({
           title: "既にいいねしています",
           description: "このトピックには既にいいねしています。",
