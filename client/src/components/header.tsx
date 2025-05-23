@@ -54,20 +54,23 @@ const Header = () => {
               <span className="font-bold text-xl tracking-tight">backspace.fmのネタ帳</span>
             </div>
             <nav className="hidden sm:ml-8 sm:flex sm:items-center space-x-6">
-              <Link href="/">
-                <a className={`inline-flex items-center px-3 py-2 border-b-2 ${isActive("/") ? "border-primary text-gray-900 font-medium" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"} text-sm`}>
-                  今週のネタ
-                </a>
+              <Link 
+                href="/"
+                className={`inline-flex items-center px-3 py-2 border-b-2 ${isActive("/") ? "border-primary text-gray-900 font-medium" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"} text-sm`}
+              >
+                今週のネタ
               </Link>
-              <Link href="/submit">
-                <a className={`inline-flex items-center px-3 py-2 border-b-2 ${isActive("/submit") ? "border-primary text-gray-900 font-medium" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"} text-sm`}>
-                  ネタを投稿
-                </a>
+              <Link 
+                href="/submit"
+                className={`inline-flex items-center px-3 py-2 border-b-2 ${isActive("/submit") ? "border-primary text-gray-900 font-medium" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"} text-sm`}
+              >
+                ネタを投稿
               </Link>
-              <Link href="/archive">
-                <a className={`inline-flex items-center px-3 py-2 border-b-2 ${isActive("/archive") ? "border-primary text-gray-900 font-medium" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"} text-sm`}>
-                  アーカイブ
-                </a>
+              <Link 
+                href="/archive"
+                className={`inline-flex items-center px-3 py-2 border-b-2 ${isActive("/archive") ? "border-primary text-gray-900 font-medium" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"} text-sm`}
+              >
+                アーカイブ
               </Link>
             </nav>
           </div>
@@ -78,10 +81,11 @@ const Header = () => {
               
               {isAdmin ? (
                 <div className="flex items-center space-x-4">
-                  <Link href="/admin">
-                    <a className={`inline-flex items-center px-3 py-1 rounded-md ${isActive("/admin") ? "bg-gray-100" : "hover:bg-gray-50"} text-gray-700 text-sm font-medium`}>
-                      管理ページ
-                    </a>
+                  <Link 
+                    href="/admin"
+                    className={`inline-flex items-center px-3 py-1 rounded-md ${isActive("/admin") ? "bg-gray-100" : "hover:bg-gray-50"} text-gray-700 text-sm font-medium`}
+                  >
+                    管理ページ
                   </Link>
                   <Button 
                     variant="ghost" 
@@ -92,10 +96,11 @@ const Header = () => {
                   </Button>
                 </div>
               ) : (
-                <Link href="/admin">
-                  <a className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                    <User className="h-6 w-6" />
-                  </a>
+                <Link 
+                  href="/admin"
+                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  <User className="h-6 w-6" />
                 </Link>
               )}
             </div>
@@ -129,20 +134,23 @@ const Header = () => {
       {/* Mobile menu */}
       <div className={`sm:hidden ${mobileMenuOpen ? "" : "hidden"}`}>
         <div className="pt-2 pb-3 space-y-1">
-          <Link href="/">
-            <a className={`block pl-3 pr-4 py-2 border-l-4 ${isActive("/") ? "border-primary bg-primary-50 text-primary-700" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} text-base font-medium`}>
-              今週のネタ
-            </a>
+          <Link 
+            href="/"
+            className={`block pl-3 pr-4 py-2 border-l-4 ${isActive("/") ? "border-primary bg-primary-50 text-primary-700" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} text-base font-medium`}
+          >
+            今週のネタ
           </Link>
-          <Link href="/submit">
-            <a className={`block pl-3 pr-4 py-2 border-l-4 ${isActive("/submit") ? "border-primary bg-primary-50 text-primary-700" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} text-base font-medium`}>
-              ネタを投稿
-            </a>
+          <Link 
+            href="/submit"
+            className={`block pl-3 pr-4 py-2 border-l-4 ${isActive("/submit") ? "border-primary bg-primary-50 text-primary-700" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} text-base font-medium`}
+          >
+            ネタを投稿
           </Link>
-          <Link href="/archive">
-            <a className={`block pl-3 pr-4 py-2 border-l-4 ${isActive("/archive") ? "border-primary bg-primary-50 text-primary-700" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} text-base font-medium`}>
-              アーカイブ
-            </a>
+          <Link 
+            href="/archive"
+            className={`block pl-3 pr-4 py-2 border-l-4 ${isActive("/archive") ? "border-primary bg-primary-50 text-primary-700" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} text-base font-medium`}
+          >
+            アーカイブ
           </Link>
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200">
@@ -164,10 +172,11 @@ const Header = () => {
           <div className="mt-3 space-y-1">
             {isAdmin ? (
               <>
-                <Link href="/admin">
-                  <a className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
-                    管理ページ
-                  </a>
+                <Link 
+                  href="/admin"
+                  className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                >
+                  管理ページ
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -177,10 +186,11 @@ const Header = () => {
                 </button>
               </>
             ) : (
-              <Link href="/admin">
-                <a className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
-                  管理者ログイン
-                </a>
+              <Link 
+                href="/admin"
+                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+              >
+                管理者ログイン
               </Link>
             )}
           </div>
