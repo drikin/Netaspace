@@ -10,6 +10,7 @@ import Home from "@/pages/home";
 import Submit from "@/pages/submit";
 import Archive from "@/pages/archive";
 import Admin from "@/pages/admin";
+import List from "@/pages/list";
 import { useEffect, useState } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { WelcomeNotification } from "@/components/welcome-notification";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/submit" component={Submit} />
       <Route path="/archive" component={Archive} />
+      <Route path="/list" component={List} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
