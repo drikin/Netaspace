@@ -4,7 +4,7 @@ import {
   topics, comments, weeks, stars, users,
   WeekWithTopics, TopicWithCommentsAndStars
 } from "@shared/schema";
-import { eq, desc, and, gt, lt, isNull, sql, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, gt, lt, isNull, sql, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -424,45 +424,110 @@ export class PostgresStorage implements IStorage {
   
   // Topic operations
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
-    const result = await this.db
+    // 一括でトピックを取得
+    const topicsResult = await this.db
       .select()
       .from(topics)
       .where(eq(topics.weekId, weekId))
       .orderBy(desc(topics.createdAt));
     
-    return Promise.all(result.map(async topic => {
-      const comments = await this.getCommentsByTopicId(topic.id);
-      const starsCount = await this.getStarsCountByTopicId(topic.id);
-      
-      return {
-        ...topic,
-        comments,
-        starsCount
-      };
+    if (topicsResult.length === 0) return [];
+    
+    const topicIds = topicsResult.map(t => t.id);
+    
+    // 一括でコメントを取得
+    const commentsResult = await this.db
+      .select()
+      .from(comments)
+      .where(inArray(comments.topicId, topicIds))
+      .orderBy(asc(comments.createdAt));
+    
+    // 一括で星の数を取得
+    const starsResult = await this.db
+      .select({
+        topicId: stars.topicId,
+        count: sql<number>`count(*)`.as('count')
+      })
+      .from(stars)
+      .where(inArray(stars.topicId, topicIds))
+      .groupBy(stars.topicId);
+    
+    // データを整理
+    const commentsMap = new Map<number, Comment[]>();
+    const starsMap = new Map<number, number>();
+    
+    commentsResult.forEach(comment => {
+      if (!commentsMap.has(comment.topicId)) {
+        commentsMap.set(comment.topicId, []);
+      }
+      commentsMap.get(comment.topicId)!.push(comment);
+    });
+    
+    starsResult.forEach(({ topicId, count }) => {
+      starsMap.set(topicId, count);
+    });
+    
+    // 結果を組み立て
+    return topicsResult.map(topic => ({
+      ...topic,
+      comments: commentsMap.get(topic.id) || [],
+      starsCount: starsMap.get(topic.id) || 0
     }));
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
-    let query = this.db
-      .select()
-      .from(topics)
-      .where(eq(topics.status, status));
+    let whereConditions = [eq(topics.status, status)];
     
     if (weekId) {
-      query = query.where(eq(topics.weekId, weekId));
+      whereConditions.push(eq(topics.weekId, weekId));
     }
     
-    const result = await query.orderBy(desc(topics.createdAt));
+    const topicsResult = await this.db
+      .select()
+      .from(topics)
+      .where(and(...whereConditions))
+      .orderBy(desc(topics.createdAt));
     
-    return Promise.all(result.map(async topic => {
-      const comments = await this.getCommentsByTopicId(topic.id);
-      const starsCount = await this.getStarsCountByTopicId(topic.id);
-      
-      return {
-        ...topic,
-        comments,
-        starsCount
-      };
+    if (topicsResult.length === 0) return [];
+    
+    const topicIds = topicsResult.map(t => t.id);
+    
+    // 一括でコメントと星を取得
+    const [commentsResult, starsResult] = await Promise.all([
+      this.db
+        .select()
+        .from(comments)
+        .where(inArray(comments.topicId, topicIds))
+        .orderBy(asc(comments.createdAt)),
+      this.db
+        .select({
+          topicId: stars.topicId,
+          count: sql<number>`count(*)`.as('count')
+        })
+        .from(stars)
+        .where(inArray(stars.topicId, topicIds))
+        .groupBy(stars.topicId)
+    ]);
+    
+    // データを整理
+    const commentsMap = new Map<number, Comment[]>();
+    const starsMap = new Map<number, number>();
+    
+    commentsResult.forEach(comment => {
+      if (!commentsMap.has(comment.topicId)) {
+        commentsMap.set(comment.topicId, []);
+      }
+      commentsMap.get(comment.topicId)!.push(comment);
+    });
+    
+    starsResult.forEach(({ topicId, count }) => {
+      starsMap.set(topicId, count);
+    });
+    
+    return topicsResult.map(topic => ({
+      ...topic,
+      comments: commentsMap.get(topic.id) || [],
+      starsCount: starsMap.get(topic.id) || 0
     }));
   }
 
@@ -610,11 +675,24 @@ export class PostgresStorage implements IStorage {
     const week = weekResult[0];
     const weekTopics = await this.getTopicsByWeekId(weekId);
     
-    if (fingerprint) {
-      // Check for each topic if the user has starred it
-      for (const topic of weekTopics) {
-        topic.hasStarred = await this.hasStarred(topic.id, fingerprint);
-      }
+    // フィンガープリントがある場合、一括でスター情報を取得
+    if (fingerprint && weekTopics.length > 0) {
+      const topicIds = weekTopics.map(t => t.id);
+      const userStars = await this.db
+        .select({ topicId: stars.topicId })
+        .from(stars)
+        .where(
+          and(
+            inArray(stars.topicId, topicIds),
+            eq(stars.fingerprint, fingerprint)
+          )
+        );
+      
+      const starredTopicIds = new Set(userStars.map(s => s.topicId));
+      
+      weekTopics.forEach(topic => {
+        topic.hasStarred = starredTopicIds.has(topic.id);
+      });
     }
     
     return {
