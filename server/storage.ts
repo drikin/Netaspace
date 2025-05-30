@@ -340,7 +340,13 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    const client = postgres(process.env.DATABASE_URL);
+    // PostgreSQL接続を最適化
+    const client = postgres(process.env.DATABASE_URL, {
+      max: 20,                    // 最大接続数
+      idle_timeout: 20,           // アイドルタイムアウト（秒）
+      connect_timeout: 10,        // 接続タイムアウト（秒）
+      prepare: false,             // プリペアードステートメントを無効化（高速化）
+    });
     this.db = drizzle(client);
   }
 

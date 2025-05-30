@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, json, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -28,14 +28,23 @@ export const topics = pgTable("topics", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   status: text("status").default("pending").notNull(), // pending, approved, featured, rejected
   stars: integer("stars").default(0).notNull(),
-});
+}, (table) => ({
+  weekIdIdx: index("topics_week_id_idx").on(table.weekId),
+  statusIdx: index("topics_status_idx").on(table.status),
+  createdAtIdx: index("topics_created_at_idx").on(table.createdAt),
+  weekStatusIdx: index("topics_week_status_idx").on(table.weekId, table.status),
+}));
 
 export const stars = pgTable("stars", {
   id: serial("id").primaryKey(),
   topicId: integer("topic_id").references(() => topics.id).notNull(),
   fingerprint: text("fingerprint").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  topicIdIdx: index("stars_topic_id_idx").on(table.topicId),
+  fingerprintIdx: index("stars_fingerprint_idx").on(table.fingerprint),
+  topicFingerprintIdx: index("stars_topic_fingerprint_idx").on(table.topicId, table.fingerprint),
+}));
 
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
@@ -43,7 +52,10 @@ export const comments = pgTable("comments", {
   name: text("name").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  topicIdIdx: index("comments_topic_id_idx").on(table.topicId),
+  createdAtIdx: index("comments_created_at_idx").on(table.createdAt),
+}));
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
