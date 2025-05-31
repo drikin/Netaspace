@@ -17,6 +17,8 @@ import MemoryStore from 'memorystore';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import { WebSocketServer, WebSocket } from 'ws';
+import * as iconv from 'iconv-lite';
+import charsetDetector from 'charset-detector';
 
 // WebSocketクライアント管理
 const clients = new Set<WebSocket>();
@@ -65,7 +67,37 @@ async function fetchArticleInfo(url: string) {
     // 最終的なURL（リダイレクト後のURL）を取得
     const finalUrl = response.url;
     
-    const html = await response.text();
+    // レスポンスのバイナリデータを取得
+    const buffer = await response.buffer();
+    
+    // 文字エンコーディングを検出
+    const charsetResult = charsetDetector(buffer);
+    let charset = 'utf-8'; // デフォルト
+    
+    if (charsetResult && charsetResult.length > 0) {
+      charset = charsetResult[0].charsetName.toLowerCase();
+      console.log(`Detected charset: ${charset}`);
+    }
+    
+    // Content-Typeヘッダーからもcharsetを確認
+    const contentType = response.headers.get('content-type');
+    if (contentType) {
+      const charsetMatch = contentType.match(/charset=([^;]+)/i);
+      if (charsetMatch) {
+        charset = charsetMatch[1].toLowerCase();
+        console.log(`Charset from Content-Type: ${charset}`);
+      }
+    }
+    
+    // 適切な文字エンコーディングでHTMLをデコード
+    let html: string;
+    if (charset !== 'utf-8' && iconv.encodingExists(charset)) {
+      html = iconv.decode(buffer, charset);
+      console.log(`Decoded as ${charset}`);
+    } else {
+      html = buffer.toString('utf-8');
+    }
+    
     const dom = new JSDOM(html);
     const document = dom.window.document;
     
