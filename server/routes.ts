@@ -254,7 +254,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/weeks', isAdmin, async (req, res) => {
     try {
-      const weekData = insertWeekSchema.parse(req.body);
+      // Convert date strings to Date objects before validation
+      const requestData = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      
+      const weekData = insertWeekSchema.parse(requestData);
       const week = await storage.createWeek(weekData);
       res.status(201).json(week);
     } catch (error) {
