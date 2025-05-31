@@ -189,7 +189,9 @@ const Admin: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {activeTab === "deleted" ? "削除済みトピック" : "投稿されたトピック"}
+            {activeTab === "deleted" ? "削除済みトピック" : 
+             activeTab === "featured" ? "採用されたトピック（古い順）" : 
+             "投稿されたトピック"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -215,6 +217,8 @@ const Admin: React.FC = () => {
             <p className="text-gray-500 text-center py-8">
               {activeTab === "deleted" 
                 ? "削除済みのトピックはありません" 
+                : activeTab === "featured"
+                ? "採用されたトピックはありません"
                 : "トピックはまだ投稿されていません"}
             </p>
           ) : (
