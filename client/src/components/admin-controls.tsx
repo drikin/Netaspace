@@ -33,15 +33,25 @@ const AdminControls: React.FC<AdminControlsProps> = ({
   const handleStatusChange = async (newStatus: string) => {
     if (isUpdating) return;
 
+    // 現在のステータスと同じボタンをクリックした場合は保留に戻す
+    const finalStatus = currentStatus === newStatus ? "pending" : newStatus;
+
     setIsUpdating(true);
     try {
       await apiRequest("PATCH", `/api/topics/${topicId}/status`, {
-        status: newStatus,
+        status: finalStatus,
       });
+
+      const statusDisplayName = {
+        pending: "保留",
+        approved: "承認", 
+        rejected: "非採用",
+        featured: "採用"
+      }[finalStatus] || finalStatus;
 
       toast({
         title: "ステータス変更完了",
-        description: `トピックのステータスを「${newStatus}」に変更しました`,
+        description: `トピックのステータスを「${statusDisplayName}」に変更しました`,
       });
 
       onStatusChange();
