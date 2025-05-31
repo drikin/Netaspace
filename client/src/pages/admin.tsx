@@ -92,10 +92,14 @@ const Admin: React.FC = () => {
         // Show deleted topics (topics with status "deleted")
         return activeWeek.topics.filter(topic => topic.status === "deleted");
       case "featured":
-        // Show featured topics sorted by oldest first (createdAt ascending)
+        // Show featured topics sorted by oldest featured first (featuredAt ascending)
         return activeWeek.topics
           .filter(topic => topic.status === "featured")
-          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          .sort((a, b) => {
+            const aTime = a.featuredAt ? new Date(a.featuredAt).getTime() : 0;
+            const bTime = b.featuredAt ? new Date(b.featuredAt).getTime() : 0;
+            return aTime - bTime;
+          });
       case "all":
       default:
         // Show all non-deleted topics

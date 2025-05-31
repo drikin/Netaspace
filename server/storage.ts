@@ -215,7 +215,8 @@ export class MemStorage implements IStorage {
       ...topic, 
       id, 
       createdAt: now,
-      stars: 0
+      stars: 0,
+      featuredAt: null
     };
     
     this.topics.set(id, newTopic);
@@ -227,6 +228,16 @@ export class MemStorage implements IStorage {
     if (!topic) return undefined;
     
     topic.status = status;
+    
+    // 採用された場合は現在の時刻を記録
+    if (status === "featured") {
+      topic.featuredAt = new Date();
+    }
+    // 採用以外のステータスに変更する場合はfeaturedAtをクリア
+    else if (status !== "featured") {
+      topic.featuredAt = null;
+    }
+    
     return topic;
   }
   
@@ -573,9 +584,20 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
+    const updateData: any = { status };
+    
+    // 採用された場合は現在の時刻を記録
+    if (status === "featured") {
+      updateData.featuredAt = new Date();
+    }
+    // 採用以外のステータスに変更する場合はfeaturedAtをクリア
+    else if (status !== "featured") {
+      updateData.featuredAt = null;
+    }
+    
     const result = await this.db
       .update(topics)
-      .set({ status })
+      .set(updateData)
       .where(eq(topics.id, id))
       .returning();
     

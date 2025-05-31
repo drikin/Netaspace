@@ -28,11 +28,13 @@ export const topics = pgTable("topics", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   status: text("status").default("pending").notNull(), // pending, approved, featured, rejected
   stars: integer("stars").default(0).notNull(),
+  featuredAt: timestamp("featured_at"), // 採用された時刻
 }, (table) => ({
   weekIdIdx: index("topics_week_id_idx").on(table.weekId),
   statusIdx: index("topics_status_idx").on(table.status),
   createdAtIdx: index("topics_created_at_idx").on(table.createdAt),
   weekStatusIdx: index("topics_week_status_idx").on(table.weekId, table.status),
+  featuredAtIdx: index("topics_featured_at_idx").on(table.featuredAt),
 }));
 
 export const stars = pgTable("stars", {
