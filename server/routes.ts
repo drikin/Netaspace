@@ -17,7 +17,7 @@ import MemoryStore from 'memorystore';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import { WebSocketServer, WebSocket } from 'ws';
-import * as iconv from 'iconv-lite';
+import iconv from 'iconv-lite';
 import charsetDetector from 'charset-detector';
 
 // WebSocketクライアント管理
@@ -94,15 +94,15 @@ async function fetchArticleInfo(url: string) {
     try {
       if (charset.toLowerCase().includes('shift') || charset.toLowerCase().includes('sjis')) {
         // Shift-JISの場合
-        html = iconv.decode(Buffer.from(buffer), 'shift_jis');
+        html = iconv.decode(buffer, 'shift_jis');
         console.log(`Successfully decoded as Shift-JIS`);
       } else if (charset.toLowerCase().includes('euc')) {
         // EUC-JPの場合
-        html = iconv.decode(Buffer.from(buffer), 'euc-jp');
+        html = iconv.decode(buffer, 'euc-jp');
         console.log(`Successfully decoded as EUC-JP`);
       } else if (charset.toLowerCase().includes('iso-2022-jp')) {
         // ISO-2022-JPの場合
-        html = iconv.decode(Buffer.from(buffer), 'iso-2022-jp');
+        html = iconv.decode(buffer, 'iso-2022-jp');
         console.log(`Successfully decoded as ISO-2022-JP`);
       } else {
         // UTF-8またはその他の場合
