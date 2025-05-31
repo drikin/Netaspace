@@ -49,14 +49,29 @@ const Submit: React.FC = () => {
     return '';
   };
 
+  // URLパラメータから初期値を取得
+  const getInitialValues = () => {
+    if (typeof window === 'undefined') {
+      return {
+        title: "",
+        url: "",
+        description: "",
+        submitter: getSavedSubmitter(),
+      };
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+      title: urlParams.get('title') || "",
+      url: urlParams.get('url') || "",
+      description: urlParams.get('description') || "",
+      submitter: urlParams.get('submitter') || getSavedSubmitter(),
+    };
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      url: "",
-      description: "",
-      submitter: getSavedSubmitter(),
-    },
+    defaultValues: getInitialValues(),
   });
 
   // URLが変更されたときに記事情報を自動取得
