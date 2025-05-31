@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,11 +12,13 @@ import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import TopicCard from "@/components/ui/topic-card";
 import TabNavigation from "@/components/tab-navigation";
+import { insertWeekSchema } from "@shared/schema";
 
 const Admin: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
+  const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
 
   // Check if user is authenticated and is admin
   const { data: auth, isLoading: isAuthLoading } = useQuery({
@@ -117,6 +120,57 @@ const Admin: React.FC = () => {
   };
 
   const filteredTopics = getFilteredTopics();
+
+  // Week creation form
+  const weekFormSchema = insertWeekSchema.extend({
+    title: z.string().min(1, "タイトルを入力してください"),
+    startDate: z.string().min(1, "開始日を入力してください"),
+    endDate: z.string().min(1, "終了日を入力してください"),
+  });
+
+  const weekForm = useForm<z.infer<typeof weekFormSchema>>({
+    resolver: zodResolver(weekFormSchema),
+    defaultValues: {
+      title: "",
+      startDate: "",
+      endDate: "",
+      isActive: false,
+    },
+  });
+
+  // Create week mutation
+  const createWeekMutation = useMutation({
+    mutationFn: (data: z.infer<typeof weekFormSchema>) => {
+      const weekData = {
+        ...data,
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: new Date(data.endDate).toISOString(),
+      };
+      return apiRequest("POST", "/api/weeks", weekData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "週を作成しました",
+        description: "新しい週が正常に作成されました。",
+      });
+      setIsCreateWeekDialogOpen(false);
+      weekForm.reset();
+      // Refresh the weeks data
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+    },
+    onError: (error) => {
+      console.error("Failed to create week:", error);
+      toast({
+        title: "エラー",
+        description: "週の作成に失敗しました。",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateWeek = (values: z.infer<typeof weekFormSchema>) => {
+    createWeekMutation.mutate(values);
+  };
 
   // Generate markdown list for featured topics
   const generateMarkdownList = () => {
@@ -228,11 +282,100 @@ const Admin: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 sm:px-0 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">管理ページ</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          投稿されたトピックを管理できます。不適切なトピックを削除してください。
-        </p>
+      <div className="px-4 sm:px-0 mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">管理ページ</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            投稿されたトピックを管理できます。不適切なトピックを削除してください。
+          </p>
+        </div>
+        
+        {/* Create Week Button */}
+        <Dialog open={isCreateWeekDialogOpen} onOpenChange={setIsCreateWeekDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              新しい週を作成
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>新しい週を作成</DialogTitle>
+              <DialogDescription>
+                翌週のネタページを作成してください
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...weekForm}>
+              <form onSubmit={weekForm.handleSubmit(handleCreateWeek)} className="space-y-4">
+                <FormField
+                  control={weekForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>タイトル</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="例: 2025年6月第1週"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={weekForm.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>開始日</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={weekForm.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>終了日</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={createWeekMutation.isPending}
+                  >
+                    {createWeekMutation.isPending ? "作成中..." : "週を作成"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    新しい週を作成すると、ユーザーはその期間のネタを投稿できるようになります。
+                  </p>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Tab Navigation */}
