@@ -118,6 +118,46 @@ const Admin: React.FC = () => {
 
   const filteredTopics = getFilteredTopics();
 
+  // Generate markdown list for featured topics
+  const generateMarkdownList = () => {
+    const featuredTopics = activeWeek?.topics
+      ?.filter(topic => topic.status === "featured")
+      ?.sort((a, b) => {
+        const aTime = a.featuredAt ? new Date(a.featuredAt).getTime() : 0;
+        const bTime = b.featuredAt ? new Date(b.featuredAt).getTime() : 0;
+        return aTime - bTime;
+      }) || [];
+
+    if (featuredTopics.length === 0) {
+      return "採用されたトピックがありません。";
+    }
+
+    const markdown = featuredTopics
+      .map((topic, index) => `${index + 1}. [${topic.title}](${topic.url})`)
+      .join('\n');
+
+    return markdown;
+  };
+
+  // Copy markdown to clipboard
+  const copyMarkdownToClipboard = async () => {
+    const markdown = generateMarkdownList();
+    try {
+      await navigator.clipboard.writeText(markdown);
+      toast({
+        title: "コピーしました",
+        description: "マークダウンリストをクリップボードにコピーしました。",
+      });
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast({
+        title: "エラー",
+        description: "クリップボードへのコピーに失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
   // If not admin and not loading, show login form
   if (!isAdmin && !isAuthLoading) {
     return (
@@ -200,12 +240,25 @@ const Admin: React.FC = () => {
 
       {/* Topics List */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>
             {activeTab === "deleted" ? "削除済みトピック" : 
              activeTab === "featured" ? "採用されたトピック（古い順）" : 
              "投稿されたトピック"}
           </CardTitle>
+          {activeTab === "featured" && (
+            <Button
+              onClick={copyMarkdownToClipboard}
+              variant="outline"
+              size="sm"
+              className="ml-4"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              マークダウンリストをコピー
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isWeekLoading ? (
