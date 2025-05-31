@@ -19,6 +19,7 @@ const Admin: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
+  const [isWeekListDialogOpen, setIsWeekListDialogOpen] = useState(false);
 
   // Check if user is authenticated and is admin
   const { data: auth, isLoading: isAuthLoading } = useQuery({
@@ -37,6 +38,12 @@ const Admin: React.FC = () => {
   // Fetch active week with topics
   const { data: activeWeek, isLoading: isWeekLoading, refetch: refetchActiveWeek } = useQuery({
     queryKey: ["/api/weeks/active"],
+    enabled: !!isAdmin,
+  });
+
+  // Fetch all weeks
+  const { data: weeksData, isLoading: isWeeksLoading } = useQuery({
+    queryKey: ["/api/weeks"],
     enabled: !!isAdmin,
   });
 
@@ -185,8 +192,35 @@ const Admin: React.FC = () => {
     },
   });
 
+  // Set active week mutation
+  const setActiveWeekMutation = useMutation({
+    mutationFn: (weekId: number) => {
+      return apiRequest("POST", `/api/weeks/${weekId}/setActive`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "アクティブ週を変更しました",
+        description: "新しい週がアクティブになりました。",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks"] });
+      setIsWeekListDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "エラー",
+        description: "アクティブ週の変更に失敗しました。",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateWeek = (values: z.infer<typeof weekFormSchema>) => {
     createWeekMutation.mutate(values);
+  };
+
+  const handleSetActiveWeek = (weekId: number) => {
+    setActiveWeekMutation.mutate(weekId);
   };
 
   // Generate markdown list for featured topics
@@ -307,17 +341,70 @@ const Admin: React.FC = () => {
           </p>
         </div>
         
-        {/* Create Week Button */}
-        <Dialog open={isCreateWeekDialogOpen} onOpenChange={setIsCreateWeekDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              新しい週を作成
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+        {/* Week Management Buttons */}
+        <div className="flex gap-2">
+          <Dialog open={isWeekListDialogOpen} onOpenChange={setIsWeekListDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                週を切り替え
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>週を切り替え</DialogTitle>
+                <DialogDescription>
+                  アクティブにする週を選択してください
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                {isWeeksLoading ? (
+                  <p className="text-center text-muted-foreground">読み込み中...</p>
+                ) : weeksData && weeksData.length > 0 ? (
+                  weeksData.map((week: any) => (
+                    <div
+                      key={week.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        week.isActive 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => !week.isActive && handleSetActiveWeek(week.id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">{week.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(week.startDate).toLocaleDateString('ja-JP')} 〜 {new Date(week.endDate).toLocaleDateString('ja-JP')}
+                          </p>
+                        </div>
+                        {week.isActive && (
+                          <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                            アクティブ
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground">週がありません</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isCreateWeekDialogOpen} onOpenChange={setIsCreateWeekDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                新しい週を作成
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>新しい週を作成</DialogTitle>
               <DialogDescription>
@@ -391,8 +478,9 @@ const Admin: React.FC = () => {
                 </div>
               </form>
             </Form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Tab Navigation */}
