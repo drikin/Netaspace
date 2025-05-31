@@ -13,6 +13,21 @@ export interface ReleaseNote {
 // リリース履歴データ（新しい順）
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "2025-05-31-v2",
+    version: "1.6.0",
+    date: "2025年5月31日",
+    title: "重複URL投稿防止機能の追加",
+    description: "同じURLの重複投稿を防ぐ機能を実装しました。重複時には既存の投稿情報（タイトル・投稿者名）を表示し、ユーザーに分かりやすくフィードバックします。",
+    features: [
+      "重複URL投稿防止機能の実装",
+      "重複時の詳細なエラーメッセージ表示",
+      "既存投稿情報（タイトル・投稿者）の表示",
+      "投稿フォームのエラーハンドリング強化",
+      "データ品質の向上"
+    ],
+    isNew: true
+  },
+  {
     id: "2025-05-31",
     version: "1.5.0",
     date: "2025年5月31日",
@@ -24,8 +39,7 @@ export const releaseNotes: ReleaseNote[] = [
       "採用時刻での管理画面ソート機能",
       "Shift-JIS等の日本語文字エンコーディング対応",
       "より直感的なユーザーインターフェース"
-    ],
-    isNew: true
+    ]
   },
   {
     id: "2025-05-25",
