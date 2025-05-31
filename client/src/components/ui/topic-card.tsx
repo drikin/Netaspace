@@ -145,7 +145,12 @@ const TopicCard: React.FC<TopicCardProps> = ({
   });
 
   const handleStarClick = () => {
-    if (isStarring || !fingerprint) return;
+    console.log('Star click - isStarring:', isStarring, 'fingerprint:', fingerprint, 'isAdmin:', isAdmin);
+    
+    if (isStarring || !fingerprint) {
+      console.log('Star click blocked - isStarring:', isStarring, 'fingerprint:', fingerprint);
+      return;
+    }
     
     setIsStarring(true);
     // 楽観的UI更新を使ったミューテーション実行
