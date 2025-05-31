@@ -224,7 +224,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
             </svg>
             <div className="flex flex-col items-center">
               <span className={`text-xs font-semibold ${hasStarred ? "text-red-500" : "text-gray-500"}`}>{starsCount}</span>
-              <span className={`text-[10px] leading-tight ${hasStarred ? "text-red-400" : "text-gray-400"}`}>応援</span>
+              <span className={`text-[10px] leading-tight ${hasStarred ? "text-red-400" : "text-gray-400"}`}>聞きたい</span>
             </div>
           </button>
         </div>
