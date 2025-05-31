@@ -169,6 +169,7 @@ const Submit: React.FC = () => {
           status: "pending",
           createdAt: new Date(),
           stars: 0,
+          featuredAt: null,
           comments: [],
           starsCount: 0,
           hasStarred: false
