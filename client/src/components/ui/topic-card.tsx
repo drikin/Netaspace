@@ -157,6 +157,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
       return (
         <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs ml-2">削除済み</span>
       );
+    } else if (topic.status === "featured") {
+      return (
+        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs ml-2">採用</span>
+      );
     }
     return null;
   };
@@ -225,7 +229,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
         {isAdmin && (
           <AdminControls
             topicId={topic.id}
-            onTopicDeleted={refetchTopics}
+            currentStatus={topic.status}
+            onStatusChange={refetchTopics}
           />
         )}
 

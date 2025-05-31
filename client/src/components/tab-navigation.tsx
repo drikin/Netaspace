@@ -8,6 +8,7 @@ interface TabNavigationProps {
 const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab }) => {
   const tabs = [
     { id: "all", label: "すべて" },
+    { id: "featured", label: "採用" },
     { id: "deleted", label: "削除済み" },
   ];
 
