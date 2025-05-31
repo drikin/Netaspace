@@ -91,10 +91,29 @@ async function fetchArticleInfo(url: string) {
     
     // 適切な文字エンコーディングでHTMLをデコード
     let html: string;
-    if (charset !== 'utf-8' && iconv.encodingExists(charset)) {
-      html = iconv.decode(buffer, charset);
-      console.log(`Decoded as ${charset}`);
-    } else {
+    try {
+      // Shift-JISや他のエンコーディングのマッピング
+      const encodingMap: { [key: string]: string } = {
+        'shift_jis': 'shift_jis',
+        'shift-jis': 'shift_jis',
+        'sjis': 'shift_jis',
+        'euc-jp': 'euc-jp',
+        'eucjp': 'euc-jp',
+        'iso-2022-jp': 'iso-2022-jp',
+        'utf-8': 'utf8',
+        'utf8': 'utf8'
+      };
+      
+      const normalizedCharset = encodingMap[charset.toLowerCase()] || charset;
+      
+      if (charset !== 'utf-8' && charset !== 'utf8') {
+        html = iconv.decode(buffer, normalizedCharset);
+        console.log(`Successfully decoded as ${normalizedCharset}`);
+      } else {
+        html = buffer.toString('utf-8');
+      }
+    } catch (error) {
+      console.log(`Failed to decode as ${charset}, falling back to UTF-8:`, error);
       html = buffer.toString('utf-8');
     }
     
