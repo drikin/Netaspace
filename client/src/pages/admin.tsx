@@ -133,7 +133,7 @@ const Admin: React.FC = () => {
     }
 
     const markdown = featuredTopics
-      .map((topic, index) => `${index + 1}. [${topic.title}](${topic.url})`)
+      .map((topic) => `- [${topic.title}](${topic.url})`)
       .join('\n');
 
     return markdown;
