@@ -24,6 +24,7 @@ export interface IStorage {
   getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]>;
   getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]>;
   getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined>;
+  getTopicByUrl(url: string): Promise<Topic | undefined>;
   createTopic(topic: InsertTopic): Promise<Topic>;
   updateTopicStatus(id: number, status: string): Promise<Topic | undefined>;
   deleteTopic(id: number): Promise<boolean>;
@@ -221,6 +222,10 @@ export class MemStorage implements IStorage {
     
     this.topics.set(id, newTopic);
     return newTopic;
+  }
+
+  async getTopicByUrl(url: string): Promise<Topic | undefined> {
+    return Array.from(this.topics.values()).find(topic => topic.url === url);
   }
 
   async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
@@ -572,6 +577,16 @@ export class PostgresStorage implements IStorage {
       starsCount,
       hasStarred
     };
+  }
+
+  async getTopicByUrl(url: string): Promise<Topic | undefined> {
+    const result = await this.db
+      .select()
+      .from(topics)
+      .where(eq(topics.url, url))
+      .limit(1);
+    
+    return result[0];
   }
 
   async createTopic(topic: InsertTopic): Promise<Topic> {

@@ -184,17 +184,29 @@ const Submit: React.FC = () => {
       // ロールバック用に前の状態を返す
       return { previousWeekData };
     },
-    onError: (err, newTopic, context) => {
+    onError: (err: any, newTopic, context) => {
       // エラー時は以前の状態に戻す
       if (context?.previousWeekData) {
         queryClient.setQueryData(["/api/weeks/active"], context.previousWeekData);
       }
+      
       console.error("Failed to submit topic:", err);
-      toast({
-        title: "エラー",
-        description: "トピックの投稿に失敗しました。もう一度お試しください。",
-        variant: "destructive",
-      });
+      
+      // 重複URLエラーの場合は専用メッセージを表示
+      if (err?.response?.status === 409 && err?.response?.data?.code === 'DUPLICATE_URL') {
+        const existingTopic = err.response.data.existingTopic;
+        toast({
+          title: "重複したURL",
+          description: `このURLは既に「${existingTopic.title}」として${existingTopic.submitter}さんが投稿済みです。`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "エラー",
+          description: "トピックの投稿に失敗しました。もう一度お試しください。",
+          variant: "destructive",
+        });
+      }
     },
     onSuccess: () => {
       toast({

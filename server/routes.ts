@@ -345,6 +345,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate using the submitTopicSchema
       const submissionData = submitTopicSchema.parse(req.body);
       
+      // Check for duplicate URL
+      const existingTopic = await storage.getTopicByUrl(submissionData.url);
+      if (existingTopic) {
+        return res.status(409).json({ 
+          message: 'このURLは既に投稿されています。', 
+          code: 'DUPLICATE_URL',
+          existingTopic: {
+            id: existingTopic.id,
+            title: existingTopic.title,
+            submitter: existingTopic.submitter
+          }
+        });
+      }
+      
       // Get the active week
       const activeWeek = await storage.getActiveWeek();
       if (!activeWeek) {
@@ -373,6 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid topic data', errors: error.errors });
       }
+      console.error('Topic creation error:', error);
       res.status(500).json({ message: 'Failed to create topic' });
     }
   });
