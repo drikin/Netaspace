@@ -26,19 +26,27 @@ const Home: React.FC = () => {
   const getFilteredTopics = (): TopicWithCommentsAndStars[] => {
     if (!week || !week.topics) return [];
 
+    let filteredTopics: TopicWithCommentsAndStars[] = [];
+
     switch (activeTab) {
       case "featured":
-        return week.topics.filter(
+        filteredTopics = week.topics.filter(
           (topic) => topic.status === "featured"
         );
+        break;
       case "pending":
-        return week.topics.filter(
+        filteredTopics = week.topics.filter(
           (topic) => !topic.status || topic.status === "pending"
         );
+        break;
       case "all":
       default:
-        return week.topics;
+        filteredTopics = week.topics;
+        break;
     }
+
+    // Sort by stars count (descending) - topics with more "聞きたい" votes appear first
+    return filteredTopics.sort((a, b) => b.starsCount - a.starsCount);
   };
 
   const handleTabChange = (tab: string) => {
