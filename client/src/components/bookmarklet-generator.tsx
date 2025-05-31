@@ -21,37 +21,7 @@ export function BookmarkletGenerator({ className }: BookmarkletGeneratorProps) {
 
   // Generate the bookmarklet code
   const generateBookmarkletCode = (name: string) => {
-    const bookmarkletCode = `
-(function() {
-  var title = document.title || '';
-  var url = window.location.href;
-  var description = '';
-  
-  // Try to get meta description
-  var metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) {
-    description = metaDesc.content || '';
-  }
-  
-  // If no meta description, try to get first paragraph text
-  if (!description) {
-    var firstP = document.querySelector('p');
-    if (firstP) {
-      description = firstP.textContent.substring(0, 200) + '...';
-    }
-  }
-  
-  // Create the submission URL with pre-filled data
-  var submissionUrl = '${currentDomain}/submit?' + 
-    'title=' + encodeURIComponent(title) + 
-    '&url=' + encodeURIComponent(url) + 
-    '&description=' + encodeURIComponent(description) + 
-    '&submitter=' + encodeURIComponent('${name}');
-  
-  // Open in new window/tab
-  window.open(submissionUrl, '_blank');
-})();
-    `.trim();
+    const bookmarkletCode = `(function(){var title=document.title||'';var url=window.location.href;var description='';var metaDesc=document.querySelector('meta[name="description"]');if(metaDesc){description=metaDesc.content||'';}if(!description){var firstP=document.querySelector('p');if(firstP){description=firstP.textContent.substring(0,200)+'...';}}var submissionUrl='${currentDomain}/submit?'+'title='+encodeURIComponent(title)+'&url='+encodeURIComponent(url)+'&description='+encodeURIComponent(description)+'&submitter='+encodeURIComponent('${name}');window.open(submissionUrl,'_blank');})();`;
 
     return `javascript:${bookmarkletCode}`;
   };
