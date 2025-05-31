@@ -237,8 +237,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
         {isAdmin && (
           <AdminControls
             topicId={topic.id}
-            currentStatus={topic.status}
-            onStatusChange={refetchTopics}
+            onTopicDeleted={refetchTopics}
           />
         )}
 

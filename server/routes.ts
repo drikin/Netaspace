@@ -378,9 +378,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Topic not found' });
       }
       
-      const success = await storage.deleteTopic(topicId);
+      // 物理削除ではなく、ステータスを「deleted」に変更（論理削除）
+      const updatedTopic = await storage.updateTopicStatus(topicId, 'deleted');
       
-      if (!success) {
+      if (!updatedTopic) {
         return res.status(500).json({ message: 'Failed to delete topic' });
       }
       
