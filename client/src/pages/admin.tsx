@@ -121,19 +121,35 @@ const Admin: React.FC = () => {
 
   const filteredTopics = getFilteredTopics();
 
+  // Get default dates (today + 7 days)
+  const getDefaultDates = () => {
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    const formatDate = (date: Date) => {
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    };
+
+    return {
+      startDate: formatDate(today),
+      endDate: formatDate(nextWeek),
+    };
+  };
+
   // Week creation form
-  const weekFormSchema = insertWeekSchema.extend({
+  const weekFormSchema = z.object({
     title: z.string().min(1, "タイトルを入力してください"),
     startDate: z.string().min(1, "開始日を入力してください"),
     endDate: z.string().min(1, "終了日を入力してください"),
+    isActive: z.boolean().default(false),
   });
 
   const weekForm = useForm<z.infer<typeof weekFormSchema>>({
     resolver: zodResolver(weekFormSchema),
     defaultValues: {
       title: "",
-      startDate: "",
-      endDate: "",
+      ...getDefaultDates(),
       isActive: false,
     },
   });
@@ -142,9 +158,10 @@ const Admin: React.FC = () => {
   const createWeekMutation = useMutation({
     mutationFn: (data: z.infer<typeof weekFormSchema>) => {
       const weekData = {
-        ...data,
+        title: data.title,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
+        isActive: data.isActive,
       };
       return apiRequest("POST", "/api/weeks", weekData);
     },
