@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Check, X, Star, Trash2, AlertTriangle } from "lucide-react";
+import { Trash2, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,56 +16,16 @@ import {
 
 interface AdminControlsProps {
   topicId: number;
-  currentStatus: string;
-  onStatusChange: () => void;
+  onTopicDeleted: () => void;
 }
 
 const AdminControls: React.FC<AdminControlsProps> = ({
   topicId,
-  currentStatus,
-  onStatusChange,
+  onTopicDeleted,
 }) => {
   const { toast } = useToast();
-  const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  const handleStatusChange = async (newStatus: string) => {
-    if (isUpdating) return;
-
-    // 現在のステータスと同じボタンをクリックした場合は保留に戻す
-    const finalStatus = currentStatus === newStatus ? "pending" : newStatus;
-
-    setIsUpdating(true);
-    try {
-      await apiRequest("PATCH", `/api/topics/${topicId}/status`, {
-        status: finalStatus,
-      });
-
-      const statusDisplayName = {
-        pending: "保留",
-        approved: "承認", 
-        rejected: "非採用",
-        featured: "採用"
-      }[finalStatus] || finalStatus;
-
-      toast({
-        title: "ステータス変更完了",
-        description: `トピックのステータスを「${statusDisplayName}」に変更しました`,
-      });
-
-      onStatusChange();
-    } catch (error) {
-      console.error("Failed to update topic status:", error);
-      toast({
-        title: "ステータス変更エラー",
-        description: "もう一度お試しください",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
   
   const handleDeleteTopic = async () => {
     setIsDeleting(true);
@@ -81,7 +41,7 @@ const AdminControls: React.FC<AdminControlsProps> = ({
         description: "トピックが削除されました",
       });
       
-      onStatusChange(); // リストを更新
+      onTopicDeleted(); // リストを更新
     } catch (error) {
       console.error("Failed to delete topic:", error);
       toast({
@@ -95,63 +55,16 @@ const AdminControls: React.FC<AdminControlsProps> = ({
     }
   };
 
-  const getButtonClassName = (status: string) => {
-    const baseClass = "px-2 py-1 text-xs font-medium rounded-md flex items-center";
-    
-    if (currentStatus === status) {
-      switch (status) {
-        case "approved":
-          return `${baseClass} bg-green-100 text-green-800`;
-        case "rejected":
-          return `${baseClass} bg-red-100 text-red-800`;
-        case "featured":
-          return `${baseClass} bg-blue-100 text-blue-800`;
-        default:
-          return `${baseClass} bg-gray-100 text-gray-800`;
-      }
-    }
-    
-    return `${baseClass} bg-gray-100 text-gray-800 hover:bg-gray-200`;
-  };
-
   return (
     <>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex justify-end">
         <Button
           variant="ghost"
-          className={getButtonClassName("approved")}
-          disabled={isUpdating}
-          onClick={() => handleStatusChange("approved")}
-        >
-          <Check className="h-3 w-3 mr-1" />
-          承認
-        </Button>
-        <Button
-          variant="ghost"
-          className={getButtonClassName("rejected")}
-          disabled={isUpdating}
-          onClick={() => handleStatusChange("rejected")}
-        >
-          <X className="h-3 w-3 mr-1" />
-          非採用
-        </Button>
-        <Button
-          variant="ghost"
-          className={getButtonClassName("featured")}
-          disabled={isUpdating}
-          onClick={() => handleStatusChange("featured")}
-        >
-          <Star className="h-3 w-3 mr-1" />
-          採用
-        </Button>
-        
-        <Button
-          variant="ghost"
-          className="px-2 py-1 text-xs font-medium rounded-md flex items-center bg-red-50 text-red-700 hover:bg-red-100"
+          className="px-3 py-2 text-sm font-medium rounded-md flex items-center bg-red-50 text-red-700 hover:bg-red-100"
           disabled={isDeleting}
           onClick={() => setShowDeleteDialog(true)}
         >
-          <Trash2 className="h-3 w-3 mr-1" />
+          <Trash2 className="h-4 w-4 mr-2" />
           削除
         </Button>
       </div>
