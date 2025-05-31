@@ -87,24 +87,33 @@ const Admin: React.FC = () => {
   const getFilteredTopics = () => {
     if (!activeWeek?.topics) return [];
     
+    let filteredTopics: any[] = [];
+    
     switch (activeTab) {
       case "deleted":
         // Show deleted topics (topics with status "deleted")
-        return activeWeek.topics.filter(topic => topic.status === "deleted");
+        filteredTopics = activeWeek.topics.filter(topic => topic.status === "deleted");
+        break;
       case "featured":
         // Show featured topics sorted by oldest featured first (featuredAt ascending)
-        return activeWeek.topics
+        filteredTopics = activeWeek.topics
           .filter(topic => topic.status === "featured")
           .sort((a, b) => {
             const aTime = a.featuredAt ? new Date(a.featuredAt).getTime() : 0;
             const bTime = b.featuredAt ? new Date(b.featuredAt).getTime() : 0;
             return aTime - bTime;
           });
+        // For featured topics, don't apply additional sorting by stars
+        return filteredTopics;
       case "all":
       default:
         // Show all non-deleted topics
-        return activeWeek.topics.filter(topic => topic.status !== "deleted");
+        filteredTopics = activeWeek.topics.filter(topic => topic.status !== "deleted");
+        break;
     }
+    
+    // For non-featured tabs, sort by stars count (descending) - topics with more "聞きたい" votes appear first
+    return filteredTopics.sort((a, b) => b.starsCount - a.starsCount);
   };
 
   const filteredTopics = getFilteredTopics();
