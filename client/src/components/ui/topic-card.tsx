@@ -153,21 +153,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
   };
 
   const getStatusBadge = () => {
-    if (!topic.status || topic.status === "pending") {
+    if (topic.status === "deleted") {
       return (
-        <span className="status-badge pending ml-2">未確認</span>
-      );
-    } else if (topic.status === "approved") {
-      return (
-        <span className="status-badge approved ml-2">承認</span>
-      );
-    } else if (topic.status === "featured") {
-      return (
-        <span className="status-badge featured ml-2">採用</span>
-      );
-    } else if (topic.status === "rejected") {
-      return (
-        <span className="status-badge rejected ml-2">非採用</span>
+        <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs ml-2">削除済み</span>
       );
     }
     return null;
