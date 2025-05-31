@@ -143,8 +143,8 @@ const Admin: React.FC = () => {
     mutationFn: (data: z.infer<typeof weekFormSchema>) => {
       const weekData = {
         ...data,
-        startDate: new Date(data.startDate).toISOString(),
-        endDate: new Date(data.endDate).toISOString(),
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
       };
       return apiRequest("POST", "/api/weeks", weekData);
     },
