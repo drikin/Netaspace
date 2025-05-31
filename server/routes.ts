@@ -92,25 +92,22 @@ async function fetchArticleInfo(url: string) {
     // 適切な文字エンコーディングでHTMLをデコード
     let html: string;
     try {
-      // Shift-JISや他のエンコーディングのマッピング
-      const encodingMap: { [key: string]: string } = {
-        'shift_jis': 'shift_jis',
-        'shift-jis': 'shift_jis',
-        'sjis': 'shift_jis',
-        'euc-jp': 'euc-jp',
-        'eucjp': 'euc-jp',
-        'iso-2022-jp': 'iso-2022-jp',
-        'utf-8': 'utf8',
-        'utf8': 'utf8'
-      };
-      
-      const normalizedCharset = encodingMap[charset.toLowerCase()] || charset;
-      
-      if (charset !== 'utf-8' && charset !== 'utf8') {
-        html = iconv.decode(buffer, normalizedCharset);
-        console.log(`Successfully decoded as ${normalizedCharset}`);
+      if (charset.toLowerCase().includes('shift') || charset.toLowerCase().includes('sjis')) {
+        // Shift-JISの場合
+        html = iconv.decode(Buffer.from(buffer), 'shift_jis');
+        console.log(`Successfully decoded as Shift-JIS`);
+      } else if (charset.toLowerCase().includes('euc')) {
+        // EUC-JPの場合
+        html = iconv.decode(Buffer.from(buffer), 'euc-jp');
+        console.log(`Successfully decoded as EUC-JP`);
+      } else if (charset.toLowerCase().includes('iso-2022-jp')) {
+        // ISO-2022-JPの場合
+        html = iconv.decode(Buffer.from(buffer), 'iso-2022-jp');
+        console.log(`Successfully decoded as ISO-2022-JP`);
       } else {
+        // UTF-8またはその他の場合
         html = buffer.toString('utf-8');
+        console.log(`Using UTF-8 encoding`);
       }
     } catch (error) {
       console.log(`Failed to decode as ${charset}, falling back to UTF-8:`, error);
