@@ -487,8 +487,14 @@ const Admin: React.FC = () => {
       {/* Tab Navigation */}
       <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} />
 
+      {/* Performance Monitor Tab */}
+      {activeTab === "performance" && (
+        <PerformanceMonitor />
+      )}
+
       {/* Topics List */}
-      <Card>
+      {activeTab !== "performance" && (
+        <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>
             {activeTab === "deleted" ? "削除済みトピック" : 
@@ -549,7 +555,8 @@ const Admin: React.FC = () => {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab })
     { id: "all", label: "すべて" },
     { id: "featured", label: "採用" },
     { id: "deleted", label: "削除済み" },
+    { id: "performance", label: "パフォーマンス" },
   ];
 
   return (
