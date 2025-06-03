@@ -225,8 +225,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
           >
             {/* Ear icon for listening/hearing */}
             <svg className="h-6 w-6 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12c0-4.42 3.58-8 8-8s8 3.58 8 8c0 1.1-.9 2-2 2s-2-.9-2-2c0-2.21-1.79-4-4-4s-4 1.79-4 4v6c0 .55-.45 1-1 1s-1-.45-1-1v-6z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12v6c0 1.66 1.34 3 3 3s3-1.34 3-3v-1" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8c0-4.4 3.6-8 8-8s8 3.6 8 8c0 2.2-1.8 4-4 4-1.1 0-2-.9-2-2 0-1.1-.9-2-2-2s-2 .9-2 2c0 1.1-.9 2-2 2-2.2 0-4-1.8-4-4z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12c0 2.2 1.8 4 4 4s4-1.8 4-4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 18c0 1.1.9 2 2 2s2-.9 2-2" />
             </svg>
             <div className="flex flex-col items-center">
               <span className={`text-xs font-semibold ${hasStarred ? "text-red-500" : "text-gray-500"}`}>{starsCount}</span>
