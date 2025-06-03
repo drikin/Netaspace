@@ -20,6 +20,32 @@ import { WebSocketServer, WebSocket } from 'ws';
 import iconv from 'iconv-lite';
 import charsetDetector from 'charset-detector';
 
+// Performance optimization: Cache for URL metadata
+const urlCache = new Map<string, { title: string; description: string; cached: number }>();
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+// Rate limiting
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 30; // 30 requests per minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = requestCounts.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 // WebSocketクライアント管理
 const clients = new Set<WebSocket>();
 
@@ -42,6 +68,12 @@ function isGoogleNewsURL(url: string): boolean {
 
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
+  // Check cache first
+  const cached = urlCache.get(url);
+  if (cached && (Date.now() - cached.cached) < CACHE_TTL) {
+    return { title: cached.title, description: cached.description };
+  }
+
   try {
     // Googleニュースのリンクかチェック
     if (isGoogleNewsURL(url)) {
@@ -128,13 +160,18 @@ async function fetchArticleInfo(url: string) {
     const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute('content')?.trim() || '';
     
     // 返り値に最終的なURLと追加情報を含める
-    return { 
+    const result = { 
       title, 
       description,
       finalUrl: finalUrl || targetUrl,
       originalUrl: url,
       ogImage
     };
+
+    // Cache the result
+    urlCache.set(url, { title, description, cached: Date.now() });
+
+    return result;
   } catch (error) {
     console.error('Error fetching article info:', error);
     return { title: '', description: '', finalUrl: url, originalUrl: url, ogImage: '' };
@@ -142,6 +179,37 @@ async function fetchArticleInfo(url: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Performance optimizations: Add compression and security headers
+  app.use((req, res, next) => {
+    // Add performance and security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    
+    // Cache static resources
+    if (req.url.includes('/assets/') || req.url.includes('.js') || req.url.includes('.css')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+    } else {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    
+    next();
+  });
+
+  // Rate limiting middleware
+  app.use('/api/', (req, res, next) => {
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    
+    if (!checkRateLimit(clientIP)) {
+      return res.status(429).json({ 
+        message: 'Too many requests. Please try again later.',
+        retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+      });
+    }
+    
+    next();
+  });
+
   // Session setup
   app.use(session({
     store: new MemoryStoreSession({
