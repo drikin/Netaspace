@@ -352,6 +352,8 @@ export class PostgresStorage implements IStorage {
   db: ReturnType<typeof drizzle>;
   private queryCache = new Map<string, { data: any; timestamp: number }>();
   private readonly CACHE_TTL = 30000; // 30 seconds cache
+  private cacheHits = 0;
+  private cacheMisses = 0;
 
   constructor() {
     if (!process.env.DATABASE_URL) {
@@ -382,8 +384,10 @@ export class PostgresStorage implements IStorage {
   private getFromCache<T>(key: string): T | null {
     const cached = this.queryCache.get(key);
     if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
+      this.cacheHits++;
       return cached.data;
     }
+    this.cacheMisses++;
     return null;
   }
 
@@ -397,6 +401,19 @@ export class PostgresStorage implements IStorage {
         this.queryCache.delete(key);
       }
     }
+  }
+
+  // Public methods for performance monitoring
+  getCacheStats() {
+    return {
+      totalCacheRequests: this.cacheHits + this.cacheMisses,
+      cacheHits: this.cacheHits,
+      cacheMisses: this.cacheMisses,
+      cacheHitRate: this.cacheHits + this.cacheMisses > 0 
+        ? (this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100 
+        : 0,
+      cacheSize: this.queryCache.size
+    };
   }
 
   // User operations

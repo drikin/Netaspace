@@ -433,6 +433,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const totalCacheRequests = performanceMetrics.urlCacheHits + performanceMetrics.urlCacheMisses;
     const cacheHitRate = totalCacheRequests > 0 ? (performanceMetrics.urlCacheHits / totalCacheRequests) * 100 : 0;
     
+    // Get database cache statistics
+    const dbCacheStats = (storage as any).getCacheStats ? (storage as any).getCacheStats() : {
+      totalCacheRequests: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      cacheHitRate: 0,
+      cacheSize: 0
+    };
+    
     res.json({
       ...performanceMetrics,
       cacheHitRate: Math.round(cacheHitRate * 100) / 100,
@@ -440,7 +449,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       uptime: process.uptime(),
       memoryUsage: process.memoryUsage(),
       urlCacheSize: urlCache.size,
-      activeConnections: clients.size
+      activeConnections: clients.size,
+      // Database cache metrics
+      dbCacheHits: dbCacheStats.cacheHits,
+      dbCacheMisses: dbCacheStats.cacheMisses,
+      dbCacheHitRate: Math.round(dbCacheStats.cacheHitRate * 100) / 100,
+      dbCacheSize: dbCacheStats.cacheSize,
+      totalDbCacheRequests: dbCacheStats.totalCacheRequests
     });
   });
 

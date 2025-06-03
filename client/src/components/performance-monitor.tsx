@@ -20,6 +20,12 @@ interface PerformanceMetrics {
   };
   urlCacheSize: number;
   activeConnections: number;
+  // Database cache metrics
+  dbCacheHits: number;
+  dbCacheMisses: number;
+  dbCacheHitRate: number;
+  dbCacheSize: number;
+  totalDbCacheRequests: number;
 }
 
 export function PerformanceMonitor() {
@@ -71,11 +77,11 @@ export function PerformanceMonitor() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Cache Performance */}
+            {/* URL Cache Performance */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Database className="w-4 h-4 text-blue-500" />
-                <span className="font-medium">キャッシュ効率</span>
+                <Globe className="w-4 h-4 text-blue-500" />
+                <span className="font-medium">URLキャッシュ</span>
               </div>
               <div className="space-y-2">
                 <Badge className={getCacheEfficiencyColor(metrics.cacheHitRate)}>
@@ -84,7 +90,25 @@ export function PerformanceMonitor() {
                 <div className="text-sm text-muted-foreground">
                   <div>ヒット: {metrics.urlCacheHits}</div>
                   <div>ミス: {metrics.urlCacheMisses}</div>
-                  <div>キャッシュサイズ: {metrics.urlCacheSize} エントリ</div>
+                  <div>サイズ: {metrics.urlCacheSize} エントリ</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Database Cache Performance */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-green-500" />
+                <span className="font-medium">DBクエリキャッシュ</span>
+              </div>
+              <div className="space-y-2">
+                <Badge className={getCacheEfficiencyColor(metrics.dbCacheHitRate)}>
+                  ヒット率: {metrics.dbCacheHitRate.toFixed(1)}%
+                </Badge>
+                <div className="text-sm text-muted-foreground">
+                  <div>ヒット: {metrics.dbCacheHits}</div>
+                  <div>ミス: {metrics.dbCacheMisses}</div>
+                  <div>サイズ: {metrics.dbCacheSize} エントリ</div>
                 </div>
               </div>
             </div>
