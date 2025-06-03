@@ -223,9 +223,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
             aria-label={hasStarred ? "応援を取り消す" : "話して欲しいと応援する"}
             title={hasStarred ? "応援を取り消す" : "この話題について話して欲しい！"}
           >
-            {/* Heart icon for support/cheer */}
+            {/* Ear icon for listening/hearing */}
             <svg className="h-6 w-6 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={hasStarred ? 0 : 2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12c0-4.42 3.58-8 8-8s8 3.58 8 8c0 1.1-.9 2-2 2s-2-.9-2-2c0-2.21-1.79-4-4-4s-4 1.79-4 4v6c0 .55-.45 1-1 1s-1-.45-1-1v-6z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12v6c0 1.66 1.34 3 3 3s3-1.34 3-3v-1" />
             </svg>
             <div className="flex flex-col items-center">
               <span className={`text-xs font-semibold ${hasStarred ? "text-red-500" : "text-gray-500"}`}>{starsCount}</span>
