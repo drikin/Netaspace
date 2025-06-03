@@ -350,6 +350,8 @@ export class MemStorage implements IStorage {
 // If using Supabase/PostgreSQL, this would be the implementation
 export class PostgresStorage implements IStorage {
   db: ReturnType<typeof drizzle>;
+  private queryCache = new Map<string, { data: any; timestamp: number }>();
+  private readonly CACHE_TTL = 30000; // 30 seconds cache
 
   constructor() {
     if (!process.env.DATABASE_URL) {
@@ -358,12 +360,43 @@ export class PostgresStorage implements IStorage {
     
     // PostgreSQL接続を最適化
     const client = postgres(process.env.DATABASE_URL, {
-      max: 20,                    // 最大接続数
-      idle_timeout: 20,           // アイドルタイムアウト（秒）
-      connect_timeout: 10,        // 接続タイムアウト（秒）
+      max: 30,                    // 最大接続数を増加
+      idle_timeout: 10,           // アイドルタイムアウトを短縮
+      connect_timeout: 5,         // 接続タイムアウトを短縮
       prepare: false,             // プリペアードステートメントを無効化（高速化）
+      transform: {
+        undefined: null,          // undefinedをnullに変換
+      },
+      fetch_types: false,         // 型取得を無効化（高速化）
+      publications: 'all',        // すべてのパブリケーションを使用
+      target_session_attrs: 'read-write', // 読み書き可能なセッションを優先
     });
     this.db = drizzle(client);
+  }
+
+  // Query caching helper methods
+  private getCacheKey(method: string, ...params: any[]): string {
+    return `${method}:${JSON.stringify(params)}`;
+  }
+
+  private getFromCache<T>(key: string): T | null {
+    const cached = this.queryCache.get(key);
+    if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  private setCache<T>(key: string, data: T): void {
+    this.queryCache.set(key, { data, timestamp: Date.now() });
+  }
+
+  private clearCacheByPattern(pattern: string): void {
+    for (const key of this.queryCache.keys()) {
+      if (key.includes(pattern)) {
+        this.queryCache.delete(key);
+      }
+    }
   }
 
   // User operations
@@ -405,13 +438,22 @@ export class PostgresStorage implements IStorage {
   }
 
   async getActiveWeek(): Promise<Week | undefined> {
+    const cacheKey = this.getCacheKey('getActiveWeek');
+    const cached = this.getFromCache<Week>(cacheKey);
+    if (cached) return cached;
+
     const result = await this.db
       .select()
       .from(weeks)
       .where(eq(weeks.isActive, true))
       .limit(1);
     
-    return result[0];
+    const activeWeek = result[0];
+    if (activeWeek) {
+      this.setCache(cacheKey, activeWeek);
+    }
+    
+    return activeWeek;
   }
 
   async createWeek(week: InsertWeek): Promise<Week> {
