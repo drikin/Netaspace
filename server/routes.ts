@@ -29,6 +29,16 @@ const requestCounts = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 30; // 30 requests per minute
 
+// Performance monitoring
+const performanceMetrics = {
+  totalRequests: 0,
+  averageResponseTime: 0,
+  errorRate: 0,
+  cacheHitRate: 0,
+  urlCacheHits: 0,
+  urlCacheMisses: 0
+};
+
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const record = requestCounts.get(ip);
@@ -71,8 +81,11 @@ async function fetchArticleInfo(url: string) {
   // Check cache first
   const cached = urlCache.get(url);
   if (cached && (Date.now() - cached.cached) < CACHE_TTL) {
+    performanceMetrics.urlCacheHits++;
     return { title: cached.title, description: cached.description };
   }
+  
+  performanceMetrics.urlCacheMisses++;
 
   try {
     // Googleニュースのリンクかチェック
@@ -413,6 +426,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching URL info:', error);
       res.status(500).json({ message: 'Failed to fetch URL info' });
     }
+  });
+
+  // Performance metrics endpoint (admin only)
+  app.get('/api/metrics', isAdmin, (req, res) => {
+    const totalCacheRequests = performanceMetrics.urlCacheHits + performanceMetrics.urlCacheMisses;
+    const cacheHitRate = totalCacheRequests > 0 ? (performanceMetrics.urlCacheHits / totalCacheRequests) * 100 : 0;
+    
+    res.json({
+      ...performanceMetrics,
+      cacheHitRate: Math.round(cacheHitRate * 100) / 100,
+      totalCacheRequests,
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+      urlCacheSize: urlCache.size,
+      activeConnections: clients.size
+    });
   });
 
   app.post('/api/topics', async (req, res) => {

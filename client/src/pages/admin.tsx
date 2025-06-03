@@ -12,6 +12,7 @@ import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import TopicCard from "@/components/ui/topic-card";
 import TabNavigation from "@/components/tab-navigation";
+import { PerformanceMonitor } from "@/components/performance-monitor";
 import { insertWeekSchema } from "@shared/schema";
 
 const Admin: React.FC = () => {
