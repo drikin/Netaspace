@@ -394,10 +394,10 @@ const Submit: React.FC = () => {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>説明</FormLabel>
+                      <FormLabel>説明（オプション）</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="トピックについての簡単な説明を入力してください"
+                          placeholder="トピックについての簡単な説明を入力してください（任意）"
                           {...field}
                           className="max-w-2xl"
                           rows={4}

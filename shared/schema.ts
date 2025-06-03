@@ -23,7 +23,7 @@ export const topics = pgTable("topics", {
   weekId: integer("week_id").references(() => weeks.id),
   title: text("title").notNull(),
   url: text("url").notNull(),
-  description: text("description").notNull(),
+  description: text("description"),
   submitter: text("submitter").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   status: text("status").default("pending").notNull(), // pending, approved, featured, rejected
@@ -111,7 +111,9 @@ export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
 // Extended schemas for form validation
-export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true });
+export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true }).extend({
+  description: z.string().optional(),
+});
 export const submitCommentSchema = insertCommentSchema.omit({ topicId: true });
 
 // Extended types for API responses
