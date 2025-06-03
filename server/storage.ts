@@ -488,6 +488,10 @@ export class PostgresStorage implements IStorage {
   
   // Topic operations
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
+    const cacheKey = this.getCacheKey('getTopicsByWeekId', weekId);
+    const cached = this.getFromCache<TopicWithCommentsAndStars[]>(cacheKey);
+    if (cached) return cached;
+
     // 一括でトピックを取得
     const topicsResult = await this.db
       .select()
@@ -532,11 +536,15 @@ export class PostgresStorage implements IStorage {
     });
     
     // 結果を組み立て
-    return topicsResult.map(topic => ({
+    const result = topicsResult.map(topic => ({
       ...topic,
       comments: commentsMap.get(topic.id) || [],
       starsCount: starsMap.get(topic.id) || 0
     }));
+
+    // Cache the result
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
@@ -637,6 +645,11 @@ export class PostgresStorage implements IStorage {
       .values(topic)
       .returning();
     
+    // Invalidate related caches
+    this.clearCacheByPattern('getTopicsByWeekId');
+    this.clearCacheByPattern('getTopicsByStatus');
+    this.clearCacheByPattern('getActiveWeekWithTopics');
+    
     return result[0];
   }
 
@@ -658,6 +671,12 @@ export class PostgresStorage implements IStorage {
       .where(eq(topics.id, id))
       .returning();
     
+    // Invalidate related caches
+    this.clearCacheByPattern('getTopicsByWeekId');
+    this.clearCacheByPattern('getTopicsByStatus');
+    this.clearCacheByPattern('getActiveWeekWithTopics');
+    this.clearCacheByPattern('getTopic');
+    
     return result[0];
   }
   
@@ -677,6 +696,12 @@ export class PostgresStorage implements IStorage {
         .delete(topics)
         .where(eq(topics.id, id))
         .returning();
+      
+      // Invalidate related caches
+      this.clearCacheByPattern('getTopicsByWeekId');
+      this.clearCacheByPattern('getTopicsByStatus');
+      this.clearCacheByPattern('getActiveWeekWithTopics');
+      this.clearCacheByPattern('getTopic');
       
       return result.length > 0;
     } catch (error) {
@@ -700,6 +725,10 @@ export class PostgresStorage implements IStorage {
       .values(comment)
       .returning();
     
+    // Invalidate related caches
+    this.clearCacheByPattern('getTopicsByWeekId');
+    this.clearCacheByPattern('getActiveWeekWithTopics');
+    
     return result[0];
   }
   
@@ -721,6 +750,10 @@ export class PostgresStorage implements IStorage {
         stars: sql`${topics.stars} + 1`
       })
       .where(eq(topics.id, star.topicId));
+    
+    // Invalidate related caches
+    this.clearCacheByPattern('getTopicsByWeekId');
+    this.clearCacheByPattern('getActiveWeekWithTopics');
     
     return true;
   }
