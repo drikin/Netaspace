@@ -524,7 +524,7 @@ const Admin: React.FC = () => {
           )}
         </CardHeader>
         <CardContent>
-          {isWeekLoading ? (
+          {(isWeekLoading || (activeTab === "deleted" && isDeletedLoading)) ? (
             // Loading state
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -538,7 +538,7 @@ const Admin: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : !activeWeek ? (
+          ) : !activeWeek && activeTab !== "deleted" ? (
             <p className="text-gray-500 text-center py-8">
               アクティブな週がありません。
             </p>
