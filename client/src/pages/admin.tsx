@@ -118,8 +118,10 @@ const Admin: React.FC = () => {
         return filteredTopics;
       case "all":
       default:
-        // Show all non-deleted topics
-        filteredTopics = activeWeek.topics.filter(topic => topic.status !== "deleted");
+        // Show pending and approved topics (not deleted or featured)
+        filteredTopics = activeWeek.topics.filter(topic => 
+          topic.status === "pending" || topic.status === "approved"
+        );
         break;
     }
     
