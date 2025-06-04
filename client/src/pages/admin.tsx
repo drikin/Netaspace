@@ -48,6 +48,12 @@ const Admin: React.FC = () => {
     enabled: !!isAdmin,
   });
 
+  // Fetch deleted topics from all weeks (for deleted tab)
+  const { data: deletedTopics, isLoading: isDeletedLoading } = useQuery({
+    queryKey: ["/api/topics/status/deleted"],
+    enabled: !!isAdmin && activeTab === "deleted",
+  });
+
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: z.infer<typeof loginSchema>) => {
@@ -96,17 +102,16 @@ const Admin: React.FC = () => {
 
   // Filter topics based on active tab
   const getFilteredTopics = () => {
-    if (!activeWeek?.topics) return [];
-    
     let filteredTopics: any[] = [];
     
     switch (activeTab) {
       case "deleted":
-        // Show deleted topics (topics with status "deleted")
-        filteredTopics = activeWeek.topics.filter(topic => topic.status === "deleted");
+        // Show deleted topics from all weeks
+        filteredTopics = deletedTopics || [];
         break;
       case "featured":
         // Show featured topics sorted by oldest featured first (featuredAt ascending)
+        if (!activeWeek?.topics) return [];
         filteredTopics = activeWeek.topics
           .filter(topic => topic.status === "featured")
           .sort((a, b) => {
@@ -119,6 +124,7 @@ const Admin: React.FC = () => {
       case "all":
       default:
         // Show pending and approved topics (not deleted or featured)
+        if (!activeWeek?.topics) return [];
         filteredTopics = activeWeek.topics.filter(topic => 
           topic.status === "pending" || topic.status === "approved"
         );
