@@ -1,8 +1,15 @@
-# Podcast Topic Suggestion System
+# Podcast Topic Suggestion System (v1.9.0)
 
 ## Overview
 
 This system allows users to submit topics for a podcast (specifically backspace.fm), vote on them, add comments, and helps podcast hosts organize and prioritize content. The application follows a client-server architecture with React frontend and Express backend, storing data in a PostgreSQL database via Drizzle ORM.
+
+## Latest Updates (v1.9.0 - June 4, 2025)
+
+- **Enhanced Security**: Admin-only tabs (deleted topics, performance monitoring) now properly restricted to authenticated administrators
+- **Performance Improvements**: Database query caching system with 30-second TTL for faster topic loading
+- **UI Improvements**: Optional description field, ear icon for "聞きたい" button for better semantic representation
+- **System Monitoring**: Real-time performance dashboard with cache statistics and memory usage monitoring
 
 ## User Preferences
 
