@@ -360,11 +360,11 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // PostgreSQL接続を最適化
+    // PostgreSQL接続を最大限最適化
     const client = postgres(process.env.DATABASE_URL, {
-      max: 30,                    // 最大接続数を増加
-      idle_timeout: 10,           // アイドルタイムアウトを短縮
-      connect_timeout: 5,         // 接続タイムアウトを短縮
+      max: 50,                    // 最大接続数をさらに増加
+      idle_timeout: 5,            // アイドルタイムアウトをさらに短縮
+      connect_timeout: 3,         // 接続タイムアウトをさらに短縮
       prepare: false,             // プリペアードステートメントを無効化（高速化）
       transform: {
         undefined: null,          // undefinedをnullに変換
@@ -372,6 +372,10 @@ export class PostgresStorage implements IStorage {
       fetch_types: false,         // 型取得を無効化（高速化）
       publications: 'all',        // すべてのパブリケーションを使用
       target_session_attrs: 'read-write', // 読み書き可能なセッションを優先
+      connection: {
+        application_name: 'backspace-fm-optimized'
+      },
+      onnotice: () => {},         // 通知を無効化して高速化
     });
     this.db = drizzle(client);
   }
@@ -509,54 +513,34 @@ export class PostgresStorage implements IStorage {
     const cached = this.getFromCache<TopicWithCommentsAndStars[]>(cacheKey);
     if (cached) return cached;
 
-    // 一括でトピックを取得
+    // 最適化されたトピック取得クエリ（必要な列のみ選択）
     const topicsResult = await this.db
-      .select()
+      .select({
+        id: topics.id,
+        weekId: topics.weekId,
+        title: topics.title,
+        url: topics.url,
+        description: topics.description,
+        submitter: topics.submitter,
+        createdAt: topics.createdAt,
+        status: topics.status,
+        stars: topics.stars,
+        featuredAt: topics.featuredAt
+      })
       .from(topics)
       .where(eq(topics.weekId, weekId))
-      .orderBy(desc(topics.createdAt));
+      .orderBy(desc(topics.createdAt))
+      .limit(100); // 最大100件に制限
     
     if (topicsResult.length === 0) return [];
     
     const topicIds = topicsResult.map(t => t.id);
     
-    // 一括でコメントを取得
-    const commentsResult = await this.db
-      .select()
-      .from(comments)
-      .where(inArray(comments.topicId, topicIds))
-      .orderBy(asc(comments.createdAt));
-    
-    // 一括で星の数を取得
-    const starsResult = await this.db
-      .select({
-        topicId: stars.topicId,
-        count: sql<number>`count(*)`.as('count')
-      })
-      .from(stars)
-      .where(inArray(stars.topicId, topicIds))
-      .groupBy(stars.topicId);
-    
-    // データを整理
-    const commentsMap = new Map<number, Comment[]>();
-    const starsMap = new Map<number, number>();
-    
-    commentsResult.forEach(comment => {
-      if (!commentsMap.has(comment.topicId)) {
-        commentsMap.set(comment.topicId, []);
-      }
-      commentsMap.get(comment.topicId)!.push(comment);
-    });
-    
-    starsResult.forEach(({ topicId, count }) => {
-      starsMap.set(topicId, count);
-    });
-    
-    // 結果を組み立て
+    // 最速化: コメントも遅延読み込みにして、星の数のみtopicsテーブルから取得
     const result = topicsResult.map(topic => ({
       ...topic,
-      comments: commentsMap.get(topic.id) || [],
-      starsCount: starsMap.get(topic.id) || 0
+      comments: [], // 空の配列（クリック時に遅延読み込み）
+      starsCount: topic.stars // topicsテーブルから直接取得で高速化
     }));
 
     // Cache the result
