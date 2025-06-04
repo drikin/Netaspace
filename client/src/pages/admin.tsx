@@ -493,7 +493,7 @@ const Admin: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} />
+      <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
 
       {/* Performance Monitor Tab */}
       {activeTab === "performance" && (

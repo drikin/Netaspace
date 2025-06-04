@@ -3,15 +3,21 @@ import React, { useState } from "react";
 interface TabNavigationProps {
   onTabChange: (tab: string) => void;
   activeTab: string;
+  isAdmin?: boolean;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab }) => {
-  const tabs = [
+const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false }) => {
+  const baseTabs = [
     { id: "all", label: "すべて" },
     { id: "featured", label: "採用" },
+  ];
+  
+  const adminTabs = [
     { id: "deleted", label: "削除済み" },
     { id: "performance", label: "パフォーマンス" },
   ];
+  
+  const tabs = isAdmin ? [...baseTabs, ...adminTabs] : baseTabs;
 
   return (
     <div className="px-4 sm:px-0 mb-4 border-b border-gray-200">

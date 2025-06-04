@@ -51,6 +51,11 @@ const Home: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
+    // Prevent non-admin users from accessing admin-only tabs
+    if (!isAdmin && (tab === "deleted" || tab === "performance")) {
+      setActiveTab("all");
+      return;
+    }
     setActiveTab(tab);
   };
 
@@ -60,7 +65,7 @@ const Home: React.FC = () => {
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <WeekSelector week={week} isLoading={isLoading} />
 
-      <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} />
+      <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
 
       <div className="space-y-6 px-4 sm:px-0">
         {isLoading ? (
