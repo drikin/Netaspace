@@ -223,11 +223,23 @@ const TopicCard: React.FC<TopicCardProps> = ({
             aria-label={hasStarred ? "応援を取り消す" : "話して欲しいと応援する"}
             title={hasStarred ? "応援を取り消す" : "この話題について話して欲しい！"}
           >
-            {/* Ear icon for listening/hearing */}
+            {/* Enhanced ear icon for listening/hearing */}
             <svg className="h-6 w-6 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8c0-4.4 3.6-8 8-8s8 3.6 8 8c0 2.2-1.8 4-4 4-1.1 0-2-.9-2-2 0-1.1-.9-2-2-2s-2 .9-2 2c0 1.1-.9 2-2 2-2.2 0-4-1.8-4-4z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12c0 2.2 1.8 4 4 4s4-1.8 4-4" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 18c0 1.1.9 2 2 2s2-.9 2-2" />
+              {/* Outer ear shape */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 8c0-3.3 2.7-6 6-6s6 2.7 6 6c0 1.7-.7 3.2-1.8 4.3" />
+              {/* Inner ear curve */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 8c0-1.7 1.3-3 3-3s3 1.3 3 3c0 .8-.3 1.5-.8 2" />
+              {/* Ear canal */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10.5c.3 0 .5.2.5.5s-.2.5-.5.5-.5-.2-.5-.5.2-.5.5-.5z" />
+              {/* Earlobe */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16c0-2.2 1.8-4 4-4s4 1.8 4 4" />
+              {/* Sound waves */}
+              {hasStarred && (
+                <>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 8c1.1 0 2-.9 2-2" opacity="0.6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 8c1.7 0 3-1.3 3-3" opacity="0.4" />
+                </>
+              )}
             </svg>
             <div className="flex flex-col items-center">
               <span className={`text-xs font-semibold ${hasStarred ? "text-red-500" : "text-gray-500"}`}>{starsCount}</span>
