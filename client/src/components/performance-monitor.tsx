@@ -31,7 +31,7 @@ interface PerformanceMetrics {
 export function PerformanceMonitor() {
   const { data: metrics, isLoading } = useQuery<PerformanceMetrics>({
     queryKey: ["/api/metrics"],
-    refetchInterval: 30000, // Update every 30 seconds
+    refetchInterval: 300000, // Update every 5 minutes (reduced from 30 seconds)
   });
 
   if (isLoading || !metrics) {

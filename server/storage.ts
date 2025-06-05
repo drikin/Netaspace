@@ -351,7 +351,7 @@ export class MemStorage implements IStorage {
 export class PostgresStorage implements IStorage {
   db: ReturnType<typeof drizzle>;
   private queryCache = new Map<string, { data: any; timestamp: number }>();
-  private readonly CACHE_TTL = 30000; // 30 seconds cache
+  private readonly CACHE_TTL = 300000; // 5 minutes cache (reduced from 30 seconds)
   private cacheHits = 0;
   private cacheMisses = 0;
 
@@ -360,12 +360,12 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // PostgreSQL接続を最大限最適化
+    // PostgreSQL接続を適正化（Compute Unit節約）
     const client = postgres(process.env.DATABASE_URL, {
-      max: 50,                    // 最大接続数をさらに増加
-      idle_timeout: 5,            // アイドルタイムアウトをさらに短縮
-      connect_timeout: 3,         // 接続タイムアウトをさらに短縮
-      prepare: false,             // プリペアードステートメントを無効化（高速化）
+      max: 5,                     // 最大接続数を大幅削減（50→5）
+      idle_timeout: 20,           // アイドルタイムアウトを延長（リソース節約）
+      connect_timeout: 10,        // 接続タイムアウトを延長
+      prepare: false,             // プリペアードステートメントを無効化
       transform: {
         undefined: null,          // undefinedをnullに変換
       },

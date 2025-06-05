@@ -106,31 +106,29 @@ async function fetchArticleInfo(url: string) {
     // 通常のURLの場合
     let targetUrl = url;
     
-    // リダイレクトを追跡して最終的なURLを取得
-    const response = await fetch(targetUrl, { redirect: 'follow' });
+    // 軽量化: レスポンスサイズを制限し、文字エンコード検出を簡素化
+    const response = await fetch(targetUrl, { 
+      redirect: 'follow',
+      signal: AbortSignal.timeout(5000), // 5秒タイムアウト
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TopicBot/1.0)'
+      }
+    });
     
-    // 最終的なURL（リダイレクト後のURL）を取得
     const finalUrl = response.url;
     
-    // レスポンスのバイナリデータを取得
-    const buffer = await response.buffer();
+    // バッファサイズを制限（最大1MB）
+    const arrayBuffer = await response.arrayBuffer();
+    const limitedBuffer = arrayBuffer.slice(0, 1024 * 1024); // 1MB制限
+    const buffer = Buffer.from(limitedBuffer);
     
-    // 文字エンコーディングを検出
-    const charsetResult = charsetDetector(buffer);
+    // 簡素化された文字エンコード検出
     let charset = 'utf-8'; // デフォルト
-    
-    if (charsetResult && charsetResult.length > 0) {
-      charset = charsetResult[0].charsetName.toLowerCase();
-      console.log(`Detected charset: ${charset}`);
-    }
-    
-    // Content-Typeヘッダーからもcharsetを確認
     const contentType = response.headers.get('content-type');
     if (contentType) {
       const charsetMatch = contentType.match(/charset=([^;]+)/i);
       if (charsetMatch) {
         charset = charsetMatch[1].toLowerCase();
-        console.log(`Charset from Content-Type: ${charset}`);
       }
     }
     
