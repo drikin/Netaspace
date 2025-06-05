@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       uptime: process.uptime(),
       memoryUsage: process.memoryUsage(),
       urlCacheSize: urlCache.size,
-      activeConnections: clients.size,
+      activeConnections: 0, // WebSocket削除によりゼロ固定
       // Database cache metrics
       dbCacheHits: dbCacheStats.cacheHits,
       dbCacheMisses: dbCacheStats.cacheMisses,
@@ -514,11 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: 'Failed to delete topic' });
       }
       
-      // トピックが削除されたことをブロードキャスト
-      broadcastEvent('topic_deleted', { 
-        topicId: topic.id,
-        weekId: topic.weekId
-      });
+      // トランザクションベース実装: リアルタイム更新を削除
       
       res.json({ success: true, message: 'Topic deleted successfully' });
     } catch (error) {
@@ -595,11 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the updated star count
       const starsCount = await storage.getStarsCountByTopicId(topicId);
       
-      // スターが追加されたことをブロードキャスト
-      broadcastEvent('star_added', { 
-        topicId, 
-        starsCount 
-      });
+      // トランザクションベース実装: リアルタイム更新を削除
       
       res.json({ success: true, starsCount });
     } catch (error) {
