@@ -106,10 +106,10 @@ async function fetchArticleInfo(url: string) {
     // 通常のURLの場合
     let targetUrl = url;
     
-    // 軽量化: レスポンスサイズを制限し、文字エンコード検出を簡素化
+    // 大幅軽量化: 最小限のHTTPリクエストのみでCompute Unit節約
     const response = await fetch(targetUrl, { 
       redirect: 'follow',
-      signal: AbortSignal.timeout(5000), // 5秒タイムアウト
+      signal: AbortSignal.timeout(3000), // 3秒タイムアウト（短縮）
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; TopicBot/1.0)'
       }
@@ -117,45 +117,8 @@ async function fetchArticleInfo(url: string) {
     
     const finalUrl = response.url;
     
-    // バッファサイズを制限（最大1MB）
-    const arrayBuffer = await response.arrayBuffer();
-    const limitedBuffer = arrayBuffer.slice(0, 1024 * 1024); // 1MB制限
-    const buffer = Buffer.from(limitedBuffer);
-    
-    // 簡素化された文字エンコード検出
-    let charset = 'utf-8'; // デフォルト
-    const contentType = response.headers.get('content-type');
-    if (contentType) {
-      const charsetMatch = contentType.match(/charset=([^;]+)/i);
-      if (charsetMatch) {
-        charset = charsetMatch[1].toLowerCase();
-      }
-    }
-    
-    // 適切な文字エンコーディングでHTMLをデコード
-    let html: string;
-    try {
-      if (charset.toLowerCase().includes('shift') || charset.toLowerCase().includes('sjis')) {
-        // Shift-JISの場合
-        html = iconv.decode(buffer, 'shift_jis');
-        console.log(`Successfully decoded as Shift-JIS`);
-      } else if (charset.toLowerCase().includes('euc')) {
-        // EUC-JPの場合
-        html = iconv.decode(buffer, 'euc-jp');
-        console.log(`Successfully decoded as EUC-JP`);
-      } else if (charset.toLowerCase().includes('iso-2022-jp')) {
-        // ISO-2022-JPの場合
-        html = iconv.decode(buffer, 'iso-2022-jp');
-        console.log(`Successfully decoded as ISO-2022-JP`);
-      } else {
-        // UTF-8またはその他の場合
-        html = buffer.toString('utf-8');
-        console.log(`Using UTF-8 encoding`);
-      }
-    } catch (error) {
-      console.log(`Failed to decode as ${charset}, falling back to UTF-8:`, error);
-      html = buffer.toString('utf-8');
-    }
+    // 軽量化: 複雑なエンコード処理を削除、テキストのみ取得
+    const html = await response.text();
     
     const dom = new JSDOM(html);
     const document = dom.window.document;
