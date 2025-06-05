@@ -388,6 +388,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chrome拡張機能ダウンロードエンドポイント
+  app.get('/api/extension/download', async (req, res) => {
+    const path = require('path');
+    const fs = require('fs');
+    
+    try {
+      const extensionDir = path.join(process.cwd(), 'chrome-extension');
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="backspace-fm-extension.zip"');
+      
+      // Create a simple tar-like archive by concatenating files
+      const files = [
+        'manifest.json',
+        'popup.html', 
+        'popup.js',
+        'content.js',
+        'README.md'
+      ];
+      
+      let archive = '';
+      
+      for (const file of files) {
+        const filePath = path.join(extensionDir, file);
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, 'utf8');
+          archive += `--- ${file} ---\n${content}\n\n`;
+        }
+      }
+      
+      // Update manifest.json with current server URL
+      const manifest = {
+        "manifest_version": 3,
+        "name": "Backspace.fm ネタ投稿",
+        "version": "1.0.0",
+        "description": "現在のページをbackspace.fmのネタとして簡単に投稿できます",
+        "permissions": ["activeTab", "storage"],
+        "host_permissions": [`${req.protocol}://${req.get('host')}/*`, "https://*.replit.dev/*"],
+        "action": {
+          "default_popup": "popup.html",
+          "default_title": "Backspace.fm ネタ投稿"
+        },
+        "content_scripts": [{
+          "matches": ["<all_urls>"],
+          "js": ["content.js"]
+        }]
+      };
+      
+      res.send(`Chrome Extension Files Package\n\n--- manifest.json ---\n${JSON.stringify(manifest, null, 2)}\n\n${archive}`);
+    } catch (error) {
+      console.error('Extension download error:', error);
+      res.status(500).json({ message: 'Failed to create extension package' });
+    }
+  });
+
   // Performance metrics endpoint (admin only)
   app.get('/api/metrics', isAdmin, (req, res) => {
     const totalCacheRequests = performanceMetrics.urlCacheHits + performanceMetrics.urlCacheMisses;
