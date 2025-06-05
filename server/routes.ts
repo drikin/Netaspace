@@ -16,9 +16,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import MemoryStore from 'memorystore';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
-import { WebSocketServer, WebSocket } from 'ws';
 import iconv from 'iconv-lite';
-import charsetDetector from 'charset-detector';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -56,18 +54,8 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// WebSocketクライアント管理
-const clients = new Set<WebSocket>();
-
-// WebSocketでイベントを全クライアントに送信する関数
-function broadcastEvent(eventType: string, data: any) {
-  const message = JSON.stringify({ type: eventType, data });
-  clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
-  });
-}
+// リアルタイム更新を削除してトランザクションベースに変更
+// WebSocket機能を無効化してCompute Unit消費を削減
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -465,13 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const topic = await storage.createTopic(topicData);
       
-      // 新しいトピックが作成されたことをブロードキャスト（完全なトピックデータを含める）
-      const topicWithDetails = await storage.getTopic(topic.id);
-      broadcastEvent('topic_created', { 
-        topicId: topic.id, 
-        weekId: topic.weekId,
-        topic: topicWithDetails
-      });
+      // トランザクションベース実装: リアルタイム更新を削除
       
       res.status(201).json(topic);
     } catch (error) {
@@ -502,14 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Topic not found' });
       }
       
-      // トピックのステータスが変更されたことをブロードキャスト（完全なトピックデータを含める）
-      const fullTopic = await storage.getTopic(topic.id);
-      broadcastEvent('topic_status_changed', { 
-        topicId: topic.id, 
-        weekId: topic.weekId, 
-        status: topic.status,
-        topic: fullTopic
-      });
+      // トランザクションベース実装: リアルタイム更新を削除
       
       res.json(topic);
     } catch (error) {
@@ -576,11 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topicId
       });
       
-      // 新しいコメントが追加されたことをブロードキャスト
-      broadcastEvent('comment_added', { 
-        commentId: comment.id, 
-        topicId: comment.topicId 
-      });
+      // トランザクションベース実装: リアルタイム更新を削除
       
       res.status(201).json(comment);
     } catch (error) {
@@ -639,19 +610,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
   // WebSocketサーバーをセットアップ
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  wss.on('connection', (ws) => {
-    // 新しいクライアント接続
-    clients.add(ws);
-    console.log('WebSocket client connected, total clients:', clients.size);
-    
-    // クライアント切断時の処理
-    ws.on('close', () => {
-      clients.delete(ws);
-      console.log('WebSocket client disconnected, remaining clients:', clients.size);
-    });
-  });
+  // WebSocketサーバーを削除してトランザクションベース実装
+  // リアルタイム更新の代わりにHTTPリクエスト時にデータ再取得
   
   return httpServer;
 }
