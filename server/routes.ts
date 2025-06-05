@@ -17,6 +17,8 @@ import MemoryStore from 'memorystore';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import iconv from 'iconv-lite';
+import path from 'path';
+import fs from 'fs';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -390,8 +392,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Chrome拡張機能ダウンロードエンドポイント
   app.get('/api/extension/download', async (req, res) => {
-    const path = require('path');
-    const fs = require('fs');
     
     try {
       const extensionDir = path.join(process.cwd(), 'chrome-extension');
