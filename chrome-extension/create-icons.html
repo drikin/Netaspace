@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas16" width="16" height="16" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    <canvas id="canvas48" width="48" height="48" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    <canvas id="canvas128" width="128" height="128" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    
+    <script>
+        function createIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            // Draw rounded rectangle background
+            ctx.fillStyle = gradient;
+            ctx.roundRect(0, 0, size, size, size * 0.2);
+            ctx.fill();
+            
+            // Draw microphone icon
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const scale = size / 16;
+            
+            ctx.fillStyle = 'white';
+            ctx.globalAlpha = 0.9;
+            
+            // Microphone body
+            ctx.fillRect(centerX - 2 * scale, centerY - 4 * scale, 4 * scale, 6 * scale);
+            
+            // Microphone grille lines
+            ctx.fillStyle = gradient;
+            ctx.fillRect(centerX - 1.5 * scale, centerY - 3 * scale, 3 * scale, 0.5 * scale);
+            ctx.fillRect(centerX - 1.5 * scale, centerY - 1.5 * scale, 3 * scale, 0.5 * scale);
+            ctx.fillRect(centerX - 1.5 * scale, centerY, 3 * scale, 0.5 * scale);
+            
+            // Stand
+            ctx.fillStyle = 'white';
+            ctx.fillRect(centerX - 0.5 * scale, centerY + 2 * scale, 1 * scale, 2 * scale);
+            ctx.fillRect(centerX - 2 * scale, centerY + 3.5 * scale, 4 * scale, 0.5 * scale);
+        }
+        
+        // Polyfill for roundRect if not available
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+                this.beginPath();
+                this.moveTo(x + radius, y);
+                this.lineTo(x + width - radius, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius);
+                this.lineTo(x + width, y + height - radius);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                this.lineTo(x + radius, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius);
+                this.lineTo(x, y + radius);
+                this.quadraticCurveTo(x, y, x + radius, y);
+                this.closePath();
+            };
+        }
+        
+        createIcon('canvas16', 16);
+        createIcon('canvas48', 48);
+        createIcon('canvas128', 128);
+        
+        // Instructions for saving
+        console.log('Right-click each canvas and save as PNG with the corresponding filename:');
+        console.log('- icon16.png');
+        console.log('- icon48.png'); 
+        console.log('- icon128.png');
+    </script>
+</body>
+</html>
