@@ -360,22 +360,16 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // PostgreSQL接続を適正化（Compute Unit節約）
+    // Supabase PostgreSQL接続設定
     const client = postgres(process.env.DATABASE_URL, {
-      max: 5,                     // 最大接続数を大幅削減（50→5）
-      idle_timeout: 20,           // アイドルタイムアウトを延長（リソース節約）
-      connect_timeout: 10,        // 接続タイムアウトを延長
-      prepare: false,             // プリペアードステートメントを無効化
+      max: 1,
+      idle_timeout: 0,
+      connect_timeout: 60,
+      ssl: 'require',
+      prepare: false,
       transform: {
-        undefined: null,          // undefinedをnullに変換
+        undefined: null,
       },
-      fetch_types: false,         // 型取得を無効化（高速化）
-      publications: 'all',        // すべてのパブリケーションを使用
-      target_session_attrs: 'read-write', // 読み書き可能なセッションを優先
-      connection: {
-        application_name: 'backspace-fm-optimized'
-      },
-      onnotice: () => {},         // 通知を無効化して高速化
     });
     this.db = drizzle(client);
   }
