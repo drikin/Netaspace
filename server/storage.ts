@@ -176,7 +176,12 @@ export class ReplitDBStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const id = await this.getNextId('user');
-    const newUser: User = { ...user, id };
+    const newUser: User = { 
+      ...user, 
+      id,
+      isAdmin: user.isAdmin ?? false,
+      email: user.email ?? null
+    };
     await this.db.set(`user:${id}`, JSON.stringify(newUser));
     return newUser;
   }
@@ -213,7 +218,11 @@ export class ReplitDBStorage implements IStorage {
 
   async createWeek(week: InsertWeek): Promise<Week> {
     const id = await this.getNextId('week');
-    const newWeek: Week = { ...week, id };
+    const newWeek: Week = { 
+      ...week, 
+      id,
+      isActive: week.isActive ?? false
+    };
     await this.db.set(`week:${id}`, JSON.stringify(newWeek));
     return newWeek;
   }
@@ -337,11 +346,15 @@ export class ReplitDBStorage implements IStorage {
     const id = await this.getNextId('topic');
     const now = new Date();
     const newTopic: Topic = {
-      ...topic,
       id,
-      createdAt: now,
+      title: topic.title,
+      url: topic.url,
+      description: topic.description ?? null,
+      submitter: topic.submitter,
       status: topic.status || 'pending',
-      stars: topic.stars || 0,
+      weekId: topic.weekId ?? null,
+      createdAt: now,
+      stars: 0,
       featuredAt: topic.status === 'featured' ? now : null
     };
     
