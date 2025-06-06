@@ -1,14 +1,8 @@
 import {
   Topic, InsertTopic, Comment, InsertComment,
   Week, InsertWeek, Star, InsertStar, User, InsertUser,
-  topics, comments, weeks, stars, users,
   WeekWithTopics, TopicWithCommentsAndStars
-} from "../shared/sqlite-schema";
-import { eq, desc, and, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import fs from "fs";
-import path from "path";
+} from "../shared/schema";
 
 export interface IStorage {
   // User operations
@@ -46,201 +40,265 @@ export interface IStorage {
   getActiveWeekWithTopics(fingerprint?: string): Promise<WeekWithTopics | undefined>;
 }
 
-function getDatabasePath() {
-  if (process.env.REPLIT_DEPLOYMENT) {
-    // Production environment uses writable directory
-    return process.env.REPLIT_DB_URL || './data/production.sqlite';
-  }
-  return './database/dev.sqlite';
-}
+// Replit Database storage implementation
+export class ReplitDBStorage implements IStorage {
+  private db: any;
 
-function initializeSQLiteDatabase() {
-  const dbPath = getDatabasePath();
-  console.log('Using SQLite database:', dbPath);
-
-  try {
-    const dir = path.dirname(dbPath);
-    if (!fs.existsSync(dir)) {
-      try {
-        fs.mkdirSync(dir, { recursive: true });
-        console.log('Created database directory:', dir);
-      } catch (error) {
-        console.warn('Could not create directory, using current directory:', (error as Error).message);
-        const fallbackPath = './fallback.sqlite';
-        console.log('Using fallback database path:', fallbackPath);
-        return new Database(fallbackPath);
-      }
+  constructor() {
+    if (process.env.REPLIT_DEPLOYMENT && process.env.REPLIT_DB_URL) {
+      console.log('Using Replit Database for production');
+      // Replit Database is available as a global
+      this.db = (global as any).db || this.createReplitDB();
+    } else {
+      console.log('Using in-memory storage for development');
+      this.db = this.createMemoryDB();
+      this.initializeSampleData();
     }
-
-    const sqlite = new Database(dbPath);
-    console.log('SQLite database initialized successfully');
-    return sqlite;
-  } catch (error) {
-    console.error('Failed to initialize SQLite database:', (error as Error).message);
-    console.log('Using in-memory database as final fallback');
-    return new Database(':memory:');
   }
-}
 
-const sqlite = initializeSQLiteDatabase();
-const db = drizzle(sqlite);
+  private createReplitDB() {
+    // Simple wrapper for Replit Database
+    return {
+      async get(key: string) {
+        try {
+          const response = await fetch(`${process.env.REPLIT_DB_URL}/${encodeURIComponent(key)}`);
+          if (!response.ok) return null;
+          return await response.text();
+        } catch {
+          return null;
+        }
+      },
+      async set(key: string, value: string) {
+        try {
+          await fetch(process.env.REPLIT_DB_URL!, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      async delete(key: string) {
+        try {
+          await fetch(`${process.env.REPLIT_DB_URL}/${encodeURIComponent(key)}`, { method: 'DELETE' });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      async list(prefix?: string) {
+        try {
+          const url = prefix ? `${process.env.REPLIT_DB_URL}?prefix=${encodeURIComponent(prefix)}` : `${process.env.REPLIT_DB_URL}?prefix=`;
+          const response = await fetch(url);
+          const text = await response.text();
+          return text.split('\n').filter(k => k.length > 0);
+        } catch {
+          return [];
+        }
+      }
+    };
+  }
 
-class SQLiteStorage implements IStorage {
-  db: ReturnType<typeof drizzle>;
+  private createMemoryDB() {
+    const store = new Map<string, string>();
+    return {
+      async get(key: string) {
+        return store.get(key) || null;
+      },
+      async set(key: string, value: string) {
+        store.set(key, value);
+        return true;
+      },
+      async delete(key: string) {
+        return store.delete(key);
+      },
+      async list(prefix?: string) {
+        const keys = Array.from(store.keys());
+        return prefix ? keys.filter(k => k.startsWith(prefix)) : keys;
+      }
+    };
+  }
 
-  constructor(database: ReturnType<typeof drizzle>) {
-    this.db = database;
+  private async initializeSampleData() {
+    // Check if data already exists
+    const existingUsers = await this.db.list('user:');
+    if (existingUsers.length > 0) return;
+
+    // Initialize with sample data
+    const adminUser: User = {
+      id: 1,
+      username: 'admin',
+      password: 'admin',
+      isAdmin: true,
+      email: 'admin@example.com'
+    };
+    await this.db.set('user:1', JSON.stringify(adminUser));
+    await this.db.set('users:counter', '2');
+
+    const week: Week = {
+      id: 1,
+      startDate: new Date('2025-05-31'),
+      endDate: new Date('2025-06-07'),
+      title: 'ep607',
+      isActive: true
+    };
+    await this.db.set('week:1', JSON.stringify(week));
+    await this.db.set('weeks:counter', '2');
+    await this.db.set('active:week', '1');
+  }
+
+  private async getNextId(entity: string): Promise<number> {
+    const counterKey = `${entity}s:counter`;
+    const current = await this.db.get(counterKey);
+    const nextId = current ? parseInt(current) : 1;
+    await this.db.set(counterKey, (nextId + 1).toString());
+    return nextId;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const result = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-    return result[0];
+    const data = await this.db.get(`user:${id}`);
+    return data ? JSON.parse(data) : undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-    return result[0];
+    const userKeys = await this.db.list('user:');
+    for (const key of userKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const user = JSON.parse(data);
+        if (user.username === username) return user;
+      }
+    }
+    return undefined;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const userWithTimestamp = {
-      ...user,
-      createdAt: new Date().toISOString(),
-      isAdmin: user.isAdmin || false
-    };
-    
-    const result = await this.db
-      .insert(users)
-      .values(userWithTimestamp)
-      .returning();
-    return result[0];
+    const id = await this.getNextId('user');
+    const newUser: User = { ...user, id };
+    await this.db.set(`user:${id}`, JSON.stringify(newUser));
+    return newUser;
   }
 
   async getWeeks(): Promise<Week[]> {
-    return this.db
-      .select()
-      .from(weeks)
-      .orderBy(desc(weeks.startDate));
+    const weekKeys = await this.db.list('week:');
+    const weeks: Week[] = [];
+    
+    for (const key of weekKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const week = JSON.parse(data);
+        week.startDate = new Date(week.startDate);
+        week.endDate = new Date(week.endDate);
+        weeks.push(week);
+      }
+    }
+    
+    return weeks.sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
   }
 
   async getActiveWeek(): Promise<Week | undefined> {
-    const result = await this.db
-      .select()
-      .from(weeks)
-      .where(eq(weeks.isActive, true))
-      .limit(1);
-    return result[0];
+    const activeWeekId = await this.db.get('active:week');
+    if (!activeWeekId) return undefined;
+    
+    const data = await this.db.get(`week:${activeWeekId}`);
+    if (!data) return undefined;
+    
+    const week = JSON.parse(data);
+    week.startDate = new Date(week.startDate);
+    week.endDate = new Date(week.endDate);
+    return week;
   }
 
   async createWeek(week: InsertWeek): Promise<Week> {
-    const weekWithDefaults = {
-      ...week,
-      isActive: week.isActive || false
-    };
-    
-    const result = await this.db
-      .insert(weeks)
-      .values(weekWithDefaults)
-      .returning();
-    return result[0];
+    const id = await this.getNextId('week');
+    const newWeek: Week = { ...week, id };
+    await this.db.set(`week:${id}`, JSON.stringify(newWeek));
+    return newWeek;
   }
 
   async setActiveWeek(weekId: number): Promise<void> {
-    // First, set all weeks to inactive
-    await this.db
-      .update(weeks)
-      .set({ isActive: false });
+    await this.db.set('active:week', weekId.toString());
     
-    // Then set the specified week to active
-    await this.db
-      .update(weeks)
-      .set({ isActive: true })
-      .where(eq(weeks.id, weekId));
+    // Update isActive flag for all weeks
+    const weekKeys = await this.db.list('week:');
+    for (const key of weekKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const week = JSON.parse(data);
+        week.isActive = week.id === weekId;
+        await this.db.set(key, JSON.stringify(week));
+      }
+    }
   }
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
-    const topicsResult = await this.db
-      .select()
-      .from(topics)
-      .where(eq(topics.weekId, weekId))
-      .orderBy(desc(topics.createdAt));
-
-    return this.enrichTopicsWithCommentsAndStars(topicsResult);
+    const topicKeys = await this.db.list('topic:');
+    const topics: Topic[] = [];
+    
+    for (const key of topicKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const topic = JSON.parse(data);
+        topic.createdAt = new Date(topic.createdAt);
+        if (topic.featuredAt) topic.featuredAt = new Date(topic.featuredAt);
+        if (topic.weekId === weekId) {
+          topics.push(topic);
+        }
+      }
+    }
+    
+    const sortedTopics = topics.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await this.enrichTopicsWithCommentsAndStars(sortedTopics);
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
-    let query = this.db
-      .select()
-      .from(topics);
-
-    if (weekId) {
-      query = query.where(and(eq(topics.status, status), eq(topics.weekId, weekId)));
-    } else {
-      query = query.where(eq(topics.status, status));
+    const topicKeys = await this.db.list('topic:');
+    const topics: Topic[] = [];
+    
+    for (const key of topicKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const topic = JSON.parse(data);
+        topic.createdAt = new Date(topic.createdAt);
+        if (topic.featuredAt) topic.featuredAt = new Date(topic.featuredAt);
+        
+        if (topic.status === status && (!weekId || topic.weekId === weekId)) {
+          topics.push(topic);
+        }
+      }
     }
-
-    const topicsResult = await query.orderBy(desc(topics.createdAt));
-    return this.enrichTopicsWithCommentsAndStars(topicsResult);
+    
+    const sortedTopics = topics.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await this.enrichTopicsWithCommentsAndStars(sortedTopics);
   }
 
-  private async enrichTopicsWithCommentsAndStars(topicsResult: Topic[]): Promise<TopicWithCommentsAndStars[]> {
-    if (topicsResult.length === 0) return [];
-
-    const topicIds = topicsResult.map(t => t.id);
+  private async enrichTopicsWithCommentsAndStars(topics: Topic[]): Promise<TopicWithCommentsAndStars[]> {
+    const enriched: TopicWithCommentsAndStars[] = [];
     
-    const [commentsResult, starsResult] = await Promise.all([
-      this.db
-        .select()
-        .from(comments)
-        .where(inArray(comments.topicId, topicIds))
-        .orderBy(comments.createdAt),
-      this.db
-        .select()
-        .from(stars)
-        .where(inArray(stars.topicId, topicIds))
-    ]);
+    for (const topic of topics) {
+      const comments = await this.getCommentsByTopicId(topic.id);
+      const starsCount = await this.getStarsCountByTopicId(topic.id);
+      
+      enriched.push({
+        ...topic,
+        comments,
+        starsCount
+      });
+    }
     
-    const commentsMap = new Map<number, Comment[]>();
-    const starsMap = new Map<number, number>();
-    
-    commentsResult.forEach(comment => {
-      if (!commentsMap.has(comment.topicId)) {
-        commentsMap.set(comment.topicId, []);
-      }
-      commentsMap.get(comment.topicId)!.push(comment);
-    });
-    
-    // Count stars by topicId
-    starsResult.forEach(star => {
-      const currentCount = starsMap.get(star.topicId) || 0;
-      starsMap.set(star.topicId, currentCount + 1);
-    });
-    
-    return topicsResult.map(topic => ({
-      ...topic,
-      comments: commentsMap.get(topic.id) || [],
-      starsCount: starsMap.get(topic.id) || 0
-    }));
+    return enriched;
   }
 
   async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
-    const result = await this.db
-      .select()
-      .from(topics)
-      .where(eq(topics.id, id))
-      .limit(1);
+    const data = await this.db.get(`topic:${id}`);
+    if (!data) return undefined;
     
-    if (result.length === 0) return undefined;
+    const topic = JSON.parse(data);
+    topic.createdAt = new Date(topic.createdAt);
+    if (topic.featuredAt) topic.featuredAt = new Date(topic.featuredAt);
     
-    const topic = result[0];
     const comments = await this.getCommentsByTopicId(id);
     const starsCount = await this.getStarsCountByTopicId(id);
     let hasStarred = false;
@@ -258,163 +316,148 @@ class SQLiteStorage implements IStorage {
   }
 
   async getTopicByUrl(url: string): Promise<Topic | undefined> {
-    const result = await this.db
-      .select()
-      .from(topics)
-      .where(eq(topics.url, url))
-      .limit(1);
+    const topicKeys = await this.db.list('topic:');
     
-    return result[0];
+    for (const key of topicKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const topic = JSON.parse(data);
+        if (topic.url === url) {
+          topic.createdAt = new Date(topic.createdAt);
+          if (topic.featuredAt) topic.featuredAt = new Date(topic.featuredAt);
+          return topic;
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   async createTopic(topic: InsertTopic): Promise<Topic> {
-    const topicWithTimestamp = {
+    const id = await this.getNextId('topic');
+    const now = new Date();
+    const newTopic: Topic = {
       ...topic,
-      createdAt: new Date().toISOString(),
+      id,
+      createdAt: now,
       status: topic.status || 'pending',
-      stars: topic.stars || 0
+      stars: topic.stars || 0,
+      featuredAt: topic.status === 'featured' ? now : null
     };
     
-    const result = await this.db
-      .insert(topics)
-      .values(topicWithTimestamp)
-      .returning();
-    
-    return result[0];
+    await this.db.set(`topic:${id}`, JSON.stringify(newTopic));
+    return newTopic;
   }
 
   async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
-    const updateData: any = { status };
+    const data = await this.db.get(`topic:${id}`);
+    if (!data) return undefined;
+    
+    const topic = JSON.parse(data);
+    topic.status = status;
     
     if (status === "featured") {
-      updateData.featuredAt = new Date().toISOString();
+      topic.featuredAt = new Date();
     } else if (status !== "featured") {
-      updateData.featuredAt = null;
+      topic.featuredAt = null;
     }
     
-    const result = await this.db
-      .update(topics)
-      .set(updateData)
-      .where(eq(topics.id, id))
-      .returning();
+    await this.db.set(`topic:${id}`, JSON.stringify(topic));
     
-    return result[0];
+    topic.createdAt = new Date(topic.createdAt);
+    if (topic.featuredAt) topic.featuredAt = new Date(topic.featuredAt);
+    
+    return topic;
   }
 
   async deleteTopic(id: number): Promise<boolean> {
-    // First delete related comments and stars
-    await this.db.delete(comments).where(eq(comments.topicId, id));
-    await this.db.delete(stars).where(eq(stars.topicId, id));
+    // Delete related comments and stars
+    const commentKeys = await this.db.list(`comment:topic:${id}:`);
+    for (const key of commentKeys) {
+      await this.db.delete(key);
+    }
     
-    // Then delete the topic
-    const result = await this.db
-      .delete(topics)
-      .where(eq(topics.id, id))
-      .returning();
+    const starKeys = await this.db.list(`star:topic:${id}:`);
+    for (const key of starKeys) {
+      await this.db.delete(key);
+    }
     
-    return result.length > 0;
+    return await this.db.delete(`topic:${id}`);
   }
 
   async getCommentsByTopicId(topicId: number): Promise<Comment[]> {
-    return this.db
-      .select()
-      .from(comments)
-      .where(eq(comments.topicId, topicId))
-      .orderBy(comments.createdAt);
+    const commentKeys = await this.db.list(`comment:topic:${topicId}:`);
+    const comments: Comment[] = [];
+    
+    for (const key of commentKeys) {
+      const data = await this.db.get(key);
+      if (data) {
+        const comment = JSON.parse(data);
+        comment.createdAt = new Date(comment.createdAt);
+        comments.push(comment);
+      }
+    }
+    
+    return comments.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
-    const commentWithTimestamp = {
-      ...comment,
-      createdAt: new Date().toISOString()
-    };
+    const id = await this.getNextId('comment');
+    const now = new Date();
+    const newComment: Comment = { ...comment, id, createdAt: now };
     
-    const result = await this.db
-      .insert(comments)
-      .values(commentWithTimestamp)
-      .returning();
-    
-    return result[0];
+    await this.db.set(`comment:topic:${comment.topicId}:${id}`, JSON.stringify(newComment));
+    return newComment;
   }
 
   async addStar(star: InsertStar): Promise<boolean> {
-    try {
-      const starWithTimestamp = {
-        ...star,
-        createdAt: new Date().toISOString()
-      };
-      
-      await this.db
-        .insert(stars)
-        .values(starWithTimestamp);
-      
-      return true;
-    } catch (error) {
-      // Star already exists or other error
-      return false;
-    }
+    const starKey = `star:topic:${star.topicId}:${star.fingerprint}`;
+    const existing = await this.db.get(starKey);
+    
+    if (existing) return false; // Already starred
+    
+    const id = await this.getNextId('star');
+    const now = new Date();
+    const newStar: Star = { ...star, id, createdAt: now };
+    
+    await this.db.set(starKey, JSON.stringify(newStar));
+    return true;
   }
 
   async removeStar(topicId: number, fingerprint: string): Promise<boolean> {
-    const result = await this.db
-      .delete(stars)
-      .where(and(eq(stars.topicId, topicId), eq(stars.fingerprint, fingerprint)))
-      .returning();
-    
-    return result.length > 0;
+    const starKey = `star:topic:${topicId}:${fingerprint}`;
+    return await this.db.delete(starKey);
   }
 
   async hasStarred(topicId: number, fingerprint: string): Promise<boolean> {
-    const result = await this.db
-      .select()
-      .from(stars)
-      .where(and(eq(stars.topicId, topicId), eq(stars.fingerprint, fingerprint)))
-      .limit(1);
-    
-    return result.length > 0;
+    const starKey = `star:topic:${topicId}:${fingerprint}`;
+    const data = await this.db.get(starKey);
+    return !!data;
   }
 
   async getStarsCountByTopicId(topicId: number): Promise<number> {
-    const result = await this.db
-      .select()
-      .from(stars)
-      .where(eq(stars.topicId, topicId));
-    
-    return result.length;
+    const starKeys = await this.db.list(`star:topic:${topicId}:`);
+    return starKeys.length;
   }
 
   async getWeekWithTopics(weekId: number, fingerprint?: string): Promise<WeekWithTopics | undefined> {
-    const week = await this.db
-      .select()
-      .from(weeks)
-      .where(eq(weeks.id, weekId))
-      .limit(1);
+    const data = await this.db.get(`week:${weekId}`);
+    if (!data) return undefined;
     
-    if (week.length === 0) return undefined;
+    const week = JSON.parse(data);
+    week.startDate = new Date(week.startDate);
+    week.endDate = new Date(week.endDate);
     
     let weekTopics = await this.getTopicsByWeekId(weekId);
     
     if (fingerprint) {
-      const topicIds = weekTopics.map(t => t.id);
-      const userStars = await this.db
-        .select({ topicId: stars.topicId })
-        .from(stars)
-        .where(
-          and(
-            inArray(stars.topicId, topicIds),
-            eq(stars.fingerprint, fingerprint)
-          )
-        );
-      
-      const starredTopicIds = new Set(userStars.map(s => s.topicId));
-      
-      weekTopics.forEach(topic => {
-        topic.hasStarred = starredTopicIds.has(topic.id);
-      });
+      for (const topic of weekTopics) {
+        topic.hasStarred = await this.hasStarred(topic.id, fingerprint);
+      }
     }
     
     return {
-      ...week[0],
+      ...week,
       topics: weekTopics
     };
   }
@@ -427,4 +470,4 @@ class SQLiteStorage implements IStorage {
   }
 }
 
-export const storage: IStorage = new SQLiteStorage(db);
+export const storage: IStorage = new ReplitDBStorage();
