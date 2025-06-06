@@ -4,11 +4,7 @@ import pg from 'postgres';
 async function bulkImportToPostgres() {
   console.log('Starting bulk import to PostgreSQL...');
   
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL
-  });
-  
-  await client.connect();
+  const sql = pg(process.env.DATABASE_URL);
   
   try {
     // Load backup data
@@ -24,22 +20,11 @@ async function bulkImportToPostgres() {
         for (const topic of batch) {
           const weekId = topic.week_id || 2; // Default to week 2 if missing
           
-          await client.query(`
+          await sql`
             INSERT INTO topics (id, title, url, description, submitter, status, week_id, created_at, stars, featured_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES (${topic.id}, ${topic.title}, ${topic.url}, ${topic.description}, ${topic.submitter}, ${topic.status || 'pending'}, ${weekId}, ${topic.created_at || new Date().toISOString()}, ${topic.stars || 0}, ${topic.featured_at})
             ON CONFLICT (id) DO NOTHING
-          `, [
-            topic.id,
-            topic.title,
-            topic.url,
-            topic.description,
-            topic.submitter,
-            topic.status || 'pending',
-            weekId,
-            topic.created_at || new Date().toISOString(),
-            topic.stars || 0,
-            topic.featured_at
-          ]);
+          `;
         }
         
         console.log(`Progress: ${Math.min(i + 10, backupData.topics.length)}/${backupData.topics.length} topics imported`);
