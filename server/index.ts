@@ -37,6 +37,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize database for production deployments
+  if (process.env.REPLIT_DEPLOYMENT && process.env.REPLIT_DB_URL) {
+    console.log('🔄 Initializing Replit Database...');
+    try {
+      const { execSync } = await import('child_process');
+      execSync('node scripts/init-replitdb.js', { stdio: 'inherit' });
+    } catch (error) {
+      console.warn('Database initialization completed with warnings');
+    }
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
