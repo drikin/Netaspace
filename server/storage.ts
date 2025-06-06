@@ -360,8 +360,10 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // Supabase PostgreSQL接続設定
-    const client = postgres(process.env.DATABASE_URL, {
+    // Supabase接続設定 - pooler URLをそのまま使用
+    const connectionUrl = process.env.DATABASE_URL;
+    
+    const client = postgres(connectionUrl, {
       max: 1,
       idle_timeout: 0,
       connect_timeout: 60,
