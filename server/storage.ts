@@ -3,10 +3,12 @@ import {
   Week, InsertWeek, Star, InsertStar, User, InsertUser,
   topics, comments, weeks, stars, users,
   WeekWithTopics, TopicWithCommentsAndStars
-} from "@shared/schema";
+} from "@shared/sqlite-schema";
 import { eq, desc, asc, and, gt, lt, isNull, sql, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
 
 export interface IStorage {
   // User operations
@@ -877,8 +879,317 @@ export class PostgresStorage implements IStorage {
   }
 }
 
-// Use the appropriate storage implementation
-// If DATABASE_URL is set, use PostgresStorage, otherwise use MemStorage
-export const storage: IStorage = process.env.DATABASE_URL
-  ? new PostgresStorage()
-  : new MemStorage();
+// SQLite用のストレージ設定
+function getDatabasePath() {
+  if (process.env.REPLIT_DEPLOYMENT) {
+    return '/var/data/production.sqlite';
+  }
+  return './database/dev.sqlite';
+}
+
+// SQLite接続の初期化
+const dbPath = getDatabasePath();
+console.log('Using SQLite database:', dbPath);
+
+// ディレクトリ作成
+const dir = path.dirname(dbPath);
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+const sqlite = new Database(dbPath);
+const db = drizzle(sqlite);
+
+// SQLiteStorageの実装
+class SQLiteStorage implements IStorage {
+  db: ReturnType<typeof drizzle>;
+
+  constructor(database: ReturnType<typeof drizzle>) {
+    this.db = database;
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const result = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return result[0];
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const result = await this.db
+      .insert(users)
+      .values(user)
+      .returning();
+    return result[0];
+  }
+
+  async getWeeks(): Promise<Week[]> {
+    return this.db
+      .select()
+      .from(weeks)
+      .orderBy(desc(weeks.startDate));
+  }
+
+  async getActiveWeek(): Promise<Week | undefined> {
+    const result = await this.db
+      .select()
+      .from(weeks)
+      .where(eq(weeks.isActive, true))
+      .limit(1);
+    return result[0];
+  }
+
+  async createWeek(week: InsertWeek): Promise<Week> {
+    const result = await this.db
+      .insert(weeks)
+      .values(week)
+      .returning();
+    return result[0];
+  }
+
+  async setActiveWeek(weekId: number): Promise<void> {
+    await this.db
+      .update(weeks)
+      .set({ isActive: false });
+    
+    await this.db
+      .update(weeks)
+      .set({ isActive: true })
+      .where(eq(weeks.id, weekId));
+  }
+
+  async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
+    const weekTopics = await this.db
+      .select()
+      .from(topics)
+      .where(eq(topics.weekId, weekId))
+      .orderBy(desc(topics.stars), desc(topics.createdAt));
+
+    return Promise.all(weekTopics.map(async topic => {
+      const comments = await this.getCommentsByTopicId(topic.id);
+      return {
+        ...topic,
+        comments,
+        starsCount: topic.stars
+      };
+    }));
+  }
+
+  async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
+    let query = this.db
+      .select()
+      .from(topics)
+      .where(eq(topics.status, status));
+
+    if (weekId) {
+      query = query.where(and(eq(topics.status, status), eq(topics.weekId, weekId)));
+    }
+
+    const filteredTopics = await query.orderBy(desc(topics.createdAt));
+
+    return Promise.all(filteredTopics.map(async topic => {
+      const comments = await this.getCommentsByTopicId(topic.id);
+      return {
+        ...topic,
+        comments,
+        starsCount: topic.stars
+      };
+    }));
+  }
+
+  async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
+    const result = await this.db
+      .select()
+      .from(topics)
+      .where(eq(topics.id, id))
+      .limit(1);
+
+    if (result.length === 0) return undefined;
+
+    const topic = result[0];
+    const comments = await this.getCommentsByTopicId(id);
+    
+    let hasStarred = false;
+    if (fingerprint) {
+      hasStarred = await this.hasStarred(id, fingerprint);
+    }
+
+    return {
+      ...topic,
+      comments,
+      starsCount: topic.stars,
+      hasStarred
+    };
+  }
+
+  async getTopicByUrl(url: string): Promise<Topic | undefined> {
+    const result = await this.db
+      .select()
+      .from(topics)
+      .where(eq(topics.url, url))
+      .limit(1);
+    return result[0];
+  }
+
+  async createTopic(topic: InsertTopic): Promise<Topic> {
+    const result = await this.db
+      .insert(topics)
+      .values({
+        ...topic,
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+        stars: 0
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
+    const result = await this.db
+      .update(topics)
+      .set({ 
+        status,
+        featuredAt: status === 'featured' ? new Date().toISOString() : null
+      })
+      .where(eq(topics.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteTopic(id: number): Promise<boolean> {
+    const result = await this.db
+      .delete(topics)
+      .where(eq(topics.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getCommentsByTopicId(topicId: number): Promise<Comment[]> {
+    return this.db
+      .select()
+      .from(comments)
+      .where(eq(comments.topicId, topicId))
+      .orderBy(comments.createdAt);
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const result = await this.db
+      .insert(comments)
+      .values({
+        ...comment,
+        createdAt: new Date().toISOString()
+      })
+      .returning();
+    return result[0];
+  }
+
+  async addStar(star: InsertStar): Promise<boolean> {
+    const hasStarred = await this.hasStarred(star.topicId, star.fingerprint);
+    if (hasStarred) return false;
+
+    await this.db.insert(stars).values({
+      ...star,
+      createdAt: new Date().toISOString()
+    });
+    
+    await this.db
+      .update(topics)
+      .set({ stars: sql`${topics.stars} + 1` })
+      .where(eq(topics.id, star.topicId));
+
+    return true;
+  }
+
+  async removeStar(topicId: number, fingerprint: string): Promise<boolean> {
+    const hasStarred = await this.hasStarred(topicId, fingerprint);
+    if (!hasStarred) return false;
+
+    await this.db
+      .delete(stars)
+      .where(and(
+        eq(stars.topicId, topicId),
+        eq(stars.fingerprint, fingerprint)
+      ));
+
+    await this.db
+      .update(topics)
+      .set({ stars: sql`MAX(0, ${topics.stars} - 1)` })
+      .where(eq(topics.id, topicId));
+
+    return true;
+  }
+
+  async hasStarred(topicId: number, fingerprint: string): Promise<boolean> {
+    const result = await this.db
+      .select()
+      .from(stars)
+      .where(and(
+        eq(stars.topicId, topicId),
+        eq(stars.fingerprint, fingerprint)
+      ))
+      .limit(1);
+    return result.length > 0;
+  }
+
+  async getStarsCountByTopicId(topicId: number): Promise<number> {
+    const result = await this.db
+      .select({ count: sql`count(*)` })
+      .from(stars)
+      .where(eq(stars.topicId, topicId));
+    return Number(result[0].count);
+  }
+
+  async getWeekWithTopics(weekId: number, fingerprint?: string): Promise<WeekWithTopics | undefined> {
+    const week = await this.db
+      .select()
+      .from(weeks)
+      .where(eq(weeks.id, weekId))
+      .limit(1);
+
+    if (week.length === 0) return undefined;
+
+    const weekTopics = await this.getTopicsByWeekId(weekId);
+    
+    if (fingerprint && weekTopics.length > 0) {
+      const topicIds = weekTopics.map(t => t.id);
+      const userStars = await this.db
+        .select({ topicId: stars.topicId })
+        .from(stars)
+        .where(and(
+          inArray(stars.topicId, topicIds),
+          eq(stars.fingerprint, fingerprint)
+        ));
+      
+      const starredTopicIds = new Set(userStars.map(s => s.topicId));
+      weekTopics.forEach(topic => {
+        topic.hasStarred = starredTopicIds.has(topic.id);
+      });
+    }
+
+    return {
+      ...week[0],
+      topics: weekTopics
+    };
+  }
+
+  async getActiveWeekWithTopics(fingerprint?: string): Promise<WeekWithTopics | undefined> {
+    const activeWeek = await this.getActiveWeek();
+    if (!activeWeek) return undefined;
+    
+    return this.getWeekWithTopics(activeWeek.id, fingerprint);
+  }
+}
+
+// メインエクスポート - SQLiteStorageを使用
+export const storage: IStorage = new SQLiteStorage(db);

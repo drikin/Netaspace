@@ -106,11 +106,11 @@ export type InsertStar = z.infer<typeof insertStarSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
-export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true }).extend({
+export const submitTopicSchema = insertTopicSchema.extend({
   weekId: z.number().optional(),
 });
 
-export const submitCommentSchema = insertCommentSchema.omit({ topicId: true });
+export const submitCommentSchema = insertCommentSchema;
 
 export type TopicWithCommentsAndStars = Topic & {
   comments: Comment[];
