@@ -13,11 +13,6 @@ const Header = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Debug logging to identify duplication
-  React.useEffect(() => {
-    console.log('Header component mounted/rendered', Date.now());
-  });
-
   // Check if user is authenticated
   const { data: auth } = useQuery({
     queryKey: ["/api/auth/me"],
