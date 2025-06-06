@@ -173,55 +173,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // No session management needed
-
-  // Passport setup
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  // Configure passport local strategy
-  passport.use(new LocalStrategy(async (username, password, done) => {
-    try {
-      const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
-        return done(null, false, { message: 'Incorrect username or password' });
-      }
-      return done(null, user);
-    } catch (err) {
-      return done(err);
-    }
-  }));
-
-  passport.serializeUser((user: any, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
-
-  // Auth routes
-  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
-    res.json({ user: req.user });
+  // Simplified auth routes - no authentication system
+  app.post('/api/auth/login', (req, res) => {
+    res.status(401).json({ message: 'Unauthorized' });
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    req.logout(() => {
-      res.json({ success: true });
-    });
+    res.json({ success: true });
   });
 
   app.get('/api/auth/me', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.json({ user: req.user });
-    } else {
-      res.status(401).json({ message: 'Not authenticated' });
-    }
+    res.status(401).json({ message: 'Not authenticated' });
   });
 
   // Week routes
@@ -722,8 +684,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Middleware to check if user is authenticated and is an admin
 function isAdmin(req: Request, res: Response, next: Function) {
-  if (req.isAuthenticated() && (req.user as any)?.isAdmin) {
-    return next();
-  }
+  // Simplified admin check - always deny for now
   res.status(403).json({ message: 'Access denied' });
 }
