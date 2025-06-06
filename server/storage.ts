@@ -583,4 +583,280 @@ export class ReplitDBStorage implements IStorage {
   }
 }
 
-export const storage: IStorage = new ReplitDBStorage();
+// PostgreSQL Storage Implementation
+export class PostgresStorage implements IStorage {
+  private db: any;
+  private initialized = false;
+
+  constructor() {
+    this.initializeDatabase();
+  }
+
+  private async initializeDatabase() {
+    if (this.initialized) return;
+    
+    try {
+      const { drizzle } = await import('drizzle-orm/neon-http');
+      const { neon } = await import('@neondatabase/serverless');
+      const { users, weeks, topics, comments, stars } = await import('../shared/schema.js');
+      
+      const postgres = neon(process.env.DATABASE_URL!);
+      this.db = drizzle(postgres);
+      this.initialized = true;
+    } catch (error) {
+      console.error('Failed to initialize PostgreSQL:', error);
+      throw error;
+    }
+  }
+
+  private async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initializeDatabase();
+    }
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    await this.ensureInitialized();
+    const { users } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    await this.ensureInitialized();
+    const { users } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    const result = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    await this.ensureInitialized();
+    const { users } = await import('../shared/schema.js');
+    
+    const result = await this.db.insert(users).values(user).returning();
+    return result[0];
+  }
+
+  async getWeeks(): Promise<Week[]> {
+    await this.ensureInitialized();
+    const { weeks } = await import('../shared/schema.js');
+    const { desc } = await import('drizzle-orm');
+    
+    return await this.db.select().from(weeks).orderBy(desc(weeks.id));
+  }
+
+  async getActiveWeek(): Promise<Week | undefined> {
+    await this.ensureInitialized();
+    const { weeks } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    const result = await this.db.select().from(weeks).where(eq(weeks.isActive, true)).limit(1);
+    return result[0];
+  }
+
+  async createWeek(week: InsertWeek): Promise<Week> {
+    await this.ensureInitialized();
+    const { weeks } = await import('../shared/schema.js');
+    
+    const result = await this.db.insert(weeks).values(week).returning();
+    return result[0];
+  }
+
+  async setActiveWeek(weekId: number): Promise<void> {
+    await this.ensureInitialized();
+    const { weeks } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    // Set all weeks to inactive
+    await this.db.update(weeks).set({ isActive: false });
+    // Set the specified week to active
+    await this.db.update(weeks).set({ isActive: true }).where(eq(weeks.id, weekId));
+  }
+
+  async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    const { eq, desc } = await import('drizzle-orm');
+    
+    const topicsResult = await this.db.select().from(topics).where(eq(topics.weekId, weekId)).orderBy(desc(topics.stars), desc(topics.createdAt));
+    return await this.enrichTopicsWithCommentsAndStars(topicsResult);
+  }
+
+  async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    const { eq, and, desc } = await import('drizzle-orm');
+    
+    let whereClause = eq(topics.status, status);
+    if (weekId) {
+      whereClause = and(eq(topics.status, status), eq(topics.weekId, weekId));
+    }
+    
+    const topicsResult = await this.db.select().from(topics).where(whereClause).orderBy(desc(topics.stars), desc(topics.createdAt));
+    return await this.enrichTopicsWithCommentsAndStars(topicsResult);
+  }
+
+  private async enrichTopicsWithCommentsAndStars(topicsResult: Topic[]): Promise<TopicWithCommentsAndStars[]> {
+    const { comments, stars } = await import('../shared/schema.js');
+    const { eq, count } = await import('drizzle-orm');
+    
+    const enrichedTopics: TopicWithCommentsAndStars[] = [];
+    
+    for (const topic of topicsResult) {
+      const topicComments = await this.db.select().from(comments).where(eq(comments.topicId, topic.id));
+      const starCountResult = await this.db.select({ count: count() }).from(stars).where(eq(stars.topicId, topic.id));
+      const starCount = starCountResult[0]?.count || 0;
+      
+      enrichedTopics.push({
+        ...topic,
+        comments: topicComments,
+        starCount: Number(starCount)
+      });
+    }
+    
+    return enrichedTopics;
+  }
+
+  async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    const result = await this.db.select().from(topics).where(eq(topics.id, id)).limit(1);
+    if (!result[0]) return undefined;
+    
+    const enriched = await this.enrichTopicsWithCommentsAndStars([result[0]]);
+    return enriched[0];
+  }
+
+  async getTopicByUrl(url: string): Promise<Topic | undefined> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    const result = await this.db.select().from(topics).where(eq(topics.url, url)).limit(1);
+    return result[0];
+  }
+
+  async createTopic(topic: InsertTopic): Promise<Topic> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    
+    const result = await this.db.insert(topics).values(topic).returning();
+    return result[0];
+  }
+
+  async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    const result = await this.db.update(topics).set({ status }).where(eq(topics.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteTopic(id: number): Promise<boolean> {
+    await this.ensureInitialized();
+    const { topics } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    await this.db.delete(topics).where(eq(topics.id, id));
+    return true;
+  }
+
+  async getCommentsByTopicId(topicId: number): Promise<Comment[]> {
+    await this.ensureInitialized();
+    const { comments } = await import('../shared/schema.js');
+    const { eq, asc } = await import('drizzle-orm');
+    
+    return await this.db.select().from(comments).where(eq(comments.topicId, topicId)).orderBy(asc(comments.createdAt));
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    await this.ensureInitialized();
+    const { comments } = await import('../shared/schema.js');
+    
+    const result = await this.db.insert(comments).values(comment).returning();
+    return result[0];
+  }
+
+  async addStar(star: InsertStar): Promise<boolean> {
+    await this.ensureInitialized();
+    const { stars, topics } = await import('../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
+    
+    try {
+      await this.db.insert(stars).values(star);
+      
+      // Update topic star count
+      const { count } = await import('drizzle-orm');
+      const starCountResult = await this.db.select({ count: count() }).from(stars).where(eq(stars.topicId, star.topicId));
+      const starCount = starCountResult[0]?.count || 0;
+      await this.db.update(topics).set({ stars: Number(starCount) }).where(eq(topics.id, star.topicId));
+      
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async removeStar(topicId: number, fingerprint: string): Promise<boolean> {
+    await this.ensureInitialized();
+    const { stars, topics } = await import('../shared/schema.js');
+    const { eq, and, count } = await import('drizzle-orm');
+    
+    try {
+      await this.db.delete(stars).where(and(eq(stars.topicId, topicId), eq(stars.fingerprint, fingerprint)));
+      
+      // Update topic star count
+      const starCountResult = await this.db.select({ count: count() }).from(stars).where(eq(stars.topicId, topicId));
+      const starCount = starCountResult[0]?.count || 0;
+      await this.db.update(topics).set({ stars: Number(starCount) }).where(eq(topics.id, topicId));
+      
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async hasStarred(topicId: number, fingerprint: string): Promise<boolean> {
+    await this.ensureInitialized();
+    const { stars } = await import('../shared/schema.js');
+    const { eq, and } = await import('drizzle-orm');
+    
+    const result = await this.db.select().from(stars).where(and(eq(stars.topicId, topicId), eq(stars.fingerprint, fingerprint))).limit(1);
+    return result.length > 0;
+  }
+
+  async getStarsCountByTopicId(topicId: number): Promise<number> {
+    await this.ensureInitialized();
+    const { stars } = await import('../shared/schema.js');
+    const { eq, count } = await import('drizzle-orm');
+    
+    const result = await this.db.select({ count: count() }).from(stars).where(eq(stars.topicId, topicId));
+    return Number(result[0]?.count || 0);
+  }
+
+  async getWeekWithTopics(weekId: number, fingerprint?: string): Promise<WeekWithTopics | undefined> {
+    const week = await this.getWeeks().then(weeks => weeks.find(w => w.id === weekId));
+    if (!week) return undefined;
+    
+    const topics = await this.getTopicsByWeekId(weekId);
+    return { ...week, topics };
+  }
+
+  async getActiveWeekWithTopics(fingerprint?: string): Promise<WeekWithTopics | undefined> {
+    const activeWeek = await this.getActiveWeek();
+    if (!activeWeek) return undefined;
+    
+    return this.getWeekWithTopics(activeWeek.id, fingerprint);
+  }
+}
+
+export const storage: IStorage = process.env.DATABASE_URL 
+  ? new PostgresStorage() 
+  : new ReplitDBStorage();
