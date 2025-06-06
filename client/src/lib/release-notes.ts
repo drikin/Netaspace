@@ -13,6 +13,23 @@ export interface ReleaseNote {
 // リリース履歴データ（新しい順）
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "2025-06-06-v2.1.0",
+    version: "2.1.0",
+    date: "2025年6月6日",
+    title: "Chrome拡張機能とUI/UX改善",
+    description: "Chrome拡張機能のダウンロード機能を修正し、ヘッダー表示の不具合を解消しました。また、ナビゲーションメニューの最適化を行い、より使いやすいインターフェースを提供します。",
+    features: [
+      "Chrome拡張機能のZIPファイル生成を修正（正常なダウンロードが可能に）",
+      "拡張機能ページでのヘッダー重複表示問題を解決",
+      "デプロイ用サーバーURL（netaspace.replit.app）をデフォルト設定",
+      "ナビゲーションメニューから「ネタを投稿」項目を削除",
+      "API ルーティングの競合問題を修正（POST/GET エンドポイント順序最適化）",
+      "ES モジュールインポートエラーを解決",
+      "拡張機能のトピック投稿機能が正常に動作"
+    ],
+    isNew: true
+  },
+  {
     id: "2025-06-05-v2.0.0",
     version: "2.0.0",
     date: "2025年6月5日",
@@ -26,8 +43,7 @@ export const releaseNotes: ReleaseNote[] = [
       "キャッシュ戦略改善（TTL 5分、React Query 10分）",
       "URL取得処理軽量化（エンコード処理簡素化）",
       "パフォーマンス監視効率化（5分間隔更新）"
-    ],
-    isNew: true
+    ]
   },
   {
     id: "2025-06-04-v1",
