@@ -20,6 +20,7 @@ import iconv from 'iconv-lite';
 import path from 'path';
 import fs from 'fs';
 import archiver from 'archiver';
+import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -436,8 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chrome extension version information
-  const EXTENSION_VERSION = '2.1.0';
+  // Chrome extension version information is now imported from shared/version.ts
   
   // Chrome extension auto-update XML endpoint
   app.get('/api/extension/updates.xml', (req, res) => {
@@ -460,6 +460,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateUrl: 'https://netaspace.replit.app/api/extension/updates.xml',
       downloadUrl: 'https://netaspace.replit.app/api/extension/download'
     });
+  });
+
+  // Application version info endpoint
+  app.get('/api/version', (req, res) => {
+    res.json(getVersionInfo());
   });
 
   // Chrome拡張機能ダウンロードエンドポイント

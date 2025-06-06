@@ -1,6 +1,11 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const Footer = () => {
+  const { data: versionInfo } = useQuery({
+    queryKey: ['/api/version'],
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
   return (
     <footer className="bg-white mt-12 border-t border-gray-200">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 md:flex md:items-center md:justify-between lg:px-8">
@@ -67,6 +72,11 @@ const Footer = () => {
         <div className="mt-8 md:mt-0 md:order-1">
           <p className="text-center text-base text-gray-400">
             &copy; {new Date().getFullYear()} ポッドキャスト用ネタ帳 for backspace.fm. All rights reserved.
+            {versionInfo && (
+              <span className="block mt-1 text-sm text-gray-300">
+                v{versionInfo.app} (Extension: v{versionInfo.extension})
+              </span>
+            )}
           </p>
         </div>
       </div>
