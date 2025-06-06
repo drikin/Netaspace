@@ -365,12 +365,15 @@ export class PostgresStorage implements IStorage {
     
     const client = postgres(connectionUrl, {
       max: 1,
-      idle_timeout: 0,
-      connect_timeout: 60,
-      ssl: 'require',
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'prefer',
       prepare: false,
       transform: {
         undefined: null,
+      },
+      connection: {
+        application_name: 'backspace-fm'
       },
     });
     this.db = drizzle(client);
