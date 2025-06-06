@@ -35,6 +35,7 @@ export interface IStorage {
   
   // Star operations
   addStar(star: InsertStar): Promise<boolean>;
+  removeStar(topicId: number, fingerprint: string): Promise<boolean>;
   hasStarred(topicId: number, fingerprint: string): Promise<boolean>;
   getStarsCountByTopicId(topicId: number): Promise<number>;
   
@@ -302,6 +303,26 @@ export class MemStorage implements IStorage {
     const topic = this.topics.get(star.topicId);
     if (topic) {
       topic.stars += 1;
+    }
+    
+    return true;
+  }
+
+  async removeStar(topicId: number, fingerprint: string): Promise<boolean> {
+    // Find the star to remove
+    const starToRemove = Array.from(this.stars.entries()).find(
+      ([_, star]) => star.topicId === topicId && star.fingerprint === fingerprint
+    );
+    
+    if (!starToRemove) return false;
+    
+    // Remove the star
+    this.stars.delete(starToRemove[0]);
+    
+    // Decrement topic stars count
+    const topic = this.topics.get(topicId);
+    if (topic && topic.stars > 0) {
+      topic.stars -= 1;
     }
     
     return true;
