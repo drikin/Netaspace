@@ -10,10 +10,7 @@ import {
   submitCommentSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import session from 'express-session';
-import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
-import MemoryStore from 'memorystore';
+// Removed passport dependencies for simplified authentication
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import iconv from 'iconv-lite';
@@ -61,7 +58,7 @@ function checkRateLimit(ip: string): boolean {
 // リアルタイム更新を削除してトランザクションベースに変更
 // WebSocket機能を無効化してCompute Unit消費を削減
 
-const MemoryStoreSession = MemoryStore(session);
+// Simplified authentication without session store
 
 // GoogleニュースのURLかどうかを確認する関数
 function isGoogleNewsURL(url: string): boolean {
@@ -176,20 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Session setup
-  app.use(session({
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    }),
-    secret: process.env.SESSION_SECRET || 'backspace-fm-podcast-topics-app',
-    resave: true,
-    saveUninitialized: true,
-    cookie: { 
-      secure: false, // デプロイ環境でもHTTPSが確実でない場合はfalseに設定
-      maxAge: 86400000, // 24 hours
-      sameSite: 'lax'
-    }
-  }));
+  // No session management needed
 
   // Passport setup
   app.use(passport.initialize());
