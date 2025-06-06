@@ -35,8 +35,8 @@ class TopicSubmitter {
     if (result.serverUrl) {
       this.serverUrlInput.value = result.serverUrl;
     } else {
-      // Default to current domain if available
-      this.serverUrlInput.value = window.location.origin || 'https://your-app.replit.dev';
+      // Default to the deployed application URL
+      this.serverUrlInput.value = 'https://netaspace.replit.app';
     }
   }
 
