@@ -436,6 +436,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chrome extension version information
+  const EXTENSION_VERSION = '2.1.0';
+  
+  // Chrome extension auto-update XML endpoint
+  app.get('/api/extension/updates.xml', (req, res) => {
+    res.setHeader('Content-Type', 'application/xml');
+    
+    const updateXml = `<?xml version='1.0' encoding='UTF-8'?>
+<gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
+  <app appid='backspace-fm-extension'>
+    <updatecheck codebase='https://netaspace.replit.app/api/extension/download' version='${EXTENSION_VERSION}' />
+  </app>
+</gupdate>`;
+    
+    res.send(updateXml);
+  });
+
   // Chrome拡張機能ダウンロードエンドポイント
   app.get('/api/extension/download', async (req, res) => {
     try {
@@ -461,14 +478,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Pipe archive to response
       archive.pipe(res);
       
-      // Update manifest.json with current server URL
+      // Update manifest.json with current version and server URL
       const manifest = {
         "manifest_version": 3,
         "name": "Backspace.fm ネタ投稿",
-        "version": "1.0.0",
+        "version": EXTENSION_VERSION,
         "description": "現在のページをbackspace.fmのネタとして簡単に投稿できます",
+        "update_url": "https://netaspace.replit.app/api/extension/updates.xml",
         "permissions": ["activeTab", "storage"],
-        "host_permissions": [`${req.protocol}://${req.get('host')}/*`, "https://*.replit.dev/*"],
+        "host_permissions": [
+          "https://*.replit.dev/*",
+          "https://*.replit.app/*",
+          "http://localhost:*/*"
+        ],
         "action": {
           "default_popup": "popup.html",
           "default_title": "Backspace.fm ネタ投稿"
@@ -476,7 +498,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "content_scripts": [{
           "matches": ["<all_urls>"],
           "js": ["content.js"]
-        }]
+        }],
+        "icons": {
+          "16": "icons/icon16.png",
+          "48": "icons/icon48.png",
+          "128": "icons/icon128.png"
+        }
       };
       
       // Add manifest.json to archive
@@ -494,6 +521,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const filePath = path.join(extensionDir, file);
         if (fs.existsSync(filePath)) {
           archive.file(filePath, { name: file });
+        }
+      }
+      
+      // Add icons directory
+      const iconsDir = path.join(extensionDir, 'icons');
+      if (fs.existsSync(iconsDir)) {
+        const iconFiles = fs.readdirSync(iconsDir);
+        for (const iconFile of iconFiles) {
+          const iconPath = path.join(iconsDir, iconFile);
+          if (fs.statSync(iconPath).isFile()) {
+            archive.file(iconPath, { name: `icons/${iconFile}` });
+          }
         }
       }
       

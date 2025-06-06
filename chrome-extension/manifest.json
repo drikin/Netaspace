@@ -1,14 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Backspace.fm ネタ投稿",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "現在のページをbackspace.fmのネタとして簡単に投稿できます",
+  "update_url": "https://netaspace.replit.app/api/extension/updates.xml",
   "permissions": [
     "activeTab",
     "storage"
   ],
   "host_permissions": [
     "https://*.replit.dev/*",
+    "https://*.replit.app/*",
     "http://localhost:*/*"
   ],
   "action": {

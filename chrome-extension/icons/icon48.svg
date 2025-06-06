@@ -1,0 +1,13 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="8" fill="url(#gradient)"/>
+  <path d="M12 18c0-1.5 1.2-3 3-3h18c1.8 0 3 1.5 3 3v12c0 1.8-1.2 3-3 3H15c-1.8 0-3-1.2-3-3V18z" fill="white" opacity="0.9"/>
+  <circle cx="18" cy="24" r="3" fill="url(#gradient)"/>
+  <circle cx="30" cy="24" r="3" fill="url(#gradient)"/>
+  <path d="M24 31.5c3.3 0 6-2.7 6-6" stroke="url(#gradient)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+</svg>
