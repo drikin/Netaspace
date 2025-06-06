@@ -182,7 +182,15 @@ const TopicCard: React.FC<TopicCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center">
-              <h2 className="text-lg font-semibold text-gray-900 line-clamp-2 mr-2">{topic.title}</h2>
+              <a
+                href={topic.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-lg font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200"
+                title="記事を開く"
+              >
+                {topic.title}
+              </a>
               {getStatusBadge()}
             </div>
             <div className="flex items-center text-xs text-gray-500 mt-1">
