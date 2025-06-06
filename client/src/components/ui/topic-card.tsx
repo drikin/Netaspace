@@ -111,9 +111,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
         variant: "destructive",
       });
     },
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       // Update UI state with actual response from server
-      if (response && typeof response === 'object' && 'starsCount' in response && 'hasStarred' in response) {
+      if (response?.starsCount !== undefined && response?.hasStarred !== undefined) {
         setStarsCount(response.starsCount);
         setHasStarred(response.hasStarred);
         
@@ -223,8 +223,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
             className={`ml-3 flex flex-col items-center min-w-[50px] ${hasStarred ? "text-red-500" : "text-gray-400 hover:text-red-400"} ${isStarring ? "opacity-50 cursor-wait" : "cursor-pointer"} transition-all duration-200`}
             onClick={handleStarClick}
             disabled={isStarring}
-            aria-label={hasStarred ? "応援を取り消す" : "話して欲しいと応援する"}
-            title={hasStarred ? "応援を取り消す" : "この話題について話して欲しい！"}
+            aria-label={hasStarred ? "聞きたいを取り消す" : "聞きたいを追加する"}
+            title={hasStarred ? "聞きたいを取り消す" : "この話題を聞きたい！"}
           >
             <svg className="h-5 w-5 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 8c0-3.3 2.7-6 6-6s6 2.7 6 6c0 1.7-.7 3.2-1.8 4.3" />
