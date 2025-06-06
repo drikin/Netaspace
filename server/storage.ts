@@ -5,8 +5,8 @@ import {
   WeekWithTopics, TopicWithCommentsAndStars
 } from "@shared/schema";
 import { eq, desc, asc, and, gt, lt, isNull, sql, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 export interface IStorage {
   // User operations
@@ -360,23 +360,15 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // Supabase接続設定 - pooler URLをそのまま使用
-    const connectionUrl = process.env.DATABASE_URL;
-    
-    const client = postgres(connectionUrl, {
+    // Supabase接続設定 - node-postgres使用
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
       max: 1,
-      idle_timeout: 20,
-      connect_timeout: 10,
-      ssl: 'prefer',
-      prepare: false,
-      transform: {
-        undefined: null,
-      },
-      connection: {
-        application_name: 'backspace-fm'
-      },
+      idleTimeoutMillis: 0,
+      connectionTimeoutMillis: 30000,
     });
-    this.db = drizzle(client);
+    this.db = drizzle(pool);
   }
 
   // Query caching helper methods
