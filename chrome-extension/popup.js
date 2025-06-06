@@ -148,7 +148,7 @@ class TopicSubmitter {
     }
 
     const result = await response.json();
-    this.showStatus('ネタを投稿しました！', 'success');
+    this.showStatus('ネタ投稿ありがとうございます！引き続きbackspace.fmをよろしくお願いします！', 'success');
     
     // Clear form after successful submission
     setTimeout(() => {

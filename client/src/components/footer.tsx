@@ -1,8 +1,14 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 
+interface VersionInfo {
+  app: string;
+  extension: string;
+  releaseDate: string;
+}
+
 const Footer = () => {
-  const { data: versionInfo } = useQuery({
+  const { data: versionInfo } = useQuery<VersionInfo>({
     queryKey: ['/api/version'],
     staleTime: 1000 * 60 * 60, // 1 hour
   });
