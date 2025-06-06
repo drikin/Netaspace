@@ -53,15 +53,18 @@ async function migrateData() {
     
     // Users
     const insertUser = sqlite.prepare(`
-      INSERT OR REPLACE INTO users (id, username, created_at) 
-      VALUES (?, ?, ?)
+      INSERT OR REPLACE INTO users (id, username, password, is_admin, email, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
     
     for (const user of users) {
       insertUser.run(
         user.id,
         user.username,
-        user.created_at?.toISOString() || new Date().toISOString()
+        user.password || 'defaultpass',
+        user.is_admin ? 1 : 0,
+        user.email,
+        new Date().toISOString()
       );
     }
     
