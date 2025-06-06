@@ -20,25 +20,26 @@ function ensureProductionDirectory() {
   }
 }
 
-function copyDatabaseToProduction() {
+function initializeProductionDatabase() {
+  ensureProductionDirectory();
+
+  // 本番DBが既に存在する場合は何もしない（データ保護）
+  if (fs.existsSync(PROD_DB_PATH)) {
+    console.log('✅ Production database already exists, preserving existing data');
+    console.log('📍 Production DB path:', PROD_DB_PATH);
+    return;
+  }
+
+  // 本番DBが存在しない場合のみ、開発DBからコピー（初回デプロイのみ）
   if (!fs.existsSync(DEV_DB_PATH)) {
     console.error('Development database not found:', DEV_DB_PATH);
     process.exit(1);
   }
 
-  ensureProductionDirectory();
-
-  // バックアップを作成（既存の本番DBがある場合）
-  if (fs.existsSync(PROD_DB_PATH)) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = `${PROD_DB_PATH}.backup-${timestamp}`;
-    fs.copyFileSync(PROD_DB_PATH, backupPath);
-    console.log('Backed up existing production DB to:', backupPath);
-  }
-
-  // 開発DBを本番環境にコピー
+  // 初回デプロイ時のみコピー
   fs.copyFileSync(DEV_DB_PATH, PROD_DB_PATH);
-  console.log('Copied development database to production:', PROD_DB_PATH);
+  console.log('🚀 Initial deployment: Copied development database to production');
+  console.log('📍 Production DB initialized at:', PROD_DB_PATH);
 
   // ファイルサイズ確認
   const devStats = fs.statSync(DEV_DB_PATH);
@@ -47,9 +48,9 @@ function copyDatabaseToProduction() {
   console.log(`Database sizes - Dev: ${devStats.size} bytes, Prod: ${prodStats.size} bytes`);
   
   if (devStats.size === prodStats.size) {
-    console.log('✅ Database copy completed successfully');
+    console.log('✅ Production database initialization completed successfully');
   } else {
-    console.error('❌ Database copy verification failed');
+    console.error('❌ Database initialization verification failed');
     process.exit(1);
   }
 }
@@ -74,11 +75,11 @@ function main() {
   console.log('🚀 Preparing database for deployment...');
   
   try {
-    copyDatabaseToProduction();
+    initializeProductionDatabase();
     updateEnvironmentConfig();
     
     console.log('✅ Database deployment preparation completed');
-    console.log('📝 Next deployment will use the current database content');
+    console.log('📝 Production data will be preserved on subsequent deployments');
     
   } catch (error) {
     console.error('❌ Deployment preparation failed:', error.message);
