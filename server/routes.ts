@@ -19,6 +19,7 @@ import { JSDOM } from 'jsdom';
 import iconv from 'iconv-lite';
 import path from 'path';
 import fs from 'fs';
+import archiver from 'archiver';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -392,7 +393,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Chrome拡張機能ダウンロードエンドポイント
   app.get('/api/extension/download', async (req, res) => {
-    
     try {
       const extensionDir = path.join(process.cwd(), 'chrome-extension');
       
@@ -400,24 +400,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', 'attachment; filename="backspace-fm-extension.zip"');
       
-      // Create a simple tar-like archive by concatenating files
-      const files = [
-        'manifest.json',
-        'popup.html', 
-        'popup.js',
-        'content.js',
-        'README.md'
-      ];
+      // Create ZIP archive
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
       
-      let archive = '';
-      
-      for (const file of files) {
-        const filePath = path.join(extensionDir, file);
-        if (fs.existsSync(filePath)) {
-          const content = fs.readFileSync(filePath, 'utf8');
-          archive += `--- ${file} ---\n${content}\n\n`;
+      // Handle errors
+      archive.on('error', (err) => {
+        console.error('Archive error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Failed to create extension package' });
         }
-      }
+      });
+      
+      // Pipe archive to response
+      archive.pipe(res);
       
       // Update manifest.json with current server URL
       const manifest = {
@@ -437,10 +434,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }]
       };
       
-      res.send(`Chrome Extension Files Package\n\n--- manifest.json ---\n${JSON.stringify(manifest, null, 2)}\n\n${archive}`);
+      // Add manifest.json to archive
+      archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+      
+      // Add existing files to archive
+      const files = [
+        'popup.html', 
+        'popup.js',
+        'content.js',
+        'README.md'
+      ];
+      
+      for (const file of files) {
+        const filePath = path.join(extensionDir, file);
+        if (fs.existsSync(filePath)) {
+          archive.file(filePath, { name: file });
+        }
+      }
+      
+      // Finalize the archive
+      await archive.finalize();
     } catch (error) {
       console.error('Extension download error:', error);
-      res.status(500).json({ message: 'Failed to create extension package' });
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Failed to create extension package' });
+      }
     }
   });
 
