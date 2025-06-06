@@ -453,6 +453,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(updateXml);
   });
 
+  // Chrome extension version info endpoint
+  app.get('/api/extension/version', (req, res) => {
+    res.json({
+      version: EXTENSION_VERSION,
+      updateUrl: 'https://netaspace.replit.app/api/extension/updates.xml',
+      downloadUrl: 'https://netaspace.replit.app/api/extension/download'
+    });
+  });
+
   // Chrome拡張機能ダウンロードエンドポイント
   app.get('/api/extension/download', async (req, res) => {
     try {
