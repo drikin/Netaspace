@@ -321,6 +321,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Topic routes
+  // POST route must come before GET route to avoid routing conflicts
+  app.post('/api/topics', async (req, res) => {
+    try {
+      // Validate using the submitTopicSchema
+      const submissionData = submitTopicSchema.parse(req.body);
+      
+      // Check for duplicate URL
+      const existingTopic = await storage.getTopicByUrl(submissionData.url);
+      if (existingTopic) {
+        return res.status(409).json({ 
+          message: 'このURLは既に投稿されています。', 
+          code: 'DUPLICATE_URL',
+          existingTopic: {
+            id: existingTopic.id,
+            title: existingTopic.title,
+            submitter: existingTopic.submitter
+          }
+        });
+      }
+      
+      // Get the active week
+      const activeWeek = await storage.getActiveWeek();
+      if (!activeWeek) {
+        return res.status(400).json({ message: 'No active week available' });
+      }
+      
+      // Create the topic with the active week ID and default status
+      const topicData = {
+        ...submissionData,
+        weekId: activeWeek.id,
+        status: 'pending'
+      };
+      
+      const topic = await storage.createTopic(topicData);
+      
+      res.status(201).json(topic);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid topic data', errors: error.errors });
+      }
+      console.error('Topic creation error:', error);
+      res.status(500).json({ message: 'Failed to create topic' });
+    }
+  });
+
   app.get('/api/topics', async (req, res) => {
     try {
       const weekId = req.query.weekId ? parseInt(req.query.weekId as string) : undefined;
@@ -493,51 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.post('/api/topics', async (req, res) => {
-    try {
-      // Validate using the submitTopicSchema
-      const submissionData = submitTopicSchema.parse(req.body);
-      
-      // Check for duplicate URL
-      const existingTopic = await storage.getTopicByUrl(submissionData.url);
-      if (existingTopic) {
-        return res.status(409).json({ 
-          message: 'このURLは既に投稿されています。', 
-          code: 'DUPLICATE_URL',
-          existingTopic: {
-            id: existingTopic.id,
-            title: existingTopic.title,
-            submitter: existingTopic.submitter
-          }
-        });
-      }
-      
-      // Get the active week
-      const activeWeek = await storage.getActiveWeek();
-      if (!activeWeek) {
-        return res.status(400).json({ message: 'No active week available' });
-      }
-      
-      // Create the topic with the active week ID and default status
-      const topicData = {
-        ...submissionData,
-        weekId: activeWeek.id,
-        status: 'pending'
-      };
-      
-      const topic = await storage.createTopic(topicData);
-      
-      // トランザクションベース実装: リアルタイム更新を削除
-      
-      res.status(201).json(topic);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid topic data', errors: error.errors });
-      }
-      console.error('Topic creation error:', error);
-      res.status(500).json({ message: 'Failed to create topic' });
-    }
-  });
+
 
   app.patch('/api/topics/:id/status', isAdmin, async (req, res) => {
     try {
