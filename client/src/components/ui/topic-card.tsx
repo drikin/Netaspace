@@ -222,12 +222,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
             </div>
             <div className="flex items-center text-xs text-gray-500 mt-1">
               <span className="mr-3">投稿: {topic.submitter}</span>
-              <span className="mr-3">コメント: {topic.comments?.length || 0}</span>
-              {starsCount > 0 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200">
-                  🔥 人気: {starsCount}
-                </span>
-              )}
+              <span>コメント: {topic.comments?.length || 0}</span>
             </div>
           </div>
 
