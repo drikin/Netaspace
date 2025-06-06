@@ -175,8 +175,35 @@ const TopicCard: React.FC<TopicCardProps> = ({
     return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
+  // Dynamic background color based on stars count
+  const getCardBackgroundStyle = () => {
+    if (starsCount === 0) {
+      return { className: "bg-white", style: {} };
+    }
+
+    // Progressive gradient intensity based on vote count
+    const intensity = Math.min(starsCount / 10, 1); // Max intensity at 10+ votes
+    const baseHue = 280; // Purple-magenta base
+    const saturation = 20 + (intensity * 30); // 20% to 50% saturation
+    const lightness = 98 - (intensity * 8); // 98% to 90% lightness
+
+    const backgroundColor = `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
+    const borderColor = `hsl(${baseHue}, ${saturation + 10}%, ${lightness - 5}%)`;
+
+    return {
+      className: "border",
+      style: {
+        backgroundColor,
+        borderColor,
+        background: `linear-gradient(135deg, ${backgroundColor} 0%, hsl(${baseHue + 10}, ${saturation}%, ${lightness + 1}%) 100%)`
+      }
+    };
+  };
+
+  const cardBg = getCardBackgroundStyle();
+
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
       <CardContent className="p-4">
         {/* Compact header - always visible */}
         <div className="flex items-start justify-between">
@@ -195,7 +222,12 @@ const TopicCard: React.FC<TopicCardProps> = ({
             </div>
             <div className="flex items-center text-xs text-gray-500 mt-1">
               <span className="mr-3">投稿: {topic.submitter}</span>
-              <span>コメント: {topic.comments?.length || 0}</span>
+              <span className="mr-3">コメント: {topic.comments?.length || 0}</span>
+              {starsCount > 0 && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200">
+                  🔥 人気: {starsCount}
+                </span>
+              )}
             </div>
           </div>
 
