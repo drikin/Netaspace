@@ -258,6 +258,7 @@ export class ReplitDBStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    await this.ensureInitialized();
     const userKeys = await this.db.list('user:');
     for (const key of userKeys) {
       const data = await this.db.get(key);
@@ -282,6 +283,7 @@ export class ReplitDBStorage implements IStorage {
   }
 
   async getWeeks(): Promise<Week[]> {
+    await this.ensureInitialized();
     const weekKeys = await this.db.list('week:');
     const weeks: Week[] = [];
     
@@ -299,6 +301,7 @@ export class ReplitDBStorage implements IStorage {
   }
 
   async getActiveWeek(): Promise<Week | undefined> {
+    await this.ensureInitialized();
     const activeWeekId = await this.db.get('active:week');
     if (!activeWeekId) return undefined;
     
@@ -308,6 +311,7 @@ export class ReplitDBStorage implements IStorage {
     const week = JSON.parse(data);
     week.startDate = new Date(week.startDate);
     week.endDate = new Date(week.endDate);
+    week.isActive = true; // Mark as active since this is the active week
     return week;
   }
 
@@ -338,6 +342,7 @@ export class ReplitDBStorage implements IStorage {
   }
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
+    await this.ensureInitialized();
     const topicKeys = await this.db.list('topic:');
     const topics: Topic[] = [];
     
