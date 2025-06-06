@@ -177,63 +177,33 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-6">
-        <div className="flex items-start">
-          {/* Topic content */}
-          <div className="flex-1">
+      <CardContent className="p-4">
+        {/* Compact header - always visible */}
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center">
-              <h2 className="text-xl font-semibold text-gray-900">{topic.title}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 line-clamp-2 mr-2">{topic.title}</h2>
               {getStatusBadge()}
             </div>
-            <div className="mt-1">
-              <a
-                href={topic.url}
-                className="text-primary hover:text-primary-700 text-sm flex items-center"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Link className="mr-1 h-4 w-4" />
-                {topic.url}
-              </a>
-            </div>
-            <div className="mt-3 text-gray-700">
-              <p>{topic.description}</p>
-            </div>
-            <div className="mt-4 flex items-center text-sm text-gray-500">
-              <span className="mr-4 flex items-center">
-                <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                投稿者: {topic.submitter}
-              </span>
-              <span className="flex items-center">
-                <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {formatDate(topic.createdAt)}
-              </span>
+            <div className="flex items-center text-xs text-gray-500 mt-1">
+              <span className="mr-3">投稿: {topic.submitter}</span>
+              <span>コメント: {topic.comments?.length || 0}</span>
             </div>
           </div>
 
-          {/* Cheer/Support button */}
+          {/* Compact cheer button */}
           <button
-            className={`cheer-button ml-4 flex flex-col items-center min-w-[60px] ${hasStarred ? "cheered text-red-500" : "text-gray-400 hover:text-red-400"} ${isStarring ? "opacity-50 cursor-wait" : "cursor-pointer"} transition-all duration-200`}
+            className={`ml-3 flex flex-col items-center min-w-[50px] ${hasStarred ? "text-red-500" : "text-gray-400 hover:text-red-400"} ${isStarring ? "opacity-50 cursor-wait" : "cursor-pointer"} transition-all duration-200`}
             onClick={handleStarClick}
             disabled={isStarring}
             aria-label={hasStarred ? "応援を取り消す" : "話して欲しいと応援する"}
             title={hasStarred ? "応援を取り消す" : "この話題について話して欲しい！"}
           >
-            {/* Enhanced ear icon for listening/hearing */}
-            <svg className="h-6 w-6 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-              {/* Outer ear shape */}
+            <svg className="h-5 w-5 transition-all duration-200" xmlns="http://www.w3.org/2000/svg" fill={hasStarred ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 8c0-3.3 2.7-6 6-6s6 2.7 6 6c0 1.7-.7 3.2-1.8 4.3" />
-              {/* Inner ear curve */}
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 8c0-1.7 1.3-3 3-3s3 1.3 3 3c0 .8-.3 1.5-.8 2" />
-              {/* Ear canal */}
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10.5c.3 0 .5.2.5.5s-.2.5-.5.5-.5-.2-.5-.5.2-.5.5-.5z" />
-              {/* Earlobe */}
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16c0-2.2 1.8-4 4-4s4 1.8 4 4" />
-              {/* Sound waves */}
               {hasStarred && (
                 <>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 8c1.1 0 2-.9 2-2" opacity="0.6" />
@@ -243,42 +213,85 @@ const TopicCard: React.FC<TopicCardProps> = ({
             </svg>
             <div className="flex flex-col items-center">
               <span className={`text-xs font-semibold ${hasStarred ? "text-red-500" : "text-gray-500"}`}>{starsCount}</span>
-              <span className={`text-[10px] leading-tight ${hasStarred ? "text-red-400" : "text-gray-400"}`}>聞きたい</span>
+              <span className={`text-[9px] leading-tight ${hasStarred ? "text-red-400" : "text-gray-400"}`}>聞きたい</span>
             </div>
           </button>
         </div>
 
-        {/* Admin controls */}
+        {/* Admin controls - compact */}
         {isAdmin && (
-          <AdminControls
-            topicId={topic.id}
-            currentStatus={topic.status}
-            onStatusChange={refetchTopics}
-          />
+          <div className="mt-2">
+            <AdminControls
+              topicId={topic.id}
+              currentStatus={topic.status}
+              onStatusChange={refetchTopics}
+            />
+          </div>
         )}
 
-        {/* Comments section - Accordion style */}
-        <div className="mt-6 border-t border-gray-100 pt-4">
+        {/* Collapsible details and comments */}
+        <div className="mt-3">
           <Accordion type="single" collapsible className="border-none">
-            <AccordionItem value="comments" className="border-none">
-              <AccordionTrigger className="py-2 hover:no-underline">
-                <span className="text-sm font-medium text-gray-900">
-                  コメント ({topic.comments?.length || 0})
-                </span>
+            <AccordionItem value="details" className="border-none">
+              <AccordionTrigger className="py-2 hover:no-underline text-sm text-gray-600">
+                詳細を表示
               </AccordionTrigger>
               <AccordionContent>
-                <div className="mb-4">
-                  <CommentsList
+                {/* URL */}
+                <div className="mb-3">
+                  <a
+                    href={topic.url}
+                    className="text-primary hover:text-primary-700 text-sm flex items-center break-all"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Link className="mr-1 h-4 w-4 flex-shrink-0" />
+                    {topic.url}
+                  </a>
+                </div>
+
+                {/* Description */}
+                {topic.description && (
+                  <div className="mb-3 text-gray-700 text-sm">
+                    <p>{topic.description}</p>
+                  </div>
+                )}
+
+                {/* Metadata */}
+                <div className="mb-4 flex items-center text-xs text-gray-500">
+                  <span className="mr-4 flex items-center">
+                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    投稿者: {topic.submitter}
+                  </span>
+                  <span className="flex items-center">
+                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {formatDate(topic.createdAt)}
+                  </span>
+                </div>
+
+                {/* Comments section */}
+                <div className="border-t border-gray-100 pt-3">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">
+                    コメント ({topic.comments?.length || 0})
+                  </h4>
+                  
+                  <div className="mb-4">
+                    <CommentsList
+                      topicId={topic.id}
+                      comments={topic.comments || []}
+                    />
+                  </div>
+                  
+                  {/* Comment form */}
+                  <CommentForm
                     topicId={topic.id}
-                    comments={topic.comments || []}
+                    onCommentAdded={refetchTopics}
                   />
                 </div>
-                
-                {/* Comment form */}
-                <CommentForm
-                  topicId={topic.id}
-                  onCommentAdded={refetchTopics}
-                />
               </AccordionContent>
             </AccordionItem>
           </Accordion>
