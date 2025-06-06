@@ -13,13 +13,18 @@ const Header = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Debug logging to identify duplication
+  React.useEffect(() => {
+    console.log('Header component mounted/rendered', Date.now());
+  });
+
   // Check if user is authenticated
   const { data: auth } = useQuery({
     queryKey: ["/api/auth/me"],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const isAdmin = auth?.user?.isAdmin;
+  const isAdmin = (auth as any)?.user?.isAdmin;
 
   const handleLogout = async () => {
     try {
@@ -177,7 +182,7 @@ const Header = () => {
                 {isAdmin ? "管理者" : "ゲスト"}
               </div>
               <div className="text-sm font-medium text-gray-500">
-                {isAdmin ? auth?.user?.username : "ログインしていません"}
+                {isAdmin ? (auth as any)?.user?.username : "ログインしていません"}
               </div>
             </div>
           </div>
