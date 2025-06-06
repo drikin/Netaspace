@@ -43,17 +43,28 @@ export interface IStorage {
 // Replit Database storage implementation
 export class ReplitDBStorage implements IStorage {
   private db: any;
+  private initialized = false;
 
   constructor() {
-    if (process.env.REPLIT_DEPLOYMENT && process.env.REPLIT_DB_URL) {
-      console.log('Using Replit Database for production');
-      // Replit Database is available as a global
-      this.db = (global as any).db || this.createReplitDB();
+    if (process.env.REPLIT_DB_URL) {
+      console.log('Using Replit Database');
+      this.db = this.createReplitDB();
     } else {
       console.log('Using in-memory storage for development');
       this.db = this.createMemoryDB();
-      this.initializeSampleData();
     }
+  }
+
+  private async ensureInitialized() {
+    if (this.initialized) return;
+    
+    if (process.env.REPLIT_DB_URL) {
+      await this.initializeFromBackup();
+    } else {
+      await this.initializeSampleData();
+    }
+    
+    this.initialized = true;
   }
 
   private createReplitDB() {
@@ -121,12 +132,93 @@ export class ReplitDBStorage implements IStorage {
     };
   }
 
-  private async initializeSampleData() {
-    // Check if data already exists
-    const existingUsers = await this.db.list('user:');
-    if (existingUsers.length > 0) return;
+  private async initializeFromBackup() {
+    try {
+      // Check if data already exists
+      const existingUsers = await this.db.list('user:');
+      if (existingUsers.length > 0) {
+        console.log('Replit Database already has data, skipping initialization');
+        return;
+      }
 
-    // Initialize with sample data
+      console.log('Initializing Replit Database from backup...');
+      
+      // Load backup data
+      const fs = await import('fs');
+      const backupPath = './backup-supabase-1749237202606.json';
+      
+      if (!fs.existsSync(backupPath)) {
+        console.warn('Backup file not found, creating minimal data');
+        await this.initializeSampleData();
+        return;
+      }
+
+      const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+      
+      // Import users
+      if (backupData.users) {
+        for (const user of backupData.users) {
+          await this.db.set(`user:${user.id}`, JSON.stringify({
+            id: user.id,
+            username: user.username,
+            password: user.password,
+            isAdmin: user.isAdmin || false,
+            email: user.email
+          }));
+        }
+        await this.db.set('users:counter', (Math.max(...backupData.users.map(u => u.id)) + 1).toString());
+      }
+
+      // Import weeks
+      if (backupData.weeks) {
+        for (const week of backupData.weeks) {
+          await this.db.set(`week:${week.id}`, JSON.stringify(week));
+          if (week.isActive) {
+            await this.db.set('active:week', week.id.toString());
+          }
+        }
+        await this.db.set('weeks:counter', (Math.max(...backupData.weeks.map(w => w.id)) + 1).toString());
+      }
+
+      // Import topics
+      if (backupData.topics) {
+        for (const topic of backupData.topics) {
+          await this.db.set(`topic:${topic.id}`, JSON.stringify(topic));
+        }
+        await this.db.set('topics:counter', (Math.max(...backupData.topics.map(t => t.id)) + 1).toString());
+      }
+
+      // Import comments
+      if (backupData.comments) {
+        for (const comment of backupData.comments) {
+          if (comment.topicId) {
+            await this.db.set(`comment:topic:${comment.topicId}:${comment.id}`, JSON.stringify(comment));
+          }
+        }
+        await this.db.set('comments:counter', (Math.max(...backupData.comments.map(c => c.id)) + 1).toString());
+      }
+
+      // Import stars
+      if (backupData.stars) {
+        for (const star of backupData.stars) {
+          if (star.topicId && star.fingerprint) {
+            await this.db.set(`star:topic:${star.topicId}:${star.fingerprint}`, JSON.stringify(star));
+          }
+        }
+        await this.db.set('stars:counter', (Math.max(...backupData.stars.map(s => s.id)) + 1).toString());
+      }
+
+      console.log(`Replit Database initialized with backup data: ${backupData.users?.length || 0} users, ${backupData.topics?.length || 0} topics`);
+      
+    } catch (error) {
+      console.error('Failed to initialize from backup:', error.message);
+      await this.initializeSampleData();
+    }
+  }
+
+  private async initializeSampleData() {
+    console.log('Creating minimal sample data...');
+    
     const adminUser: User = {
       id: 1,
       username: 'admin',
@@ -147,6 +239,8 @@ export class ReplitDBStorage implements IStorage {
     await this.db.set('week:1', JSON.stringify(week));
     await this.db.set('weeks:counter', '2');
     await this.db.set('active:week', '1');
+    
+    console.log('Sample data created');
   }
 
   private async getNextId(entity: string): Promise<number> {
@@ -158,6 +252,7 @@ export class ReplitDBStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
+    await this.ensureInitialized();
     const data = await this.db.get(`user:${id}`);
     return data ? JSON.parse(data) : undefined;
   }
