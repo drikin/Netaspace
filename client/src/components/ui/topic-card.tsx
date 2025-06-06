@@ -34,16 +34,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const [starsCount, setStarsCount] = useState(topic.starsCount);
   const [hasStarred, setHasStarred] = useState(topic.hasStarred || false);
 
-  // いいね追加のミューテーション（楽観的UI更新対応）
+  // Star/unstar toggle mutation with proper API call
   const addStarMutation = useMutation({
     mutationFn: () => {
-      // 既にいいねしている場合は解除を行うシミュレーション（バックエンドAPIがあれば適切に実装）
-      if (hasStarred) {
-        // シミュレートしたいいね解除処理の成功を返す
-        return Promise.resolve({ ok: true });
-      }
-      
-      // 新しくいいねをつける
+      // Always call the API endpoint - it handles both star and unstar operations
       return apiRequest("POST", `/api/topics/${topic.id}/star`, {
         fingerprint,
       });
@@ -118,22 +112,20 @@ const TopicCard: React.FC<TopicCardProps> = ({
       });
     },
     onSuccess: (response) => {
-      // レスポンスがOKでない場合（400エラーなど）の処理
-      if (response && typeof response === 'object' && 'ok' in response && !response.ok && 'status' in response && response.status === 400) {
+      // Update UI state with actual response from server
+      if (response && typeof response === 'object' && 'starsCount' in response && 'hasStarred' in response) {
+        setStarsCount(response.starsCount);
+        setHasStarred(response.hasStarred);
+        
+        // Show appropriate message based on action
+        const action = response.action;
         toast({
-          title: "既にいいねしています",
-          description: "このトピックには既にいいねしています。",
+          title: action === 'starred' ? "聞きたいを追加しました！" : "聞きたいを解除しました",
+          description: action === 'starred' 
+            ? "フィードバックありがとうございます。" 
+            : "このトピックの聞きたいを解除しました。",
         });
-        return;
       }
-      
-      // 正常に処理されたときのメッセージ
-      toast({
-        title: hasStarred ? "いいねを解除しました" : "いいねしました！",
-        description: hasStarred 
-          ? "このトピックのいいねを解除しました。" 
-          : "フィードバックありがとうございます。",
-      });
       
       // 必要なクエリを無効化して最新データを再取得
       queryClient.invalidateQueries({ queryKey: [`/api/topics/${topic.id}`] });

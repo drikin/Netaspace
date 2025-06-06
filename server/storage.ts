@@ -780,6 +780,34 @@ export class PostgresStorage implements IStorage {
     return true;
   }
 
+  async removeStar(topicId: number, fingerprint: string): Promise<boolean> {
+    // Check if the user has actually starred this topic
+    const hasStarred = await this.hasStarred(topicId, fingerprint);
+    if (!hasStarred) return false;
+    
+    // Remove the star
+    await this.db
+      .delete(stars)
+      .where(and(
+        eq(stars.topicId, topicId),
+        eq(stars.fingerprint, fingerprint)
+      ));
+    
+    // Decrement topic stars count (but don't go below 0)
+    await this.db
+      .update(topics)
+      .set({
+        stars: sql`GREATEST(0, ${topics.stars} - 1)`
+      })
+      .where(eq(topics.id, topicId));
+    
+    // Invalidate related caches
+    this.clearCacheByPattern('getTopicsByWeekId');
+    this.clearCacheByPattern('getActiveWeekWithTopics');
+    
+    return true;
+  }
+
   async hasStarred(topicId: number, fingerprint: string): Promise<boolean> {
     const result = await this.db
       .select()
