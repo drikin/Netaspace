@@ -15,7 +15,7 @@ function getDatabasePath() {
 
 export default defineConfig({
   dialect: 'sqlite',
-  schema: './shared/schema.ts',
+  schema: './shared/sqlite-schema.ts',
   out: './drizzle',
   dbCredentials: {
     url: getDatabasePath(),
