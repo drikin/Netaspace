@@ -182,20 +182,20 @@ const TopicCard: React.FC<TopicCardProps> = ({
     }
 
     // Progressive gradient intensity based on vote count - backspace.fm green theme
-    const intensity = Math.min(starsCount / 10, 1); // Max intensity at 10+ votes
+    const intensity = Math.min(starsCount / 8, 1); // Max intensity at 8+ votes (lower threshold)
     const baseHue = 160; // Green base (backspace.fm inspired)
-    const saturation = 25 + (intensity * 35); // 25% to 60% saturation
-    const lightness = 97 - (intensity * 10); // 97% to 87% lightness
+    const saturation = 35 + (intensity * 45); // 35% to 80% saturation (more vibrant)
+    const lightness = 95 - (intensity * 15); // 95% to 80% lightness (more contrast)
 
     const backgroundColor = `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
-    const borderColor = `hsl(${baseHue}, ${saturation + 15}%, ${lightness - 8}%)`;
+    const borderColor = `hsl(${baseHue}, ${saturation + 20}%, ${lightness - 12}%)`;
 
     return {
-      className: "border",
+      className: "border-2",
       style: {
         backgroundColor,
         borderColor,
-        background: `linear-gradient(135deg, ${backgroundColor} 0%, hsl(${baseHue - 5}, ${saturation}%, ${lightness + 1}%) 100%)`
+        background: `linear-gradient(135deg, ${backgroundColor} 0%, hsl(${baseHue - 8}, ${saturation + 5}%, ${lightness - 2}%) 100%)`
       }
     };
   };
