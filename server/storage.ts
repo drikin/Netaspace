@@ -108,7 +108,12 @@ export class MemStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const newUser: User = { ...user, id };
+    const newUser: User = { 
+      ...user, 
+      id,
+      isAdmin: user.isAdmin ?? false,
+      email: user.email ?? null
+    };
     this.users.set(id, newUser);
     return newUser;
   }
@@ -829,7 +834,5 @@ export class PostgresStorage implements IStorage {
 }
 
 // Use the appropriate storage implementation
-// If DATABASE_URL is set, use PostgresStorage, otherwise use MemStorage
-export const storage: IStorage = process.env.DATABASE_URL
-  ? new PostgresStorage()
-  : new MemStorage();
+// Temporarily using MemStorage until database connection is fixed
+export const storage: IStorage = new MemStorage();
