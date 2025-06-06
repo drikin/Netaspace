@@ -3,7 +3,7 @@ import {
   Week, InsertWeek, Star, InsertStar, User, InsertUser,
   topics, comments, weeks, stars, users,
   WeekWithTopics, TopicWithCommentsAndStars
-} from "../shared/sqlite-schema";
+} from "@/shared/sqlite-schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
@@ -179,12 +179,11 @@ class SQLiteStorage implements IStorage {
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
     let query = this.db
       .select()
-      .from(topics);
+      .from(topics)
+      .where(eq(topics.status, status));
 
     if (weekId) {
       query = query.where(and(eq(topics.status, status), eq(topics.weekId, weekId)));
-    } else {
-      query = query.where(eq(topics.status, status));
     }
 
     const topicsResult = await query.orderBy(desc(topics.createdAt));
@@ -203,7 +202,10 @@ class SQLiteStorage implements IStorage {
         .where(inArray(comments.topicId, topicIds))
         .orderBy(comments.createdAt),
       this.db
-        .select()
+        .select({
+          topicId: stars.topicId,
+          count: 1
+        })
         .from(stars)
         .where(inArray(stars.topicId, topicIds))
     ]);
@@ -219,9 +221,9 @@ class SQLiteStorage implements IStorage {
     });
     
     // Count stars by topicId
-    starsResult.forEach(star => {
-      const currentCount = starsMap.get(star.topicId) || 0;
-      starsMap.set(star.topicId, currentCount + 1);
+    starsResult.forEach(({ topicId }) => {
+      const currentCount = starsMap.get(topicId) || 0;
+      starsMap.set(topicId, currentCount + 1);
     });
     
     return topicsResult.map(topic => ({

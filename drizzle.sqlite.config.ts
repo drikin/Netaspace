@@ -5,8 +5,8 @@ import { defineConfig } from 'drizzle-kit';
 
 function getDatabasePath() {
   if (process.env.REPLIT_DEPLOYMENT) {
-    // 本番環境（Replit Deploy）
-    return '/var/data/production.sqlite';
+    // Production環境では書き込み可能なディレクトリを使用
+    return process.env.REPLIT_DB_URL || './data/production.sqlite';
   } else {
     // 開発環境
     return './database/dev.sqlite';
