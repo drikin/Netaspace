@@ -181,21 +181,21 @@ const TopicCard: React.FC<TopicCardProps> = ({
       return { className: "bg-white", style: {} };
     }
 
-    // Progressive gradient intensity based on vote count
+    // Progressive gradient intensity based on vote count - backspace.fm green theme
     const intensity = Math.min(starsCount / 10, 1); // Max intensity at 10+ votes
-    const baseHue = 280; // Purple-magenta base
-    const saturation = 20 + (intensity * 30); // 20% to 50% saturation
-    const lightness = 98 - (intensity * 8); // 98% to 90% lightness
+    const baseHue = 160; // Green base (backspace.fm inspired)
+    const saturation = 25 + (intensity * 35); // 25% to 60% saturation
+    const lightness = 97 - (intensity * 10); // 97% to 87% lightness
 
     const backgroundColor = `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
-    const borderColor = `hsl(${baseHue}, ${saturation + 10}%, ${lightness - 5}%)`;
+    const borderColor = `hsl(${baseHue}, ${saturation + 15}%, ${lightness - 8}%)`;
 
     return {
       className: "border",
       style: {
         backgroundColor,
         borderColor,
-        background: `linear-gradient(135deg, ${backgroundColor} 0%, hsl(${baseHue + 10}, ${saturation}%, ${lightness + 1}%) 100%)`
+        background: `linear-gradient(135deg, ${backgroundColor} 0%, hsl(${baseHue - 5}, ${saturation}%, ${lightness + 1}%) 100%)`
       }
     };
   };
@@ -224,7 +224,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
               <span className="mr-3">投稿: {topic.submitter}</span>
               <span className="mr-3">コメント: {topic.comments?.length || 0}</span>
               {starsCount > 0 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200">
                   🔥 人気: {starsCount}
                 </span>
               )}
