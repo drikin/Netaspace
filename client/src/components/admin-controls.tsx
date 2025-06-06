@@ -140,7 +140,7 @@ const AdminControls: React.FC<AdminControlsProps> = ({
               トピックを削除しますか？
             </AlertDialogTitle>
             <AlertDialogDescription>
-              このトピックを完全に削除します。この操作は取り消せません。関連するコメントや聞きたい投票もすべて削除されます。
+              このトピックを完全に削除します。この操作は取り消せません。関連するコメントやいいねもすべて削除されます。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

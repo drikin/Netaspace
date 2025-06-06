@@ -706,41 +706,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Topic not found' });
       }
       
-      // Check current star status
-      const hasStarred = await storage.hasStarred(topicId, fingerprint);
-      let success = false;
-      let action = '';
-      
-      if (hasStarred) {
-        // User wants to unstar
-        success = await storage.removeStar(topicId, fingerprint);
-        action = 'unstarred';
-      } else {
-        // User wants to star
-        success = await storage.addStar({
-          topicId,
-          fingerprint
-        });
-        action = 'starred';
-      }
-      
-      if (!success) {
-        return res.status(400).json({ message: 'Operation failed' });
-      }
-      
-      // Get the updated star count and status
-      const starsCount = await storage.getStarsCountByTopicId(topicId);
-      const newHasStarred = await storage.hasStarred(topicId, fingerprint);
-      
-      res.json({ 
-        success: true, 
-        starsCount, 
-        hasStarred: newHasStarred, 
-        action 
+      // Try to add the star
+      const starred = await storage.addStar({
+        topicId,
+        fingerprint
       });
+      
+      if (!starred) {
+        return res.status(400).json({ message: 'Already starred' });
+      }
+      
+      // Get the updated star count
+      const starsCount = await storage.getStarsCountByTopicId(topicId);
+      
+      // トランザクションベース実装: リアルタイム更新を削除
+      
+      res.json({ success: true, starsCount });
     } catch (error) {
-      console.error('Star operation error:', error);
-      res.status(500).json({ message: 'Failed to process star operation' });
+      res.status(500).json({ message: 'Failed to star topic' });
     }
   });
 
