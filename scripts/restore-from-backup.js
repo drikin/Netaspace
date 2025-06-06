@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { drizzle } = require('drizzle-orm/better-sqlite3');
-const Database = require('better-sqlite3');
+import fs from 'fs';
+import path from 'path';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
 
 // Import schema
-const { users, weeks, topics, comments, stars } = require('../shared/sqlite-schema.ts');
+import { users, weeks, topics, comments, stars } from '../shared/sqlite-schema.js';
 
 async function restoreFromBackup() {
   try {
