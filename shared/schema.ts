@@ -25,6 +25,7 @@ export const topics = pgTable("topics", {
   url: text("url").notNull(),
   description: text("description"),
   submitter: text("submitter").notNull(),
+  fingerprint: text("fingerprint").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   status: text("status").default("pending").notNull(), // pending, approved, featured, rejected
   stars: integer("stars").default(0).notNull(),
@@ -81,6 +82,7 @@ export const insertTopicSchema = createInsertSchema(topics).pick({
   description: true,
   submitter: true,
   status: true,
+  fingerprint: true,
 });
 
 export const insertStarSchema = createInsertSchema(stars).pick({

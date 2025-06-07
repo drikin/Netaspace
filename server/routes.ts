@@ -348,11 +348,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No active week available' });
       }
       
-      // Create the topic with the active week ID and default status
+      // Generate fingerprint for the submission
+      const fingerprint = (req.ip || 'unknown') + (req.get('User-Agent') || 'anonymous');
+      const hashedFingerprint = require('crypto').createHash('sha256').update(fingerprint).digest('hex');
+      
+      // Create the topic with the active week ID, default status, and fingerprint
       const topicData = {
         ...submissionData,
         weekId: activeWeek.id,
-        status: 'pending'
+        status: 'pending',
+        fingerprint: hashedFingerprint
       };
       
       const topic = await storage.createTopic(topicData);
