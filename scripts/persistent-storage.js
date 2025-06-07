@@ -1,132 +1,144 @@
-#!/usr/bin/env node
-
-import fs from 'fs';
-import path from 'path';
-
 /**
  * Replit永続化ストレージ設定スクリプト
  * Redeploy時のデータ消失を防ぐための設定
  */
 
-const PERSISTENT_PATHS = [
-  '/tmp/persistent',
-  '/home/runner/.local/share/app-data',
-  './data'
-];
-
-const DEV_DB_PATH = './database/dev.sqlite';
+import fs from 'fs';
+import path from 'path';
+import Database from 'better-sqlite3';
 
 function findBestPersistentPath() {
-  for (const testPath of PERSISTENT_PATHS) {
+  const candidates = [
+    '/tmp/persistent',
+    '/home/runner/persistent', 
+    '/var/tmp/persistent',
+    './data/persistent'
+  ];
+  
+  for (const candidate of candidates) {
     try {
-      // ディレクトリが作成可能かテスト
-      if (!fs.existsSync(testPath)) {
-        fs.mkdirSync(testPath, { recursive: true });
+      if (!fs.existsSync(candidate)) {
+        fs.mkdirSync(candidate, { recursive: true });
       }
       
-      // 書き込みテスト
-      const testFile = path.join(testPath, 'test-write.tmp');
+      // Write test
+      const testFile = path.join(candidate, 'test.txt');
       fs.writeFileSync(testFile, 'test');
       fs.unlinkSync(testFile);
       
-      console.log(`✅ Persistent path available: ${testPath}`);
-      return testPath;
+      console.log(`✓ 永続化パス確認: ${candidate}`);
+      return candidate;
     } catch (error) {
-      console.log(`❌ Path not available: ${testPath} - ${error.message}`);
+      console.log(`✗ パス使用不可: ${candidate} - ${error.message}`);
     }
   }
   
-  throw new Error('No persistent storage path available');
+  throw new Error('利用可能な永続化パスが見つかりません');
 }
 
 function setupPersistentStorage() {
-  console.log('🔧 Setting up persistent storage for Replit deployment...');
+  console.log('=== Replit永続化ストレージ設定 ===');
   
+  const persistentDir = findBestPersistentPath();
+  const dbPath = path.join(persistentDir, 'production.sqlite');
+  const backupDir = path.join(persistentDir, 'backups');
+  
+  // バックアップディレクトリ作成
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+    console.log(`✓ バックアップディレクトリ作成: ${backupDir}`);
+  }
+  
+  // 現在のデータベースが存在する場合、永続化パスにコピー
+  const currentDbPaths = [
+    './database/dev.sqlite',
+    './data/production.sqlite',
+    '/tmp/production.sqlite'
+  ];
+  
+  let sourceDb = null;
+  for (const currentPath of currentDbPaths) {
+    if (fs.existsSync(currentPath)) {
+      sourceDb = currentPath;
+      break;
+    }
+  }
+  
+  if (sourceDb && !fs.existsSync(dbPath)) {
+    fs.copyFileSync(sourceDb, dbPath);
+    console.log(`✓ データベースを永続化パスにコピー: ${sourceDb} → ${dbPath}`);
+  }
+  
+  // データベース整合性確認
   try {
-    const persistentDir = findBestPersistentPath();
-    const prodDbPath = path.join(persistentDir, 'production.sqlite');
-    const backupDir = path.join(persistentDir, 'backups');
-    
-    // バックアップディレクトリ作成
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-      console.log(`📁 Created backup directory: ${backupDir}`);
-    }
-    
-    // 開発DBが存在し、本番DBが存在しない場合は初期化
-    if (fs.existsSync(DEV_DB_PATH) && !fs.existsSync(prodDbPath)) {
-      fs.copyFileSync(DEV_DB_PATH, prodDbPath);
-      console.log(`🚀 Initialized production database from development data`);
-      console.log(`📍 Production DB: ${prodDbPath}`);
-    }
-    
-    // 本番DBが既に存在する場合はバックアップ作成
-    if (fs.existsSync(prodDbPath)) {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-      const backupPath = path.join(backupDir, `production-backup-${timestamp}.sqlite`);
-      
-      // 同じ日のバックアップが存在しない場合のみ作成
-      if (!fs.existsSync(backupPath)) {
-        fs.copyFileSync(prodDbPath, backupPath);
-        console.log(`📦 Created backup: ${backupPath}`);
-      }
-    }
-    
-    // 環境変数設定の指示
-    console.log('\n📝 Environment Configuration:');
-    console.log(`REPLIT_DB_URL="${prodDbPath}"`);
-    console.log('REPLIT_DEPLOYMENT=true');
-    
-    return {
-      persistentDir,
-      prodDbPath,
-      backupDir
-    };
-    
+    const db = new Database(dbPath);
+    const topicCount = db.prepare('SELECT COUNT(*) as count FROM topics').get();
+    console.log(`✓ データベース確認: ${topicCount.count}件のトピック`);
+    db.close();
   } catch (error) {
-    console.error('❌ Failed to setup persistent storage:', error.message);
+    console.error(`✗ データベース確認エラー: ${error.message}`);
     throw error;
   }
+  
+  return { dbPath, backupDir };
 }
 
 function verifyPersistence() {
-  console.log('\n🔍 Verifying persistence setup...');
+  console.log('\n=== 永続化検証 ===');
   
-  const config = setupPersistentStorage();
+  const persistentDir = findBestPersistentPath();
+  const dbPath = path.join(persistentDir, 'production.sqlite');
   
-  // データベースファイルの存在確認
-  if (fs.existsSync(config.prodDbPath)) {
-    const stats = fs.statSync(config.prodDbPath);
-    console.log(`✅ Production database exists: ${(stats.size / 1024).toFixed(1)} KB`);
-  } else {
-    console.log('⚠️  Production database not found');
+  if (!fs.existsSync(dbPath)) {
+    console.error('✗ 永続化データベースが見つかりません');
+    return false;
   }
   
-  // バックアップの確認
-  const backupFiles = fs.readdirSync(config.backupDir).filter(f => f.endsWith('.sqlite'));
-  console.log(`✅ Available backups: ${backupFiles.length} files`);
-  
-  return config;
+  try {
+    const db = new Database(dbPath);
+    const result = db.prepare('SELECT COUNT(*) as count FROM topics').get();
+    db.close();
+    
+    console.log(`✓ 永続化確認完了: ${result.count}件のデータが保存されています`);
+    return true;
+  } catch (error) {
+    console.error(`✗ 永続化検証エラー: ${error.message}`);
+    return false;
+  }
 }
 
 function main() {
-  console.log('🏗️  Replit Persistent Storage Setup');
-  console.log('===================================');
-  
   try {
-    const config = verifyPersistence();
+    const { dbPath, backupDir } = setupPersistentStorage();
     
-    console.log('\n🎉 Persistent storage setup completed!');
-    console.log('📌 Key points:');
-    console.log('   • Database survives redeployments');
-    console.log('   • Automatic backups are created');
-    console.log('   • Data is preserved in persistent directory');
-    console.log(`   • Production DB: ${config.prodDbPath}`);
+    // 環境変数更新スクリプト生成
+    const envScript = `
+# Replit永続化設定
+export PERSISTENT_DB_PATH="${dbPath}"
+export BACKUP_DIR="${backupDir}"
+export NODE_ENV=production
+
+echo "永続化データベース: $PERSISTENT_DB_PATH"
+echo "バックアップディレクトリ: $BACKUP_DIR"
+`;
+    
+    fs.writeFileSync('.env.persistent', envScript);
+    console.log('✓ 永続化環境変数設定完了');
+    
+    if (verifyPersistence()) {
+      console.log('\n✅ 永続化ストレージ設定完了');
+      console.log(`データベース: ${dbPath}`);
+      console.log(`バックアップ: ${backupDir}`);
+    } else {
+      throw new Error('永続化検証に失敗しました');
+    }
     
   } catch (error) {
-    console.error('❌ Setup failed:', error.message);
+    console.error(`❌ 永続化設定エラー: ${error.message}`);
     process.exit(1);
   }
 }
 
-main();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
