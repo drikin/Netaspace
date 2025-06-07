@@ -93,6 +93,43 @@ export class MemStorage implements IStorage {
       title: `${startOfWeek.getFullYear()}年${startOfWeek.getMonth() + 1}月${startOfWeek.getDate()}日〜${endOfWeek.getMonth() + 1}月${endOfWeek.getDate()}日`,
       isActive: true
     });
+
+    // Add sample topics with different vote counts to demonstrate background coloring
+    setTimeout(() => {
+      this.addSampleTopics();
+    }, 100);
+  }
+
+  private async addSampleTopics() {
+    const activeWeek = await this.getActiveWeek();
+    if (!activeWeek) return;
+
+    const sampleTopics = [
+      { title: "AI技術の未来について", url: "https://example.com/ai-future", description: "AIが社会に与える影響について議論", stars: 0 },
+      { title: "リモートワークの効率化", url: "https://example.com/remote-work", description: "在宅勤務での生産性向上のコツ", stars: 2 },
+      { title: "サステナブルな生活スタイル", url: "https://example.com/sustainable", description: "環境に配慮した暮らし方の提案", stars: 5 },
+      { title: "デジタルデトックスの重要性", url: "https://example.com/digital-detox", description: "スマートフォンとの適切な距離感", stars: 8 },
+      { title: "次世代のエネルギー技術", url: "https://example.com/energy-tech", description: "再生可能エネルギーの最新動向", stars: 12 }
+    ];
+
+    for (const sample of sampleTopics) {
+      const topic = await this.createTopic({
+        title: sample.title,
+        url: sample.url,
+        description: sample.description,
+        submitter: "サンプルユーザー",
+        weekId: activeWeek.id,
+        status: "pending"
+      });
+
+      // Add stars for demonstration
+      for (let i = 0; i < sample.stars; i++) {
+        await this.addStar({
+          topicId: topic.id,
+          fingerprint: `demo-user-${i}`
+        });
+      }
+    }
   }
 
   // User operations
