@@ -1,6 +1,24 @@
 # 本番環境デプロイメントガイド
 
-## データベース移行手順
+## 簡単デプロイ（推奨）
+
+### ワンコマンドデプロイ
+```bash
+node scripts/deploy.js
+```
+
+このコマンドで以下が自動実行されます：
+- 開発データベースから本番データベースへのコピー
+- データ整合性の検証
+- デプロイ準備の完了確認
+
+### Replit Deployでの実行
+
+1. 上記コマンドを実行後、Replitの「Deploy」ボタンをクリック
+2. 本番環境では自動的に `./data/production.sqlite` が使用されます
+3. 開発環境のすべてのデータが本番環境で利用可能になります
+
+## 手動デプロイ手順
 
 ### 1. 開発環境での準備
 ```bash
@@ -14,25 +32,11 @@ npm run dev
 node scripts/deploy-production.js
 ```
 
-このスクリプトは以下を実行します：
-- `./database/dev.sqlite` から `./data/production.sqlite` へのコピー
-- 既存の本番データベースがある場合、自動的にバックアップを作成
-- データ整合性の確認
-
-### 3. Replit Deployでの設定
-
-Replit Deployを実行する前に、以下の環境変数が自動設定されます：
-
+### 3. デプロイメント検証
 ```bash
-REPLIT_DEPLOYMENT=true
-REPLIT_DB_URL=./data/production.sqlite
+# データベース移行の検証
+node scripts/verify-deployment.js
 ```
-
-### 4. デプロイメント実行
-
-1. Replitの「Deploy」ボタンをクリック
-2. 本番環境では自動的に `./data/production.sqlite` が使用されます
-3. アプリケーションが起動し、開発環境のデータが本番環境で利用可能になります
 
 ## ファイル構造
 
