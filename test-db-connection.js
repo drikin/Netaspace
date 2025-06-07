@@ -15,27 +15,34 @@ async function testDatabaseConnection() {
   // Test different connection configurations
   const configs = [
     {
-      name: 'Current config (SSL required)',
+      name: 'Supabase recommended config',
       config: {
         connectionString: DATABASE_URL,
         ssl: { rejectUnauthorized: false },
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 60000,
+        application_name: 'backspace-fm-app'
       }
     },
     {
-      name: 'Simple SSL config',
+      name: 'Direct session mode',
       config: {
-        connectionString: DATABASE_URL,
-        ssl: true
+        connectionString: DATABASE_URL.replace(':6543/', ':5432/'),
+        ssl: { rejectUnauthorized: false }
       }
     },
     {
-      name: 'No SSL config',
+      name: 'Pool mode with pgbouncer settings',
       config: {
         connectionString: DATABASE_URL,
-        ssl: false
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+        statement_timeout: 30000,
+        query_timeout: 30000
+      }
+    },
+    {
+      name: 'Minimal config',
+      config: {
+        connectionString: DATABASE_URL
       }
     }
   ];

@@ -390,17 +390,51 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // Supabase接続設定 - node-postgres使用
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false
+    this.db = this.createDrizzleConnection();
+  }
+
+  private createDrizzleConnection() {
+    const connectionString = process.env.DATABASE_URL!;
+    
+    // Try different connection configurations
+    const configs = [
+      // Configuration 1: Standard Supabase setup
+      {
+        connectionString,
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+        idleTimeoutMillis: 0,
+        connectionTimeoutMillis: 30000,
       },
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 60000,
-    });
-    this.db = drizzle(pool);
+      // Configuration 2: Direct connection mode (port 5432)
+      {
+        connectionString: connectionString.replace(':6543/', ':5432/'),
+        ssl: { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 60000,
+      },
+      // Configuration 3: Minimal SSL configuration
+      {
+        connectionString,
+        ssl: true,
+        max: 1,
+      }
+    ];
+
+    for (const config of configs) {
+      try {
+        const pool = new Pool(config);
+        return drizzle(pool);
+      } catch (error) {
+        console.warn(`Failed to create connection with config: ${JSON.stringify(config)}`);
+        continue;
+      }
+    }
+
+    // Fallback: Basic connection
+    const pool = new Pool({ connectionString });
+    return drizzle(pool);
   }
 
   // Query caching helper methods
