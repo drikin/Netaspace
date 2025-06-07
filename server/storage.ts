@@ -5,8 +5,8 @@ import {
   WeekWithTopics, TopicWithCommentsAndStars
 } from "@shared/schema";
 import { eq, desc, asc, and, gt, lt, isNull, sql, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 export interface IStorage {
   // User operations
@@ -87,7 +87,7 @@ export class MemStorage implements IStorage {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
-    this.createWeek({
+    const week = this.createWeek({
       startDate: startOfWeek,
       endDate: endOfWeek,
       title: `${startOfWeek.getFullYear()}年${startOfWeek.getMonth() + 1}月${startOfWeek.getDate()}日〜${endOfWeek.getMonth() + 1}月${endOfWeek.getDate()}日`,
@@ -95,41 +95,34 @@ export class MemStorage implements IStorage {
     });
 
     // Add sample topics with different vote counts to demonstrate background coloring
-    setTimeout(() => {
-      this.addSampleTopics();
-    }, 100);
-  }
-
-  private async addSampleTopics() {
-    const activeWeek = await this.getActiveWeek();
-    if (!activeWeek) return;
-
     const sampleTopics = [
-      { title: "AI技術の未来について", url: "https://example.com/ai-future", description: "AIが社会に与える影響について議論", stars: 0 },
-      { title: "リモートワークの効率化", url: "https://example.com/remote-work", description: "在宅勤務での生産性向上のコツ", stars: 2 },
-      { title: "サステナブルな生活スタイル", url: "https://example.com/sustainable", description: "環境に配慮した暮らし方の提案", stars: 5 },
-      { title: "デジタルデトックスの重要性", url: "https://example.com/digital-detox", description: "スマートフォンとの適切な距離感", stars: 8 },
-      { title: "次世代のエネルギー技術", url: "https://example.com/energy-tech", description: "再生可能エネルギーの最新動向", stars: 12 }
+      { title: "AIと音楽制作の未来について", url: "https://example.com/ai-music", description: "人工知能が音楽制作に与える影響と可能性について議論したい", submitter: "音楽愛好家", votes: 8 },
+      { title: "リモートワークの生産性向上術", url: "https://example.com/remote-work", description: "在宅勤務での効率的な働き方のコツを共有", submitter: "フリーランサー", votes: 5 },
+      { title: "サステナブルファッションの現状", url: "https://example.com/sustainable-fashion", description: "環境に配慮したファッション業界の取り組み", submitter: "環境活動家", votes: 12 },
+      { title: "プログラミング教育の重要性", url: "https://example.com/coding-education", description: "子どもたちにプログラミングを教える意義", submitter: "エンジニア", votes: 3 },
+      { title: "宇宙開発の最新動向", url: "https://example.com/space-development", description: "民間宇宙開発企業の競争について", submitter: "宇宙好き", votes: 15 },
+      { title: "メンタルヘルスケアの普及", url: "https://example.com/mental-health", description: "職場でのメンタルヘルス対策の現状", submitter: "カウンセラー", votes: 7 },
+      { title: "日本の食文化の変化", url: "https://example.com/food-culture", description: "伝統的な日本料理と現代の食習慣", submitter: "料理研究家", votes: 2 },
+      { title: "eスポーツの将来性", url: "https://example.com/esports", description: "競技ゲームの市場拡大と課題", submitter: "ゲーマー", votes: 10 }
     ];
 
-    for (const sample of sampleTopics) {
-      const topic = await this.createTopic({
-        title: sample.title,
-        url: sample.url,
-        description: sample.description,
-        submitter: "サンプルユーザー",
-        weekId: activeWeek.id,
-        status: "pending"
+    sampleTopics.forEach(topicData => {
+      const topic = this.createTopic({
+        title: topicData.title,
+        url: topicData.url,
+        description: topicData.description,
+        submitter: topicData.submitter,
+        weekId: week.id
       });
 
-      // Add stars for demonstration
-      for (let i = 0; i < sample.stars; i++) {
-        await this.addStar({
+      // Add stars to demonstrate vote-based coloring
+      for (let i = 0; i < topicData.votes; i++) {
+        this.addStar({
           topicId: topic.id,
-          fingerprint: `demo-user-${i}`
+          fingerprint: `demo_user_${i}_${topic.id}`
         });
       }
-    }
+    });
   }
 
   // User operations
@@ -145,12 +138,7 @@ export class MemStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const newUser: User = { 
-      ...user, 
-      id,
-      isAdmin: user.isAdmin ?? false,
-      email: user.email ?? null
-    };
+    const newUser: User = { ...user, id };
     this.users.set(id, newUser);
     return newUser;
   }
@@ -402,24 +390,15 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // PostgreSQL接続を適正化（Compute Unit節約）
-    const client = postgres(process.env.DATABASE_URL, {
-      max: 5,                     // 最大接続数を大幅削減（50→5）
-      idle_timeout: 20,           // アイドルタイムアウトを延長（リソース節約）
-      connect_timeout: 10,        // 接続タイムアウトを延長
-      prepare: false,             // プリペアードステートメントを無効化
-      transform: {
-        undefined: null,          // undefinedをnullに変換
-      },
-      fetch_types: false,         // 型取得を無効化（高速化）
-      publications: 'all',        // すべてのパブリケーションを使用
-      target_session_attrs: 'read-write', // 読み書き可能なセッションを優先
-      connection: {
-        application_name: 'backspace-fm-optimized'
-      },
-      onnotice: () => {},         // 通知を無効化して高速化
+    // Supabase接続設定 - node-postgres使用
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 1,
+      idleTimeoutMillis: 0,
+      connectionTimeoutMillis: 30000,
     });
-    this.db = drizzle(client);
+    this.db = drizzle(pool);
   }
 
   // Query caching helper methods
@@ -871,5 +850,6 @@ export class PostgresStorage implements IStorage {
 }
 
 // Use the appropriate storage implementation
-// Temporarily using MemStorage until database connection is fixed
+// If DATABASE_URL is set, use PostgresStorage, otherwise use MemStorage
+// Temporarily use MemStorage due to DATABASE_URL authentication issues
 export const storage: IStorage = new MemStorage();
