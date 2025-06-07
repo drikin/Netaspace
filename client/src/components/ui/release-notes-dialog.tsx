@@ -61,7 +61,7 @@ export function ReleaseNotesDialog({
               <div className="space-y-2 pr-3">
                 {releaseNotes.map((note) => {
                   const isSelected = note.id === selectedReleaseId;
-                  const isRead = readReleases.includes(note.id);
+                  const noteIsRead = isRead(note.id);
                   
                   return (
                     <Button
@@ -75,7 +75,7 @@ export function ReleaseNotesDialog({
                       <div className="flex flex-col items-start">
                         <div className="flex items-center w-full justify-between">
                           <span className="font-medium truncate">{note.version}</span>
-                          {!isRead && (
+                          {!noteIsRead && (
                             <Badge variant="default" className="ml-2 bg-blue-500">新着</Badge>
                           )}
                         </div>
@@ -138,7 +138,7 @@ export function ReleaseNotesDialog({
 
 export function ReleaseNotesButton() {
   const [open, setOpen] = useState(false);
-  const unreadCount = releaseNotes.filter(note => !getReadReleases().includes(note.id)).length;
+  const { unreadCount } = useReleaseNotes();
   
   return (
     <>
