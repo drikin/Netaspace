@@ -113,9 +113,16 @@ export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
 // Extended schemas for form validation
-export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true }).extend({
+export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true, fingerprint: true }).extend({
   description: z.string().optional(),
 });
+
+// Server-side topic creation schema (includes all required fields)
+export const createTopicSchema = insertTopicSchema.extend({
+  fingerprint: z.string(),
+  status: z.string().default('pending'),
+});
+
 export const submitCommentSchema = insertCommentSchema.omit({ topicId: true });
 
 // Extended types for API responses

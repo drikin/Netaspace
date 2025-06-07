@@ -297,16 +297,21 @@ class SQLiteStorage implements IStorage {
   }
 
   async createTopic(topic: InsertTopic): Promise<Topic> {
-    const topicWithTimestamp = {
-      ...topic,
+    const topicData = {
+      weekId: topic.weekId,
+      title: topic.title,
+      url: topic.url,
+      description: topic.description,
+      submitter: topic.submitter,
+      fingerprint: topic.fingerprint,
       createdAt: new Date().toISOString(),
       status: topic.status || 'pending',
-      stars: topic.stars || 0
+      stars: 0
     };
     
     const result = await this.db
       .insert(topics)
-      .values(topicWithTimestamp)
+      .values(topicData)
       .returning();
     
     return result[0];
