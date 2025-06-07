@@ -5,8 +5,8 @@ import {
   WeekWithTopics, TopicWithCommentsAndStars
 } from "@shared/schema";
 import { eq, desc, asc, and, gt, lt, isNull, sql, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 export interface IStorage {
   // User operations
@@ -87,11 +87,41 @@ export class MemStorage implements IStorage {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
     
-    this.createWeek({
+    const week = this.createWeek({
       startDate: startOfWeek,
       endDate: endOfWeek,
       title: `${startOfWeek.getFullYear()}年${startOfWeek.getMonth() + 1}月${startOfWeek.getDate()}日〜${endOfWeek.getMonth() + 1}月${endOfWeek.getDate()}日`,
       isActive: true
+    });
+
+    // Add sample topics with different vote counts to demonstrate background coloring
+    const sampleTopics = [
+      { title: "AIと音楽制作の未来について", url: "https://example.com/ai-music", description: "人工知能が音楽制作に与える影響と可能性について議論したい", submitter: "音楽愛好家", votes: 8 },
+      { title: "リモートワークの生産性向上術", url: "https://example.com/remote-work", description: "在宅勤務での効率的な働き方のコツを共有", submitter: "フリーランサー", votes: 5 },
+      { title: "サステナブルファッションの現状", url: "https://example.com/sustainable-fashion", description: "環境に配慮したファッション業界の取り組み", submitter: "環境活動家", votes: 12 },
+      { title: "プログラミング教育の重要性", url: "https://example.com/coding-education", description: "子どもたちにプログラミングを教える意義", submitter: "エンジニア", votes: 3 },
+      { title: "宇宙開発の最新動向", url: "https://example.com/space-development", description: "民間宇宙開発企業の競争について", submitter: "宇宙好き", votes: 15 },
+      { title: "メンタルヘルスケアの普及", url: "https://example.com/mental-health", description: "職場でのメンタルヘルス対策の現状", submitter: "カウンセラー", votes: 7 },
+      { title: "日本の食文化の変化", url: "https://example.com/food-culture", description: "伝統的な日本料理と現代の食習慣", submitter: "料理研究家", votes: 2 },
+      { title: "eスポーツの将来性", url: "https://example.com/esports", description: "競技ゲームの市場拡大と課題", submitter: "ゲーマー", votes: 10 }
+    ];
+
+    sampleTopics.forEach(topicData => {
+      const topic = this.createTopic({
+        title: topicData.title,
+        url: topicData.url,
+        description: topicData.description,
+        submitter: topicData.submitter,
+        weekId: week.id
+      });
+
+      // Add stars to demonstrate vote-based coloring
+      for (let i = 0; i < topicData.votes; i++) {
+        this.addStar({
+          topicId: topic.id,
+          fingerprint: `demo_user_${i}_${topic.id}`
+        });
+      }
     });
   }
 
@@ -360,24 +390,69 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    // PostgreSQL接続を適正化（Compute Unit節約）
-    const client = postgres(process.env.DATABASE_URL, {
-      max: 5,                     // 最大接続数を大幅削減（50→5）
-      idle_timeout: 20,           // アイドルタイムアウトを延長（リソース節約）
-      connect_timeout: 10,        // 接続タイムアウトを延長
-      prepare: false,             // プリペアードステートメントを無効化
-      transform: {
-        undefined: null,          // undefinedをnullに変換
+    this.db = this.createDrizzleConnection();
+  }
+
+  private async createDrizzleConnection() {
+    const connectionString = process.env.DATABASE_URL!;
+    
+    // Test connection first before creating drizzle instance
+    const workingConfig = await this.findWorkingConfig(connectionString);
+    
+    if (!workingConfig) {
+      console.error('All database connection attempts failed. Using fallback configuration.');
+      // Still create a connection that might work later
+      const pool = new Pool({
+        connectionString,
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+      });
+      return drizzle(pool);
+    }
+
+    console.log('Database connection established successfully');
+    const pool = new Pool(workingConfig);
+    return drizzle(pool);
+  }
+
+  private async findWorkingConfig(connectionString: string) {
+    const configs = [
+      {
+        connectionString,
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+        idleTimeoutMillis: 0,
+        connectionTimeoutMillis: 15000,
       },
-      fetch_types: false,         // 型取得を無効化（高速化）
-      publications: 'all',        // すべてのパブリケーションを使用
-      target_session_attrs: 'read-write', // 読み書き可能なセッションを優先
-      connection: {
-        application_name: 'backspace-fm-optimized'
+      {
+        connectionString: connectionString.replace(':6543/', ':5432/'),
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+        connectionTimeoutMillis: 15000,
       },
-      onnotice: () => {},         // 通知を無効化して高速化
-    });
-    this.db = drizzle(client);
+      {
+        connectionString,
+        ssl: false,
+        max: 1,
+      }
+    ];
+
+    for (const config of configs) {
+      try {
+        const testPool = new Pool(config);
+        const client = await testPool.connect();
+        await client.query('SELECT 1');
+        client.release();
+        await testPool.end();
+        console.log('Found working database configuration');
+        return config;
+      } catch (error) {
+        console.warn(`Database config failed: ${(error as Error).message}`);
+        continue;
+      }
+    }
+
+    return null;
   }
 
   // Query caching helper methods
@@ -830,6 +905,6 @@ export class PostgresStorage implements IStorage {
 
 // Use the appropriate storage implementation
 // If DATABASE_URL is set, use PostgresStorage, otherwise use MemStorage
-export const storage: IStorage = process.env.DATABASE_URL
-  ? new PostgresStorage()
+export const storage: IStorage = process.env.DATABASE_URL 
+  ? new PostgresStorage() 
   : new MemStorage();
