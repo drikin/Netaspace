@@ -1,5 +1,5 @@
 // アプリケーション全体のバージョン管理
-export const APP_VERSION = '2.3.0';
+export const APP_VERSION = '2.2.0';
 export const EXTENSION_VERSION = '2.1.1';
 
 // バージョン情報を取得する関数
