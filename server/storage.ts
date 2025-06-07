@@ -47,25 +47,40 @@ export interface IStorage {
 }
 
 function getDatabasePath() {
+  // Always check for persistent database first, regardless of environment
+  const persistentPath = '/tmp/persistent/production.sqlite';
+  const fallbackPath = './data/production.sqlite';
+  const devPath = './database/dev.sqlite';
+  
+  // Priority 1: Use persistent database if it exists (production data)
+  if (fs.existsSync(persistentPath)) {
+    console.log('Using persistent production database');
+    return persistentPath;
+  }
+  
+  // Priority 2: Check if we're in production environment
   if (process.env.REPLIT_DEPLOYMENT) {
-    // Production environment: Use persistent directory that survives redeployments
-    // Replit preserves files in certain directories across deployments
-    const persistentPath = '/tmp/persistent/production.sqlite';
-    const fallbackPath = './data/production.sqlite';
-    
-    // Try to use /tmp/persistent first (more reliable for persistence)
     try {
       const persistentDir = path.dirname(persistentPath);
       if (!fs.existsSync(persistentDir)) {
         fs.mkdirSync(persistentDir, { recursive: true });
       }
+      
+      // Copy from development if available
+      if (fs.existsSync(devPath)) {
+        fs.copyFileSync(devPath, persistentPath);
+        console.log('Initialized persistent database from development data');
+      }
+      
       return persistentPath;
     } catch (error) {
       console.warn('Could not use persistent directory, falling back to data directory');
       return fallbackPath;
     }
   }
-  return './database/dev.sqlite';
+  
+  // Priority 3: Development environment
+  return devPath;
 }
 
 function initializeSQLiteDatabase() {
