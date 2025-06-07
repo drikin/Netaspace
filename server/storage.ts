@@ -390,70 +390,17 @@ export class PostgresStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     
-    this.db = this.createDrizzleConnection();
+    // Create synchronous connection
+    const connectionString = process.env.DATABASE_URL;
+    const pool = new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+      max: 1,
+    });
+    this.db = drizzle(pool);
   }
 
-  private async createDrizzleConnection() {
-    const connectionString = process.env.DATABASE_URL!;
-    
-    // Test connection first before creating drizzle instance
-    const workingConfig = await this.findWorkingConfig(connectionString);
-    
-    if (!workingConfig) {
-      console.error('All database connection attempts failed. Using fallback configuration.');
-      // Still create a connection that might work later
-      const pool = new Pool({
-        connectionString,
-        ssl: { rejectUnauthorized: false },
-        max: 1,
-      });
-      return drizzle(pool);
-    }
 
-    console.log('Database connection established successfully');
-    const pool = new Pool(workingConfig);
-    return drizzle(pool);
-  }
-
-  private async findWorkingConfig(connectionString: string) {
-    const configs = [
-      {
-        connectionString,
-        ssl: { rejectUnauthorized: false },
-        max: 1,
-        idleTimeoutMillis: 0,
-        connectionTimeoutMillis: 15000,
-      },
-      {
-        connectionString: connectionString.replace(':6543/', ':5432/'),
-        ssl: { rejectUnauthorized: false },
-        max: 1,
-        connectionTimeoutMillis: 15000,
-      },
-      {
-        connectionString,
-        ssl: false,
-        max: 1,
-      }
-    ];
-
-    for (const config of configs) {
-      try {
-        const testPool = new Pool(config);
-        const client = await testPool.connect();
-        await client.query('SELECT 1');
-        client.release();
-        await testPool.end();
-        console.log('Found working database configuration');
-        return config;
-      } catch (error) {
-        console.warn(`Database config failed: ${(error as Error).message}`);
-        continue;
-      }
-    }
-
-    return null;
-  }
 
   // Query caching helper methods
   private getCacheKey(method: string, ...params: any[]): string {

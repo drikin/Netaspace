@@ -261,6 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(week);
     } catch (error) {
+      console.error('Error in /api/weeks/active:', error);
       res.status(500).json({ message: 'Failed to fetch active week' });
     }
   });
