@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ReleaseNote, releaseNotes, getReadReleases, markReleasesAsRead } from '@/lib/release-notes';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Check, Info } from 'lucide-react';
+import { useReleaseNotes } from '@/lib/use-release-notes';
 
 interface ReleaseNotesDialogProps {
   open: boolean;
@@ -19,6 +19,7 @@ export function ReleaseNotesDialog({
 }: ReleaseNotesDialogProps) {
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | undefined>(initialReleaseId);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { releaseNotes, readReleases, markAllAsRead, isRead } = useReleaseNotes();
   
   // 初期表示時、選択がなければ最新のリリースを選択
   useEffect(() => {
@@ -28,20 +29,17 @@ export function ReleaseNotesDialog({
         setSelectedReleaseId(releaseNotes[0].id);
       }
     }
-  }, [open, selectedReleaseId, isLoaded]);
+  }, [open, selectedReleaseId, isLoaded, releaseNotes]);
   
-  // ダイアログが閉じられるとき、表示したリリースを既読にする
+  // ダイアログが開かれるとき、全ての未読リリースを既読にする
   useEffect(() => {
-    if (!open && isLoaded && selectedReleaseId) {
-      markReleasesAsRead([selectedReleaseId]);
+    if (open && isLoaded) {
+      markAllAsRead();
     }
-  }, [open, selectedReleaseId, isLoaded]);
+  }, [open, isLoaded, markAllAsRead]);
   
   // 選択されたリリースノートを取得
   const selectedRelease = releaseNotes.find(note => note.id === selectedReleaseId);
-  
-  // 既読済みリリースIDリスト
-  const readReleases = getReadReleases();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

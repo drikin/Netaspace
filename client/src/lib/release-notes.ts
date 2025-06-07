@@ -278,3 +278,12 @@ export function getUnreadReleases(): ReleaseNote[] {
   const readReleases = getReadReleases();
   return releaseNotes.filter(note => !readReleases.includes(note.id));
 }
+
+// 全ての未読リリースを既読にマーク
+export function markAllUnreadAsRead() {
+  const unreadReleases = getUnreadReleases();
+  if (unreadReleases.length > 0) {
+    const unreadIds = unreadReleases.map(note => note.id);
+    markReleasesAsRead(unreadIds);
+  }
+}
