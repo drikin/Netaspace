@@ -23,34 +23,42 @@ function ensureProductionDirectory() {
 function initializeProductionDatabase() {
   ensureProductionDirectory();
 
-  // 本番DBが既に存在する場合は何もしない（データ保護）
-  if (fs.existsSync(PROD_DB_PATH)) {
-    console.log('✅ Production database already exists, preserving existing data');
-    console.log('📍 Production DB path:', PROD_DB_PATH);
-    return;
-  }
-
-  // 本番DBが存在しない場合のみ、開発DBからコピー（初回デプロイのみ）
+  // 開発DBが存在しない場合はエラー
   if (!fs.existsSync(DEV_DB_PATH)) {
-    console.error('Development database not found:', DEV_DB_PATH);
+    console.error('❌ Development database not found:', DEV_DB_PATH);
+    console.error('Please ensure the development database exists before deployment');
     process.exit(1);
   }
 
-  // 初回デプロイ時のみコピー
-  fs.copyFileSync(DEV_DB_PATH, PROD_DB_PATH);
-  console.log('🚀 Initial deployment: Copied development database to production');
-  console.log('📍 Production DB initialized at:', PROD_DB_PATH);
+  // 本番環境でのみ実行する安全チェック
+  if (!process.env.REPLIT_DEPLOYMENT) {
+    console.log('⚠️  Not in production environment, skipping database copy');
+    return;
+  }
 
+  // バックアップを作成（既存の本番DBがある場合）
+  if (fs.existsSync(PROD_DB_PATH)) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${PROD_DB_PATH}.backup.${timestamp}`;
+    fs.copyFileSync(PROD_DB_PATH, backupPath);
+    console.log('📦 Created backup of existing production database:', backupPath);
+  }
+
+  // 開発DBを本番環境にコピー
+  console.log('🚀 Copying development database to production...');
+  fs.copyFileSync(DEV_DB_PATH, PROD_DB_PATH);
+  
   // ファイルサイズ確認
   const devStats = fs.statSync(DEV_DB_PATH);
   const prodStats = fs.statSync(PROD_DB_PATH);
   
-  console.log(`Database sizes - Dev: ${devStats.size} bytes, Prod: ${prodStats.size} bytes`);
+  console.log(`📊 Database sizes - Dev: ${devStats.size} bytes, Prod: ${prodStats.size} bytes`);
   
   if (devStats.size === prodStats.size) {
-    console.log('✅ Production database initialization completed successfully');
+    console.log('✅ Production database deployment completed successfully');
+    console.log('📍 Production DB path:', PROD_DB_PATH);
   } else {
-    console.error('❌ Database initialization verification failed');
+    console.error('❌ Database deployment verification failed - size mismatch');
     process.exit(1);
   }
 }
