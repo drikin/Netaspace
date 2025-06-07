@@ -393,48 +393,66 @@ export class PostgresStorage implements IStorage {
     this.db = this.createDrizzleConnection();
   }
 
-  private createDrizzleConnection() {
+  private async createDrizzleConnection() {
     const connectionString = process.env.DATABASE_URL!;
     
-    // Try different connection configurations
+    // Test connection first before creating drizzle instance
+    const workingConfig = await this.findWorkingConfig(connectionString);
+    
+    if (!workingConfig) {
+      console.error('All database connection attempts failed. Using fallback configuration.');
+      // Still create a connection that might work later
+      const pool = new Pool({
+        connectionString,
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+      });
+      return drizzle(pool);
+    }
+
+    console.log('Database connection established successfully');
+    const pool = new Pool(workingConfig);
+    return drizzle(pool);
+  }
+
+  private async findWorkingConfig(connectionString: string) {
     const configs = [
-      // Configuration 1: Standard Supabase setup
       {
         connectionString,
         ssl: { rejectUnauthorized: false },
         max: 1,
         idleTimeoutMillis: 0,
-        connectionTimeoutMillis: 30000,
+        connectionTimeoutMillis: 15000,
       },
-      // Configuration 2: Direct connection mode (port 5432)
       {
         connectionString: connectionString.replace(':6543/', ':5432/'),
         ssl: { rejectUnauthorized: false },
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 60000,
+        max: 1,
+        connectionTimeoutMillis: 15000,
       },
-      // Configuration 3: Minimal SSL configuration
       {
         connectionString,
-        ssl: true,
+        ssl: false,
         max: 1,
       }
     ];
 
     for (const config of configs) {
       try {
-        const pool = new Pool(config);
-        return drizzle(pool);
+        const testPool = new Pool(config);
+        const client = await testPool.connect();
+        await client.query('SELECT 1');
+        client.release();
+        await testPool.end();
+        console.log('Found working database configuration');
+        return config;
       } catch (error) {
-        console.warn(`Failed to create connection with config: ${JSON.stringify(config)}`);
+        console.warn(`Database config failed: ${(error as Error).message}`);
         continue;
       }
     }
 
-    // Fallback: Basic connection
-    const pool = new Pool({ connectionString });
-    return drizzle(pool);
+    return null;
   }
 
   // Query caching helper methods
@@ -887,5 +905,6 @@ export class PostgresStorage implements IStorage {
 
 // Use the appropriate storage implementation
 // If DATABASE_URL is set, use PostgresStorage, otherwise use MemStorage
-// Temporarily use MemStorage while troubleshooting database connection
-export const storage: IStorage = new MemStorage();
+export const storage: IStorage = process.env.DATABASE_URL 
+  ? new PostgresStorage() 
+  : new MemStorage();
