@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { createHash } from "crypto";
 import { storage } from "./storage";
 import { 
   insertTopicSchema, 
@@ -350,14 +351,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate fingerprint for the submission
       const fingerprint = (req.ip || 'unknown') + (req.get('User-Agent') || 'anonymous');
-      const hashedFingerprint = require('crypto').createHash('sha256').update(fingerprint).digest('hex');
+      const hashedFingerprint = createHash('sha256').update(fingerprint).digest('hex');
       
-      // Create the topic with the active week ID, default status, and fingerprint
+      // Create the topic with all required fields for storage
       const topicData = {
-        ...submissionData,
         weekId: activeWeek.id,
-        status: 'pending',
-        fingerprint: hashedFingerprint
+        title: submissionData.title,
+        url: submissionData.url,
+        description: submissionData.description || null,
+        submitter: submissionData.submitter,
+        fingerprint: hashedFingerprint,
+        status: 'pending'
       };
       
       const topic = await storage.createTopic(topicData);

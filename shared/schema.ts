@@ -123,6 +123,8 @@ export const createTopicSchema = insertTopicSchema.extend({
   status: z.string().default('pending'),
 });
 
+export type CreateTopicData = z.infer<typeof createTopicSchema>;
+
 export const submitCommentSchema = insertCommentSchema.omit({ topicId: true });
 
 // Extended types for API responses
