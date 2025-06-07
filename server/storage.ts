@@ -393,10 +393,12 @@ export class PostgresStorage implements IStorage {
     // Supabase接続設定 - node-postgres使用
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      max: 1,
-      idleTimeoutMillis: 0,
-      connectionTimeoutMillis: 30000,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 60000,
     });
     this.db = drizzle(pool);
   }
@@ -851,5 +853,5 @@ export class PostgresStorage implements IStorage {
 
 // Use the appropriate storage implementation
 // If DATABASE_URL is set, use PostgresStorage, otherwise use MemStorage
-// Temporarily use MemStorage due to DATABASE_URL authentication issues
+// Temporarily use MemStorage while troubleshooting database connection
 export const storage: IStorage = new MemStorage();
