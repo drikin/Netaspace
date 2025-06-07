@@ -40,7 +40,7 @@ function createBackup() {
 }
 
 function deployDatabase() {
-  console.log('🚀 Starting database deployment...');
+  console.log('🚀 Starting persistent database deployment...');
 
   // 開発DBの存在確認
   if (!fs.existsSync(DEV_DB_PATH)) {
@@ -49,29 +49,76 @@ function deployDatabase() {
     process.exit(1);
   }
 
-  ensureDirectories();
-  const backupPath = createBackup();
+  // 永続化ディレクトリの設定
+  const persistentPaths = [
+    '/tmp/persistent',
+    '/home/runner/.local/share/app-data',
+    './data'
+  ];
+
+  let persistentDir = null;
+  for (const testPath of persistentPaths) {
+    try {
+      if (!fs.existsSync(testPath)) {
+        fs.mkdirSync(testPath, { recursive: true });
+      }
+      // 書き込みテスト
+      const testFile = path.join(testPath, 'test-write.tmp');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      persistentDir = testPath;
+      console.log(`✅ Using persistent directory: ${persistentDir}`);
+      break;
+    } catch (error) {
+      console.log(`❌ Path not available: ${testPath}`);
+    }
+  }
+
+  if (!persistentDir) {
+    console.error('❌ No persistent storage available, using fallback');
+    persistentDir = './data';
+  }
+
+  const persistentProdPath = path.join(persistentDir, 'production.sqlite');
+  const persistentBackupDir = path.join(persistentDir, 'backups');
+
+  // バックアップディレクトリ作成
+  if (!fs.existsSync(persistentBackupDir)) {
+    fs.mkdirSync(persistentBackupDir, { recursive: true });
+    console.log(`📁 Created persistent backup directory: ${persistentBackupDir}`);
+  }
+
+  // 既存の永続化DBがある場合はバックアップ
+  let backupPath = null;
+  if (fs.existsSync(persistentProdPath)) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+    backupPath = path.join(persistentBackupDir, `production-${timestamp}.sqlite`);
+    if (!fs.existsSync(backupPath)) {
+      fs.copyFileSync(persistentProdPath, backupPath);
+      console.log('📦 Created backup of existing persistent database:', backupPath);
+    }
+  }
 
   try {
-    // 開発DBを本番環境にコピー
-    console.log('📋 Copying development database to production...');
-    fs.copyFileSync(DEV_DB_PATH, PROD_DB_PATH);
+    // 開発DBを永続化ディレクトリにコピー
+    console.log('📋 Copying development database to persistent storage...');
+    fs.copyFileSync(DEV_DB_PATH, persistentProdPath);
 
     // ファイルサイズとデータの整合性確認
     const devStats = fs.statSync(DEV_DB_PATH);
-    const prodStats = fs.statSync(PROD_DB_PATH);
+    const prodStats = fs.statSync(persistentProdPath);
 
     console.log(`📊 Database sizes:`);
     console.log(`  Development: ${devStats.size} bytes`);
-    console.log(`  Production:  ${prodStats.size} bytes`);
+    console.log(`  Persistent:  ${prodStats.size} bytes`);
 
     if (devStats.size === prodStats.size) {
-      console.log('✅ Database deployment completed successfully');
-      console.log('📍 Production database path:', PROD_DB_PATH);
+      console.log('✅ Persistent database deployment completed successfully');
+      console.log('📍 Persistent database path:', persistentProdPath);
       
       // 環境変数の設定指示
-      console.log('\n📝 Environment setup:');
-      console.log(`REPLIT_DB_URL="${PROD_DB_PATH}"`);
+      console.log('\n📝 Environment setup for persistence:');
+      console.log(`REPLIT_DB_URL="${persistentProdPath}"`);
       console.log('REPLIT_DEPLOYMENT=true');
       
     } else {
@@ -79,12 +126,12 @@ function deployDatabase() {
     }
 
   } catch (error) {
-    console.error('❌ Database deployment failed:', error.message);
+    console.error('❌ Persistent database deployment failed:', error.message);
     
     // エラー時の復元処理
     if (backupPath && fs.existsSync(backupPath)) {
       console.log('🔄 Restoring from backup...');
-      fs.copyFileSync(backupPath, PROD_DB_PATH);
+      fs.copyFileSync(backupPath, persistentProdPath);
       console.log('✅ Restored from backup');
     }
     

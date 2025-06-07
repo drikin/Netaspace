@@ -48,8 +48,22 @@ export interface IStorage {
 
 function getDatabasePath() {
   if (process.env.REPLIT_DEPLOYMENT) {
-    // Production environment uses writable directory
-    return process.env.REPLIT_DB_URL || './data/production.sqlite';
+    // Production environment: Use persistent directory that survives redeployments
+    // Replit preserves files in certain directories across deployments
+    const persistentPath = '/tmp/persistent/production.sqlite';
+    const fallbackPath = './data/production.sqlite';
+    
+    // Try to use /tmp/persistent first (more reliable for persistence)
+    try {
+      const persistentDir = path.dirname(persistentPath);
+      if (!fs.existsSync(persistentDir)) {
+        fs.mkdirSync(persistentDir, { recursive: true });
+      }
+      return persistentPath;
+    } catch (error) {
+      console.warn('Could not use persistent directory, falling back to data directory');
+      return fallbackPath;
+    }
   }
   return './database/dev.sqlite';
 }
