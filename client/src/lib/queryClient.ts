@@ -59,9 +59,9 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      refetchOnMount: false, // Prevent unnecessary refetches
-      staleTime: 1000 * 60 * 10, // 10 minutes (increased from 2 minutes)
-      gcTime: 1000 * 60 * 60, // 60 minutes cache time (increased)
+      refetchOnMount: true, // Allow refetches to get latest data
+      staleTime: 1000 * 30, // 30 seconds (reduced for fresh data)
+      gcTime: 1000 * 60 * 5, // 5 minutes cache time (reduced)
       retry: (failureCount, error: any) => {
         // Smart retry logic
         if (error?.response?.status >= 400 && error?.response?.status < 500 && error?.response?.status !== 429) {

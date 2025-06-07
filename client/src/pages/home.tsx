@@ -6,6 +6,8 @@ import TopicCard from "@/components/ui/topic-card";
 import { BookmarkletGenerator } from "@/components/bookmarklet-generator";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -15,6 +17,9 @@ const Home: React.FC = () => {
   const { data: week, isLoading, refetch } = useQuery({
     queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!fingerprint,
+    staleTime: 0, // Force fresh data for home page
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Check if user is authenticated and is admin
