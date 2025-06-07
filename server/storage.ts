@@ -47,40 +47,131 @@ export interface IStorage {
 }
 
 function getDatabasePath() {
-  // Always check for persistent database first, regardless of environment
-  const persistentPath = '/tmp/persistent/production.sqlite';
-  const fallbackPath = './data/production.sqlite';
-  const devPath = './database/dev.sqlite';
+  // Multiple persistent locations for maximum reliability
+  const persistentCandidates = [
+    '/tmp/persistent/production.sqlite',
+    '/home/runner/workspace/data/persistent/production.sqlite',
+    '/var/tmp/persistent/production.sqlite'
+  ];
   
-  // Priority 1: Use persistent database if it exists (production data)
-  if (fs.existsSync(persistentPath)) {
-    console.log('Using persistent production database');
-    return persistentPath;
-  }
+  const backupLocations = [
+    '/tmp/persistent/backups',
+    '/home/runner/workspace/data/backups',
+    './data/backups'
+  ];
   
-  // Priority 2: Check if we're in production environment
-  if (process.env.REPLIT_DEPLOYMENT) {
-    try {
-      const persistentDir = path.dirname(persistentPath);
-      if (!fs.existsSync(persistentDir)) {
-        fs.mkdirSync(persistentDir, { recursive: true });
-      }
-      
-      // Copy from development if available
-      if (fs.existsSync(devPath)) {
-        fs.copyFileSync(devPath, persistentPath);
-        console.log('Initialized persistent database from development data');
-      }
-      
+  // Priority 1: Use existing persistent database
+  for (const persistentPath of persistentCandidates) {
+    if (fs.existsSync(persistentPath)) {
+      console.log(`Using persistent production database: ${persistentPath}`);
       return persistentPath;
-    } catch (error) {
-      console.warn('Could not use persistent directory, falling back to data directory');
-      return fallbackPath;
     }
   }
   
-  // Priority 3: Development environment
-  return devPath;
+  // Priority 2: Restore from backup if available
+  for (const backupDir of backupLocations) {
+    const latestBackupInfo = path.join(backupDir, 'latest-backup.json');
+    if (fs.existsSync(latestBackupInfo)) {
+      try {
+        const backupInfo = JSON.parse(fs.readFileSync(latestBackupInfo, 'utf8'));
+        if (fs.existsSync(backupInfo.backupFile)) {
+          console.log(`Restoring from backup: ${backupInfo.backupFile}`);
+          
+          // Create persistent directory and restore
+          const targetPath = persistentCandidates[0];
+          const targetDir = path.dirname(targetPath);
+          if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+          }
+          
+          fs.copyFileSync(backupInfo.backupFile, targetPath);
+          console.log(`Database restored to: ${targetPath}`);
+          return targetPath;
+        }
+      } catch (error) {
+        console.log(`Backup restore attempt failed: ${error.message}`);
+      }
+    }
+  }
+  
+  // Priority 3: Create persistent database from existing data
+  const fallbackPaths = ['./data/production.sqlite', './database/dev.sqlite'];
+  
+  for (const fallbackPath of fallbackPaths) {
+    if (fs.existsSync(fallbackPath)) {
+      console.log(`Migrating database to persistent storage: ${fallbackPath}`);
+      
+      // Copy to persistent location
+      const targetPath = persistentCandidates[0];
+      const targetDir = path.dirname(targetPath);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      
+      fs.copyFileSync(fallbackPath, targetPath);
+      console.log(`Database migrated to: ${targetPath}`);
+      return targetPath;
+    }
+  }
+  
+  // Priority 4: Create new persistent database
+  const newDbPath = persistentCandidates[0];
+  const newDbDir = path.dirname(newDbPath);
+  if (!fs.existsSync(newDbDir)) {
+    fs.mkdirSync(newDbDir, { recursive: true });
+  }
+  
+  console.log(`Creating new persistent database: ${newDbPath}`);
+  return newDbPath;
+}
+
+function createAutoBackup(dbPath: string) {
+  try {
+    const backupDir = path.join(path.dirname(dbPath), 'backups');
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(backupDir, `auto-backup-${timestamp}.sqlite`);
+    
+    fs.copyFileSync(dbPath, backupFile);
+    
+    // Update latest backup info
+    const backupInfo = {
+      timestamp,
+      backupFile,
+      sourceDb: dbPath,
+      createdAt: new Date().toISOString()
+    };
+    
+    fs.writeFileSync(
+      path.join(backupDir, 'latest-backup.json'),
+      JSON.stringify(backupInfo, null, 2)
+    );
+    
+    console.log(`Auto-backup created: ${backupFile}`);
+    
+    // Clean old backups (keep last 10)
+    const backupFiles = fs.readdirSync(backupDir)
+      .filter(file => file.startsWith('auto-backup-') && file.endsWith('.sqlite'))
+      .map(file => ({
+        name: file,
+        path: path.join(backupDir, file),
+        mtime: fs.statSync(path.join(backupDir, file)).mtime
+      }))
+      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+    
+    const toDelete = backupFiles.slice(10);
+    for (const file of toDelete) {
+      fs.unlinkSync(file.path);
+    }
+    
+    return backupFile;
+  } catch (error) {
+    console.warn('Auto-backup failed:', error.message);
+    return null;
+  }
 }
 
 function initializeSQLiteDatabase() {
@@ -103,6 +194,15 @@ function initializeSQLiteDatabase() {
 
     const sqlite = new Database(dbPath);
     console.log('SQLite database initialized successfully');
+    
+    // Create initial backup after successful initialization
+    createAutoBackup(dbPath);
+    
+    // Schedule periodic backups every 4 hours for production persistence
+    setInterval(() => {
+      createAutoBackup(dbPath);
+    }, 4 * 60 * 60 * 1000);
+    
     return sqlite;
   } catch (error) {
     console.error('Failed to initialize SQLite database:', (error as Error).message);
