@@ -80,17 +80,73 @@ const Home: React.FC = () => {
 
       <div className="flex justify-between items-center mb-4">
         <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isLoading}
-          className="ml-4"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          更新
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            更新
+          </Button>
+          {error && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleForceClear}
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              完全リセット
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <h3 className="text-red-800 font-medium">データ読み込みエラー</h3>
+          </div>
+          <p className="text-red-700 text-sm mt-2">
+            データの取得に失敗しました。ページを更新するか、完全リセットをお試しください。
+          </p>
+          <details className="mt-2">
+            <summary className="text-red-600 cursor-pointer text-sm">詳細情報</summary>
+            <pre className="text-xs text-red-600 mt-1 overflow-auto">
+              {JSON.stringify(error, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+
+      {/* Debug Info for Production */}
+      {!week && !isLoading && !error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+            <h3 className="text-yellow-800 font-medium">表示問題の検出</h3>
+          </div>
+          <p className="text-yellow-700 text-sm mt-2">
+            データが正常に読み込まれていない可能性があります。「完全リセット」をお試しください。
+          </p>
+          <div className="mt-3 space-y-1 text-xs text-yellow-600">
+            <div>フィンガープリント: {fingerprint || "未生成"}</div>
+            <div>環境: {process.env.NODE_ENV || "不明"}</div>
+            <div>タイムスタンプ: {new Date().toLocaleString('ja-JP')}</div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleForceClear}
+            className="mt-3"
+          >
+            完全リセット
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-6 px-4 sm:px-0">
         {isLoading ? (
