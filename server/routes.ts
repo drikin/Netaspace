@@ -684,6 +684,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Backup management endpoints (admin only)
+  app.get('/api/admin/backups', isAdmin, async (req, res) => {
+    try {
+      const backupDir = './data/backups';
+      
+      // Check if backup directory exists
+      if (!fs.existsSync(backupDir)) {
+        return res.json([]);
+      }
+
+      // Read backup directory
+      const files = fs.readdirSync(backupDir);
+      const backupFiles = files.filter(file => file.endsWith('.sqlite'));
+
+      // Get file information
+      const backups = backupFiles.map(filename => {
+        const filePath = path.join(backupDir, filename);
+        const stats = fs.statSync(filePath);
+        
+        return {
+          filename,
+          size: stats.size,
+          createdAt: stats.birthtime,
+          modifiedAt: stats.mtime
+        };
+      });
+
+      // Sort by creation date (newest first)
+      backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      res.json(backups);
+    } catch (error) {
+      console.error('Backup list error:', error);
+      res.status(500).json({ message: 'Failed to retrieve backup list' });
+    }
+  });
+
+  app.get('/api/admin/backups/:filename', isAdmin, async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const backupDir = './data/backups';
+      const filePath = path.join(backupDir, filename);
+
+      // Security check: ensure filename is safe
+      if (!filename.endsWith('.sqlite') || filename.includes('..') || filename.includes('/')) {
+        return res.status(400).json({ message: 'Invalid backup filename' });
+      }
+
+      // Check if backup file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'Backup file not found' });
+      }
+
+      // Get file stats
+      const stats = fs.statSync(filePath);
+
+      // Set appropriate headers for SQLite backup download
+      res.setHeader('Content-Type', 'application/x-sqlite3');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', stats.size);
+
+      // Create read stream and pipe to response
+      const readStream = fs.createReadStream(filePath);
+      readStream.on('error', (error) => {
+        console.error('Backup download stream error:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Failed to stream backup file' });
+        }
+      });
+
+      readStream.pipe(res);
+    } catch (error) {
+      console.error('Backup download error:', error);
+      res.status(500).json({ message: 'Failed to download backup file' });
+    }
+  });
+
   // Performance metrics endpoint (admin only)
   app.get('/api/metrics', isAdmin, (req, res) => {
     const totalCacheRequests = performanceMetrics.urlCacheHits + performanceMetrics.urlCacheMisses;
