@@ -272,6 +272,59 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Database export functionality
+  const exportDatabaseMutation = useMutation({
+    mutationFn: async (format: 'json' | 'csv') => {
+      const response = await fetch(`/api/admin/export/${format}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.statusText}`);
+      }
+      
+      return { response, format };
+    },
+    onSuccess: async ({ response, format }) => {
+      try {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `database-export-${new Date().toISOString().split('T')[0]}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "エクスポート完了",
+          description: `データベースを${format.toUpperCase()}形式でダウンロードしました。`,
+        });
+      } catch (error) {
+        console.error('Download failed:', error);
+        toast({
+          title: "ダウンロードエラー",
+          description: "ファイルのダウンロードに失敗しました。",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Export failed:', error);
+      toast({
+        title: "エクスポートエラー",
+        description: "データベースのエクスポートに失敗しました。",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleExportDatabase = (format: 'json' | 'csv') => {
+    exportDatabaseMutation.mutate(format);
+  };
+
   // If not admin and not loading, show login form
   if (!isAdmin && !isAuthLoading) {
     return (
@@ -350,8 +403,34 @@ const Admin: React.FC = () => {
           </p>
         </div>
         
-        {/* Week Management Buttons */}
-        <div className="flex gap-2">
+        {/* Management Buttons */}
+        <div className="flex gap-2 flex-wrap">
+          {/* Database Export Buttons */}
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExportDatabase('json')}
+              disabled={exportDatabaseMutation.isPending}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              JSON
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExportDatabase('csv')}
+              disabled={exportDatabaseMutation.isPending}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              CSV
+            </Button>
+          </div>
+
           <Dialog open={isWeekListDialogOpen} onOpenChange={setIsWeekListDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">

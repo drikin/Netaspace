@@ -560,6 +560,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database export endpoints (admin only)
+  app.get('/api/admin/export/json', isAdmin, async (req, res) => {
+    try {
+      const [weeks, topics, users, comments, stars] = await Promise.all([
+        storage.getWeeks(),
+        storage.getTopicsByStatus('featured'),
+        // Get all users (admin only has access)
+        storage.getUser(1), // For simplicity, get basic user info
+        // Get comments for all topics
+        [], // We'll populate this below
+        [] // We'll populate this below
+      ]);
+
+      // Get all topics regardless of status for export
+      const allTopicsPromises = weeks.map(week => storage.getTopicsByWeekId(week.id));
+      const allTopicsArrays = await Promise.all(allTopicsPromises);
+      const allTopics = allTopicsArrays.flat();
+
+      // Get all comments
+      const allCommentsPromises = allTopics.map(topic => storage.getCommentsByTopicId(topic.id));
+      const allCommentsArrays = await Promise.all(allCommentsPromises);
+      const allComments = allCommentsArrays.flat();
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: getVersionInfo(),
+        data: {
+          weeks: weeks,
+          topics: allTopics,
+          comments: allComments,
+          statistics: {
+            totalWeeks: weeks.length,
+            totalTopics: allTopics.length,
+            totalComments: allComments.length,
+            featuredTopics: allTopics.filter(t => t.status === 'featured').length,
+            pendingTopics: allTopics.filter(t => t.status === 'pending').length,
+            deletedTopics: allTopics.filter(t => t.status === 'deleted').length
+          }
+        }
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="database-export-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(exportData);
+    } catch (error) {
+      console.error('JSON export error:', error);
+      res.status(500).json({ message: 'Failed to export database' });
+    }
+  });
+
+  app.get('/api/admin/export/csv', isAdmin, async (req, res) => {
+    try {
+      const weeks = await storage.getWeeks();
+      const allTopicsPromises = weeks.map(week => storage.getTopicsByWeekId(week.id));
+      const allTopicsArrays = await Promise.all(allTopicsPromises);
+      const allTopics = allTopicsArrays.flat();
+
+      // Create CSV content
+      let csvContent = 'Week Title,Week Start Date,Week End Date,Topic ID,Topic Title,Topic URL,Topic Description,Submitter,Status,Created At,Featured At,Stars Count\n';
+      
+      for (const week of weeks) {
+        const weekTopics = allTopics.filter(t => t.weekId === week.id);
+        
+        if (weekTopics.length === 0) {
+          // Add week even if it has no topics
+          csvContent += `"${week.title}","${week.startDate}","${week.endDate}","","","","","","","","",""\n`;
+        } else {
+          for (const topic of weekTopics) {
+            const description = (topic.description || '').replace(/"/g, '""');
+            const title = topic.title.replace(/"/g, '""');
+            const submitter = topic.submitter.replace(/"/g, '""');
+            const url = topic.url.replace(/"/g, '""');
+            
+            csvContent += `"${week.title}","${week.startDate}","${week.endDate}","${topic.id}","${title}","${url}","${description}","${submitter}","${topic.status}","${topic.createdAt}","${topic.featuredAt || ''}","${topic.starsCount || 0}"\n`;
+          }
+        }
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="database-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      res.status(500).json({ message: 'Failed to export database as CSV' });
+    }
+  });
+
   // Performance metrics endpoint (admin only)
   app.get('/api/metrics', isAdmin, (req, res) => {
     const totalCacheRequests = performanceMetrics.urlCacheHits + performanceMetrics.urlCacheMisses;
