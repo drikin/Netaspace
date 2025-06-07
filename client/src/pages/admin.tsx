@@ -274,7 +274,7 @@ const Admin: React.FC = () => {
 
   // Database export functionality
   const exportDatabaseMutation = useMutation({
-    mutationFn: async (format: 'json' | 'csv') => {
+    mutationFn: async (format: 'json' | 'csv' | 'sqlite') => {
       const response = await fetch(`/api/admin/export/${format}`, {
         method: 'GET',
         credentials: 'include',
@@ -298,9 +298,10 @@ const Admin: React.FC = () => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
+        const formatName = format === 'sqlite' ? 'SQLite' : format.toUpperCase();
         toast({
           title: "エクスポート完了",
-          description: `データベースを${format.toUpperCase()}形式でダウンロードしました。`,
+          description: `データベースを${formatName}形式でダウンロードしました。`,
         });
       } catch (error) {
         console.error('Download failed:', error);
@@ -321,7 +322,7 @@ const Admin: React.FC = () => {
     },
   });
 
-  const handleExportDatabase = (format: 'json' | 'csv') => {
+  const handleExportDatabase = (format: 'json' | 'csv' | 'sqlite') => {
     exportDatabaseMutation.mutate(format);
   };
 
@@ -428,6 +429,17 @@ const Admin: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExportDatabase('sqlite')}
+              disabled={exportDatabaseMutation.isPending}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+              </svg>
+              SQLite
             </Button>
           </div>
 

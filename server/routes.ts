@@ -647,6 +647,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/admin/export/sqlite', isAdmin, async (req, res) => {
+    try {
+      // Determine the current database path
+      const dbPath = process.env.REPLIT_DEPLOYMENT 
+        ? (process.env.REPLIT_DB_URL || './data/production.sqlite')
+        : './database/dev.sqlite';
+
+      // Check if database file exists
+      if (!fs.existsSync(dbPath)) {
+        return res.status(404).json({ message: 'Database file not found' });
+      }
+
+      // Get file stats
+      const stats = fs.statSync(dbPath);
+      const filename = `database-export-${new Date().toISOString().split('T')[0]}.sqlite`;
+
+      // Set appropriate headers for SQLite file download
+      res.setHeader('Content-Type', 'application/x-sqlite3');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', stats.size);
+
+      // Create read stream and pipe to response
+      const readStream = fs.createReadStream(dbPath);
+      readStream.on('error', (error) => {
+        console.error('SQLite export stream error:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Failed to stream database file' });
+        }
+      });
+
+      readStream.pipe(res);
+    } catch (error) {
+      console.error('SQLite export error:', error);
+      res.status(500).json({ message: 'Failed to export SQLite database' });
+    }
+  });
+
   // Performance metrics endpoint (admin only)
   app.get('/api/metrics', isAdmin, (req, res) => {
     const totalCacheRequests = performanceMetrics.urlCacheHits + performanceMetrics.urlCacheMisses;
