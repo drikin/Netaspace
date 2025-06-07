@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import WeekSelector from "@/components/week-selector";
 import TabNavigation from "@/components/tab-navigation";
 import TopicCard from "@/components/ui/topic-card";
@@ -7,20 +7,28 @@ import { BookmarkletGenerator } from "@/components/bookmarklet-generator";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertCircle } from "lucide-react";
 
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const fingerprint = useFingerprint();
+  const queryClient = useQueryClient();
 
   // Fetch active week with topics
-  const { data: week, isLoading, refetch } = useQuery({
+  const { data: week, isLoading, refetch, error } = useQuery({
     queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!fingerprint,
-    staleTime: 0, // Force fresh data for home page
+    staleTime: 1000 * 60, // 1 minute
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  // Force cache clear for production issues
+  const handleForceClear = () => {
+    queryClient.clear();
+    localStorage.removeItem('fingerprint');
+    window.location.reload();
+  };
 
   // Check if user is authenticated and is admin
   const { data: auth } = useQuery({
@@ -70,7 +78,19 @@ const Home: React.FC = () => {
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <WeekSelector week={week} isLoading={isLoading} />
 
-      <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
+      <div className="flex justify-between items-center mb-4">
+        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isLoading}
+          className="ml-4"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          更新
+        </Button>
+      </div>
 
       <div className="space-y-6 px-4 sm:px-0">
         {isLoading ? (

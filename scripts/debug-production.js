@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
-function debugProduction() {
+async function debugProduction() {
   console.log('=== プロダクション環境デバッグ ===');
   
   // 環境変数の確認
@@ -13,7 +14,6 @@ function debugProduction() {
   const devPath = './database/dev.sqlite';
   
   console.log('\n=== データベースファイル存在確認 ===');
-  const fs = await import('fs');
   console.log('Persistent:', fs.existsSync(persistentPath) ? '✓' : '✗');
   console.log('Fallback:', fs.existsSync(fallbackPath) ? '✓' : '✗');
   console.log('Dev:', fs.existsSync(devPath) ? '✓' : '✗');
