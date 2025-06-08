@@ -5,6 +5,13 @@ set -e
 
 echo "=== さくらのクラウド デプロイスクリプト ==="
 
+# スクリプトの場所を取得
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# プロジェクトルートに移動
+cd "$PROJECT_ROOT"
+
 # 環境変数チェック
 if [ -z "$SAKURA_SERVER_IP" ]; then
     read -p "サーバーIPアドレスを入力してください: " SAKURA_SERVER_IP
@@ -18,22 +25,20 @@ echo "デプロイ先: $SAKURA_USER@$SAKURA_SERVER_IP"
 
 # データベースバックアップ作成
 echo "=== ローカルバックアップ作成 ==="
-cd ..  # プロジェクトルートに移動
 if [ -f "scripts/deploy-with-backup.js" ]; then
     node scripts/deploy-with-backup.js pre-deploy
 fi
 
 # ファイル圧縮
 echo "=== アプリケーションファイル圧縮 ==="
-tar -czf scripts/backspace-fm-app.tar.gz \
+tar -czf backspace-fm-app.tar.gz \
     --exclude=node_modules \
     --exclude=.git \
     --exclude=.replit \
     --exclude="*.log" \
     --exclude=/tmp \
-    --exclude=scripts/backspace-fm-app.tar.gz \
+    --exclude=backspace-fm-app.tar.gz \
     .
-cd scripts  # scriptsディレクトリに移動
 
 # サーバーにファイル転送
 echo "=== ファイル転送 ==="
