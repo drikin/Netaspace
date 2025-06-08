@@ -19,6 +19,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Build production server
+RUN npx esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
 # Remove dev dependencies to reduce image size
 RUN npm prune --production
 
@@ -39,4 +42,4 @@ ENV PERSISTENT_DB_PATH=/app/data/persistent/production.sqlite
 ENV BACKUP_DIR=/app/data/backups
 
 # Start application
-CMD ["npm", "start"]
+CMD ["node", "dist/production.js"]

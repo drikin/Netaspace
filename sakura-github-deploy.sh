@@ -59,7 +59,7 @@ fi
 # Build and deploy
 echo "Building application..."
 cd $APP_NAME
-docker build -t $APP_NAME:latest .
+docker build -t $APP_NAME:latest . --no-cache
 
 echo "Starting application..."
 docker run -d \
