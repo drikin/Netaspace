@@ -1,247 +1,161 @@
-# Backspace.fm Topic Manager
+# Backspace.fm Topic Management Platform
 
-A comprehensive podcast topic management platform for backspace.fm that enables community-driven content discovery through an interactive web interface and Chrome extension.
+A podcast topic management platform for backspace.fm that enables community-driven content discovery through an interactive web interface and Chrome extension.
 
-## Version 2.4.0 - Persistent Storage Edition
+## Features
 
-### Key Features
-
-- **Persistent Data Storage**: Complete protection against deployment data loss
-- **Community Topic Submission**: Users can submit podcast topic suggestions
-- **Weekly Topic Management**: Organize topics by weekly episodes
-- **Star Rating System**: Community feedback and topic popularity tracking
-- **Administrative Controls**: Full topic approval and management workflow
-- **Chrome Extension**: Direct topic submission from any webpage
-- **Database Export**: Comprehensive backup and export functionality
-- **Real-time Updates**: Live topic status and comment updates
-
-### Recent Major Update: Persistent Storage System
-
-Version 2.4.0 introduces a robust persistent storage system that ensures all data survives Replit redeployments:
-
-- **Zero Data Loss**: All topics, comments, and user interactions preserved
-- **Automatic Migration**: Seamless transition from existing data
-- **Smart Backup System**: Daily automated backups with admin panel access
-- **Fallback Protection**: Multiple storage layers ensure reliability
+- **Topic Submission & Management**: Community-driven topic submission with admin approval workflow
+- **Chrome Extension**: Browser extension for easy topic submission from any webpage
+- **Weekly Organization**: Topics organized by weekly episodes with automated week management
+- **Interactive Voting**: Star rating system for community feedback
+- **Comment System**: Discussion threads for each topic
+- **Admin Dashboard**: Comprehensive admin interface for content moderation
+- **Data Persistence**: Robust backup system preventing data loss during deployments
+- **Release Notes**: Automated release management with user notifications
 
 ## Technology Stack
 
-- **Frontend**: React with TypeScript, Tailwind CSS, Shadcn/ui components
-- **Backend**: Express.js with TypeScript
-- **Database**: SQLite with Drizzle ORM
-- **Build Tool**: Vite for development and production builds
-- **Deployment**: Replit with persistent storage configuration
+- **Frontend**: React + TypeScript + Tailwind CSS + shadcn/ui
+- **Backend**: Node.js + Express + SQLite/PostgreSQL
+- **Database ORM**: Drizzle ORM with automatic migrations
+- **Query Management**: TanStack Query for efficient data fetching
+- **Authentication**: Session-based authentication system
+- **Deployment**: Docker + Docker Compose ready
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js 20+ 
-- SQLite3
-- Modern web browser
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies (automatic on Replit)
-3. Start the development server:
-
-```bash
-npm run dev
-```
-
-### Initial Setup
-
-For production deployment with persistent storage:
-
-```bash
-# Setup persistent storage system
-node scripts/persistent-storage.js
-
-# Verify setup
-node scripts/test-persistent-storage.js
-```
-
-## Project Structure
-
-```
-├── client/                 # React frontend application
-│   ├── src/
-│   │   ├── pages/         # Route components
-│   │   ├── components/    # Reusable UI components
-│   │   └── lib/          # Utilities and API client
-├── server/                # Express backend
-│   ├── routes.ts         # API endpoints
-│   ├── storage.ts        # Database operations
-│   └── index.ts          # Server entry point
-├── shared/               # Shared types and schemas
-│   ├── schema.ts         # Database schema definitions
-│   └── version.ts        # Version management
-├── scripts/              # Deployment and maintenance
-│   ├── persistent-storage.js
-│   ├── test-persistent-storage.js
-│   └── deploy-production.js
-├── chrome-extension/     # Browser extension
-└── data/                # Database and backups
-```
-
-## Core Functionality
-
-### Topic Management
-
-- Submit new podcast topic suggestions
-- Community star rating system
-- Comment and discussion threads
-- Administrative approval workflow
-- Weekly episode organization
-
-### User System
-
-- Anonymous fingerprint-based tracking
-- Administrative user roles
-- Secure authentication for admin functions
-- Privacy-focused user identification
-
-### Data Export
-
-Multiple export formats available through admin panel:
-- JSON format for data interchange
-- CSV format for spreadsheet analysis
-- SQLite database for full backup
-- Automatic backup downloads
-
-## Deployment
-
 ### Development
-
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-### Production (Replit)
+### Production Deployment
 
-1. Setup persistent storage:
-   ```bash
-   node scripts/persistent-storage.js
-   ```
+#### Replit Deploy
+- Automatic deployment with persistent storage
+- Built-in backup system
+- Zero-configuration setup
 
-2. Deploy using Replit's Deploy button
-
-3. Data automatically preserved across deployments
-
-### Database Management
-
-The application uses intelligent database path resolution:
-
-1. **Persistent Storage**: `/tmp/persistent/production.sqlite` (primary)
-2. **Fallback Storage**: `./data/production.sqlite` (secondary)
-3. **Development**: `./database/dev.sqlite` (local development)
-
-## API Endpoints
-
-### Public APIs
-
-- `GET /api/weeks/active` - Get current active week
-- `GET /api/topics` - List topics with filtering
-- `POST /api/topics` - Submit new topic
-- `POST /api/topics/:id/comments` - Add comment
-- `POST /api/topics/:id/star` - Star/unstar topic
-
-### Admin APIs
-
-- `GET /api/admin/stats` - System statistics
-- `POST /api/admin/topics/:id/status` - Update topic status
-- `GET /api/admin/export` - Database export functionality
-- `GET /api/admin/backups` - Backup management
-
-## Security Features
-
-- Fingerprint-based user tracking for privacy
-- CSRF protection on all forms
-- SQL injection prevention with parameterized queries
-- Secure session management
-- Rate limiting on topic submissions
-
-## Browser Extension
-
-The Chrome extension enables direct topic submission from any webpage:
-
-- One-click topic submission
-- Automatic title and URL extraction
-- Settings synchronization
-- Seamless integration with main application
-
-## Monitoring and Maintenance
-
-### Health Checks
-
+#### Self-Hosted (Docker)
 ```bash
-# Check database status
-sqlite3 /tmp/persistent/production.sqlite ".tables"
+# Build and start
+docker-compose up --build -d
 
-# Verify data integrity
-node scripts/test-persistent-storage.js
-
-# Check backup status
-ls -la /tmp/persistent/backups/
+# View logs
+docker-compose logs -f
 ```
 
-### Backup Management
+#### Sakura Cloud Deployment
+```bash
+# Use automated deployment script
+./scripts/sakura-deploy.sh
+```
 
-- Automatic daily backups before deployments
-- Manual backup creation through admin panel
-- Backup download and restoration capabilities
-- Automatic cleanup of old backup files
+## Architecture
+
+### Database Schema
+- **Topics**: Core content with URL, description, status
+- **Weeks**: Episode organization with date ranges
+- **Comments**: Threaded discussions
+- **Stars**: Community voting system
+- **Users**: Authentication and admin roles
+
+### API Endpoints
+- `GET /api/weeks/active` - Current week with topics
+- `POST /api/topics` - Submit new topic
+- `PATCH /api/topics/:id/status` - Admin topic approval
+- `POST /api/comments` - Add comment to topic
+- `POST /api/stars` - Vote on topics
+
+### Data Persistence
+- Multiple backup locations for reliability
+- Automatic hourly backups
+- Pre/post deployment data protection
+- Cross-environment data migration
+
+## Chrome Extension
+
+The browser extension enables one-click topic submission:
+
+1. Install extension from `chrome-extension/` directory
+2. Configure server URL in extension settings
+3. Click extension icon on any webpage to submit
+
+## Admin Features
+
+- Topic status management (pending/approved/featured)
+- Week creation and management
+- User authentication
+- Data export capabilities
+- System health monitoring
+
+## Configuration
+
+### Environment Variables
+```bash
+NODE_ENV=production
+PERSISTENT_DB_PATH=/app/data/persistent/production.sqlite
+BACKUP_DIR=/app/data/backups
+```
+
+### Database Options
+- **SQLite**: Default, file-based, portable
+- **PostgreSQL**: Enterprise-grade, scalable
+- **Supabase**: Managed PostgreSQL service
+
+## Backup & Recovery
+
+Automatic backup system with multiple protection layers:
+
+1. **Hourly Backups**: Automatic database snapshots
+2. **Deployment Protection**: Pre/post deployment validation
+3. **Multiple Locations**: Redundant storage across paths
+4. **Recovery Tools**: One-click restore capabilities
+
+## Development
+
+### Project Structure
+```
+├── client/           # React frontend application
+├── server/           # Express backend API
+├── shared/           # Shared types and schemas
+├── scripts/          # Deployment and utility scripts
+├── chrome-extension/ # Browser extension
+└── data/            # Database and backups
+```
+
+### Key Commands
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run db:push      # Database migration
+npm start           # Production server
+```
+
+## Deployment Options
+
+### Supported Platforms
+- **Replit**: Zero-config deployment
+- **Sakura Cloud**: Japanese cloud provider
+- **AWS/GCP/Azure**: Major cloud platforms
+- **DigitalOcean**: VPS deployment
+- **Railway/Render**: Platform-as-a-Service
+
+### Docker Support
+Complete containerization with:
+- Multi-stage builds for optimization
+- Health checks for reliability
+- Volume persistence for data
+- Automatic service recovery
 
 ## Contributing
 
-### Development Setup
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with proper TypeScript typing
-4. Test thoroughly including database operations
-5. Submit pull request
-
-### Code Standards
-
-- TypeScript for all new code
-- Proper error handling and validation
-- Database operations through Drizzle ORM
-- Responsive design with Tailwind CSS
-- Component-based architecture
-
-## Troubleshooting
-
-### Common Issues
-
-**Data not persisting after deployment:**
-- Run `node scripts/persistent-storage.js`
-- Verify `/tmp/persistent/` directory exists
-- Check environment variables are properly set
-
-**Topic submission failures:**
-- Verify database schema is up to date
-- Check fingerprint generation is working
-- Ensure all required fields are provided
-
-**Extension not working:**
-- Verify extension is loaded and enabled
-- Check server URL configuration in extension settings
-- Ensure CORS settings allow extension requests
-
-## Support
-
-For technical issues:
-1. Check the troubleshooting section
-2. Run diagnostic scripts
-3. Review server logs for errors
-4. Contact system administrator if problems persist
+This is a production application for backspace.fm podcast. The codebase includes comprehensive error handling, data validation, and deployment automation.
 
 ## License
 
 MIT License - see LICENSE file for details
-
----
-
-Built with ❤️ for the backspace.fm community
