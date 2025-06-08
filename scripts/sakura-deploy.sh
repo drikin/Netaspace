@@ -39,20 +39,30 @@ scp backspace-fm-app.tar.gz $SAKURA_USER@$SAKURA_SERVER_IP:~/
 # サーバー上でデプロイ実行
 echo "=== リモートデプロイ実行 ==="
 ssh $SAKURA_USER@$SAKURA_SERVER_IP << 'ENDSSH'
+    # Docker Compose インストール確認
+    if ! command -v docker-compose &> /dev/null; then
+        echo "Docker Compose をインストール中..."
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # パスを追加
+        export PATH="/usr/local/bin:$PATH"
+    fi
+    
     # 作業ディレクトリ作成
     mkdir -p ~/backspace-fm-app
     cd ~/backspace-fm-app
     
     # 既存のアプリケーション停止
     if [ -f "docker-compose.yml" ]; then
-        docker-compose down || true
+        /usr/local/bin/docker-compose down || docker compose down || true
     fi
     
     # ファイル展開
     tar -xzf ~/backspace-fm-app.tar.gz
     
     # Docker ビルド & 起動
-    docker-compose up --build -d
+    /usr/local/bin/docker-compose up --build -d || docker compose up --build -d
     
     # ヘルスチェック
     echo "=== ヘルスチェック ==="
@@ -61,7 +71,7 @@ ssh $SAKURA_USER@$SAKURA_SERVER_IP << 'ENDSSH'
         echo "✓ デプロイ成功: アプリケーションが正常に動作しています"
     else
         echo "✗ デプロイ失敗: アプリケーションに問題があります"
-        docker-compose logs
+        /usr/local/bin/docker-compose logs || docker compose logs
         exit 1
     fi
     
