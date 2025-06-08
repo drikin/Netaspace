@@ -49,10 +49,19 @@ docker-compose up --build -d
 docker-compose logs -f
 ```
 
-#### Sakura Cloud Deployment
+#### Sakura Cloud GitHub Deployment
 ```bash
-# Use automated deployment script
-./scripts/sakura-deploy.sh
+# One-command deployment from GitHub
+curl -fsSL https://raw.githubusercontent.com/yourusername/backspace-fm/main/sakura-github-deploy.sh | bash
+
+# Or manual Docker deployment
+git clone https://github.com/yourusername/backspace-fm.git
+cd backspace-fm
+docker build -t backspace-fm .
+docker run -d --name backspace-fm --restart unless-stopped -p 5000:5000 -v /opt/backspace-fm-data:/app/data backspace-fm
+
+# Using Docker Compose
+docker-compose -f docker-compose.prod.yml up --build -d
 ```
 
 ## Architecture
