@@ -1,0 +1,90 @@
+~/workspace$ cd scripts/
+~/workspace/scripts$ sh ./sakura-deploy.sh 
+=== さくらのクラウド デプロイスクリプト ===
+サーバーIPアドレスを入力してください: 153.125.147.133
+デプロイ先: ubuntu@153.125.147.133
+=== ローカルバックアップ作成 ===
+=== アプリケーションファイル圧縮 ===
+=== ファイル転送 ===
+ubuntu@153.125.147.133's password: 
+backspace-fm-app.tar.gz                              100%   22KB  98.3KB/s   00:00    
+=== リモートデプロイ実行 ===
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+ubuntu@153.125.147.133's password: 
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sun Jun  8 04:38:16 PM JST 2025
+
+  System load:  0.0                Processes:             452
+  Usage of /:   17.8% of 19.51GB   Users logged in:       1
+  Memory usage: 0%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+no configuration file provided: not found
+no configuration file provided: not found
+=== ヘルスチェック ===
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to localhost port 5000 after 0 ms: Couldn't connect to server
+✗ デプロイ失敗: アプリケーションに問題があります
+no configuration file provided: not found
+no configuration file provided: not found
+~/workspace/scripts$ sh ./sakura-deploy.sh 
+=== さくらのクラウド デプロイスクリプト ===
+サーバーIPアドレスを入力してください: 153.125.147.133
+デプロイ先: ubuntu@153.125.147.133
+=== ローカルバックアップ作成 ===
+=== アプリケーションファイル圧縮 ===
+=== ファイル転送 ===
+ubuntu@153.125.147.133's password: 
+backspace-fm-app.tar.gz                              100%   22KB  96.6KB/s   00:00    
+=== リモートデプロイ実行 ===
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+ubuntu@153.125.147.133's password: 
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sun Jun  8 04:38:16 PM JST 2025
+
+  System load:  0.0                Processes:             452
+  Usage of /:   17.8% of 19.51GB   Users logged in:       1
+  Memory usage: 0%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+no configuration file provided: not found
+no configuration file provided: not found
+=== ヘルスチェック ===
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to localhost port 5000 after 0 ms: Couldn't connect to server
+✗ デプロイ失敗: アプリケーションに問題があります
+no configuration file provided: not found
+no configuration file provided: not found
+~/workspace/scripts$ 
