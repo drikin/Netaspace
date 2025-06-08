@@ -17,13 +17,16 @@ This guide enables direct deployment from GitHub repository to Sakura Cloud usin
 git clone https://github.com/yourusername/backspace-fm.git
 cd backspace-fm
 
-# Build and run
-docker build -t backspace-fm .
+# Build and run (production-optimized)
+docker build -t backspace-fm . --no-cache
 docker run -d \
   --name backspace-fm \
   --restart unless-stopped \
   -p 5000:5000 \
   -v /opt/backspace-fm-data:/app/data \
+  -e NODE_ENV=production \
+  -e PERSISTENT_DB_PATH=/app/data/persistent/production.sqlite \
+  -e BACKUP_DIR=/app/data/backups \
   backspace-fm
 ```
 
