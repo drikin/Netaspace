@@ -1,35 +1,42 @@
-# さくらのクラウド用 Dockerfile
+# Production Dockerfile for Sakura Cloud
 FROM node:20-alpine
 
-# 作業ディレクトリを設定
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ curl
+
+# Set working directory
 WORKDIR /app
 
-# パッケージファイルをコピー
+# Copy package files
 COPY package*.json ./
 
-# 依存関係をインストール
-RUN npm ci --only=production
+# Install all dependencies (including dev for build)
+RUN npm ci
 
-# アプリケーションファイルをコピー
+# Copy source code
 COPY . .
 
-# 本番用ビルド
+# Build the application
 RUN npm run build
 
-# データディレクトリを作成
-RUN mkdir -p /app/data/persistent /app/data/backups
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
-# ポート設定
+# Create data directories with proper permissions
+RUN mkdir -p /app/data/persistent /app/data/backups \
+    && chmod -R 755 /app/data
+
+# Expose port
 EXPOSE 5000
 
-# ヘルスチェック
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/api/version || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:5000/api/version || exit 1
 
-# 本番環境用の設定
+# Environment variables
 ENV NODE_ENV=production
 ENV PERSISTENT_DB_PATH=/app/data/persistent/production.sqlite
 ENV BACKUP_DIR=/app/data/backups
 
-# アプリケーション開始
+# Start application
 CMD ["npm", "start"]
