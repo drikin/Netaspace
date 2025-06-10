@@ -610,6 +610,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Performance monitoring endpoints
+  app.get('/api/performance', (req, res) => {
+    try {
+      const metrics = getDatabaseMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Failed to get performance metrics:', error);
+      res.status(500).json({ message: 'Failed to get performance metrics' });
+    }
+  });
+
+  app.post('/api/performance/reset', isAdmin, (req, res) => {
+    try {
+      resetDatabaseMetrics();
+      res.json({ message: 'Performance metrics reset successfully' });
+    } catch (error) {
+      console.error('Failed to reset performance metrics:', error);
+      res.status(500).json({ message: 'Failed to reset performance metrics' });
+    }
+  });
+
   app.get('/api/admin/export/csv', isAdmin, async (req, res) => {
     try {
       const weeks = await storage.getWeeks();
