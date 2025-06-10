@@ -688,11 +688,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       pgDump.stdout.pipe(res);
       
-      pgDump.stderr.on('data', (data) => {
+      pgDump.stderr.on('data', (data: any) => {
         console.error('pg_dump error:', data.toString());
       });
 
-      pgDump.on('error', (error) => {
+      pgDump.on('error', (error: any) => {
         console.error('pg_dump spawn error:', error);
         if (!res.headersSent) {
           res.status(500).json({ message: 'Failed to export PostgreSQL database' });
