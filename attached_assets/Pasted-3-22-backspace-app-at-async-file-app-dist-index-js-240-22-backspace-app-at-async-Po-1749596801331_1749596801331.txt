@@ -1,0 +1,41 @@
+3:22
+backspace-app  |     at async file:///app/dist/index.js:240:22
+backspace-app  |     at async PostgreSQLStorage.executeWithMonitoring (file:///app/dist/index.js:223:22)
+backspace-app  |     at async Strategy._verify (file:///app/dist/index.js:551:20)
+backspace-app  | 11:06:04 PM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-app  | 11:06:04 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+backspace-app  | Database error in getUserByUsername: password authentication failed for user "backspace_user"
+backspace-app  | 11:06:06 PM [express] POST /api/auth/login 500 in 8ms :: {"message":"password authentication failed f…
+backspace-app  | error: password authentication failed for user "backspace_user"
+backspace-app  |     at /app/node_modules/pg-pool/index.js:45:11
+backspace-app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+backspace-app  |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+backspace-app  |     at async file:///app/dist/index.js:240:22
+backspace-app  |     at async PostgreSQLStorage.executeWithMonitoring (file:///app/dist/index.js:223:22)
+backspace-app  |     at async Strategy._verify (file:///app/dist/index.js:551:20)
+backspace-app  | 11:06:19 PM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+
+=== PostgreSQLログ（最新20行） ===
+time="2025-06-11T08:06:35+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:05:50.920 UTC [45] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:05:50.920 UTC [45] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:05:52.071 UTC [46] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:05:52.071 UTC [46] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:05:54.224 UTC [48] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:05:54.224 UTC [48] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:05:58.749 UTC [49] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:05:58.749 UTC [49] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:06:02.128 UTC [50] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:06:02.128 UTC [50] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:06:06.520 UTC [51] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:06:06.520 UTC [51] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:06:13.425 UTC [59] FATAL:  role "backspace_user" does not exist
+
+リアルタイムログを見るには: docker-compose -f docker-compose.prod.yml logs -f
