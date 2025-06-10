@@ -1,14 +1,28 @@
-import { pgTable, text, integer, boolean, index, timestamp, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, index, timestamp, serial, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  id: varchar("id").primaryKey().notNull(), // Replit user ID (string)
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  email: text("email").unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const weeks = pgTable("weeks", {
@@ -54,11 +68,15 @@ export const stars = pgTable("stars", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+  id: true,
   email: true,
+  firstName: true,
+  lastName: true,
+  profileImageUrl: true,
   isAdmin: true,
 });
+
+export const upsertUserSchema = insertUserSchema.omit({ isAdmin: true });
 
 export const insertWeekSchema = createInsertSchema(weeks).pick({
   startDate: true,
@@ -87,6 +105,7 @@ export const insertStarSchema = createInsertSchema(stars).pick({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
 
 export type Week = typeof weeks.$inferSelect;
 export type InsertWeek = z.infer<typeof insertWeekSchema>;

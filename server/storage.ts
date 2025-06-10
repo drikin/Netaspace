@@ -11,6 +11,7 @@ import {
   type Topic,
   type Star,
   type InsertUser,
+  type UpsertUser,
   type InsertWeek,
   type InsertTopic,
   type InsertStar,
@@ -74,10 +75,9 @@ class DatabasePerformanceMonitor {
 const performanceMonitor = new DatabasePerformanceMonitor();
 
 export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // User operations - Updated for Replit Auth
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   
   // Week operations
   getWeeks(): Promise<Week[]>;
