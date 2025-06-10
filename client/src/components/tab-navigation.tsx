@@ -13,7 +13,6 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, i
   ];
   
   const adminTabs = [
-    { id: "deleted", label: "削除済み" },
     { id: "performance", label: "パフォーマンス" },
   ];
   

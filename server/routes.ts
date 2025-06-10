@@ -851,20 +851,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid topic ID' });
       }
       
-      // 削除前にトピック情報を取得（ブロードキャスト用）
+      // 削除前にトピック情報を取得
       const topic = await storage.getTopic(topicId);
       if (!topic) {
         return res.status(404).json({ message: 'Topic not found' });
       }
       
-      // 物理削除ではなく、ステータスを「deleted」に変更（論理削除）
-      const updatedTopic = await storage.updateTopicStatus(topicId, 'deleted');
+      // 物理削除（データベースから完全に削除）
+      const deleteResult = await storage.deleteTopic(topicId);
       
-      if (!updatedTopic) {
+      if (!deleteResult) {
         return res.status(500).json({ message: 'Failed to delete topic' });
       }
-      
-      // トランザクションベース実装: リアルタイム更新を削除
       
       res.json({ success: true, message: 'Topic deleted successfully' });
     } catch (error) {

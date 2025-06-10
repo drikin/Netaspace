@@ -78,7 +78,7 @@ const Home: React.FC = () => {
 
   const handleTabChange = (tab: string) => {
     // Prevent non-admin users from accessing admin-only tabs
-    if (!isAdmin && (tab === "deleted" || tab === "performance")) {
+    if (!isAdmin && tab === "performance") {
       setActiveTab("all");
       return;
     }

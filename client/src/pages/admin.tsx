@@ -65,12 +65,7 @@ const Admin: React.FC = () => {
     enabled: !!isAdmin,
   });
 
-  // Fetch deleted topics from all weeks (for deleted tab)
-  const { data: deletedTopics, isLoading: isDeletedLoading } = useQuery({
-    queryKey: ["/api/topics", { status: "deleted" }],
-    queryFn: () => apiRequest("GET", "/api/topics?status=deleted"),
-    enabled: !!isAdmin && activeTab === "deleted",
-  });
+
 
   // Login mutation
   const loginMutation = useMutation({
@@ -139,10 +134,6 @@ const Admin: React.FC = () => {
     let filteredTopics: any[] = [];
     
     switch (activeTab) {
-      case "deleted":
-        // Show deleted topics from all weeks
-        filteredTopics = Array.isArray(deletedTopics) ? deletedTopics : [];
-        break;
       case "featured":
         // Show featured topics sorted by oldest featured first (featuredAt ascending)
         if (!(activeWeek as any)?.topics) return [];
@@ -776,8 +767,7 @@ const Admin: React.FC = () => {
         <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>
-            {activeTab === "deleted" ? "削除済みトピック" : 
-             activeTab === "featured" ? "採用されたトピック（古い順）" : 
+            {activeTab === "featured" ? "採用されたトピック（古い順）" : 
              "投稿されたトピック"}
           </CardTitle>
           {activeTab === "featured" && (
@@ -795,7 +785,7 @@ const Admin: React.FC = () => {
           )}
         </CardHeader>
         <CardContent>
-          {(isWeekLoading || (activeTab === "deleted" && isDeletedLoading)) ? (
+          {isWeekLoading ? (
             // Loading state
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
