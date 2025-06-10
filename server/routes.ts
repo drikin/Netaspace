@@ -57,8 +57,7 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// リアルタイム更新を削除してトランザクションベースに変更
-// WebSocket機能を無効化してCompute Unit消費を削減
+// トランザクションベース実装でリアルタイム更新を削除
 
 // GoogleニュースのURLかどうかを確認する関数
 function isGoogleNewsURL(url: string): boolean {
