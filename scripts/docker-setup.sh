@@ -64,7 +64,6 @@ check_docker_daemon() {
 # Create necessary directories
 create_directories() {
     print_status "Creating necessary directories..."
-    mkdir -p database
     mkdir -p data
     print_success "Directories created"
 }

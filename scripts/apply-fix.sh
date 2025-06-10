@@ -29,8 +29,8 @@ docker-compose down
 print_status "Rebuilding containers with updated configuration..."
 docker-compose up -d --build
 
-print_status "Waiting for application startup..."
-sleep 20
+print_status "Waiting for PostgreSQL and application startup..."
+sleep 30
 
 print_status "Testing application health..."
 for i in {1..30}; do

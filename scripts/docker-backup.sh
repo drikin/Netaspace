@@ -31,17 +31,22 @@ create_backup_dir() {
     echo "$backup_dir"
 }
 
-# Backup database
+# Backup PostgreSQL database
 backup_database() {
     local backup_dir="$1"
     
-    print_status "Backing up database..."
+    print_status "Backing up PostgreSQL database..."
     
-    if [ -f "database/neta.sqlite" ]; then
-        cp database/neta.sqlite "$backup_dir/neta.sqlite"
-        print_success "Database backed up to $backup_dir/neta.sqlite"
+    # Check if PostgreSQL container is running
+    if docker-compose ps postgres | grep -q "Up"; then
+        if docker-compose exec -T postgres pg_dump -U backspace_user backspace_fm > "$backup_dir/backspace_fm.sql"; then
+            print_success "PostgreSQL database backed up to $backup_dir/backspace_fm.sql"
+        else
+            print_error "Failed to backup PostgreSQL database"
+            return 1
+        fi
     else
-        print_error "Database file not found"
+        print_error "PostgreSQL container is not running"
         return 1
     fi
 }
@@ -98,7 +103,7 @@ main() {
     echo ""
     echo "To restore from backup:"
     echo "  1. Extract: tar -xzf backup_YYYYMMDD_HHMMSS.tar.gz"
-    echo "  2. Copy database: cp backup_*/neta.sqlite database/"
+    echo "  2. Restore database: cat backup_*/backspace_fm.sql | docker-compose exec -T postgres psql -U backspace_user backspace_fm"
     echo "  3. Restart: docker-compose restart"
 }
 

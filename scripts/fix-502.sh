@@ -40,8 +40,8 @@ print_status "Starting containers..."
 docker-compose up -d
 
 # Wait for startup
-print_status "Waiting for application startup..."
-sleep 15
+print_status "Waiting for PostgreSQL and application startup..."
+sleep 25
 
 # Check if app is responding
 print_status "Testing application..."

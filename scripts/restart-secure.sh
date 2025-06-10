@@ -45,8 +45,8 @@ print_status "Starting containers in secure mode..."
 docker-compose up -d --build
 
 # 4. Wait for app to start
-print_status "Waiting for application to start..."
-sleep 10
+print_status "Waiting for PostgreSQL and application to start..."
+sleep 20
 
 # 5. Check application status
 print_status "Checking application status..."
