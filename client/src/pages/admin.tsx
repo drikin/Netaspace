@@ -22,12 +22,10 @@ const Admin: React.FC = () => {
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
   const [isWeekListDialogOpen, setIsWeekListDialogOpen] = useState(false);
 
-  // Check if user is authenticated and is admin
-  const { data: auth, isLoading: isAuthLoading } = useQuery({
-    queryKey: ["/api/auth/me"],
-  });
+  // Check if user is authenticated using Replit Auth
+  const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
 
-  const isAdmin = (auth as any)?.user?.isAdmin;
+  const isAdmin = isAuthenticated;
 
   // If not admin, redirect to login form
   useEffect(() => {
