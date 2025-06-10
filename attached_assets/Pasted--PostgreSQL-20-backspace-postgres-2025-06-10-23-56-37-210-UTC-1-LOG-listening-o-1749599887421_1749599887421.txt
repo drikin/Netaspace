@@ -1,0 +1,22 @@
+
+=== PostgreSQLログ（最新20行） ===
+backspace-postgres  | 2025-06-10 23:56:37.210 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+backspace-postgres  | 2025-06-10 23:56:37.213 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+backspace-postgres  | 2025-06-10 23:56:37.218 UTC [29] LOG:  database system was shut down at 2025-06-10 23:56:36 UTC
+backspace-postgres  | 2025-06-10 23:56:37.224 UTC [1] LOG:  database system is ready to accept connections
+backspace-postgres  | 2025-06-10 23:57:07.206 UTC [40] FATAL:  role "backspace_user" does not exist
+backspace-postgres  | 2025-06-10 23:57:07.838 UTC [41] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:57:07.838 UTC [41] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:57:08.876 UTC [42] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:57:08.876 UTC [42] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:57:10.100 UTC [43] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:57:10.100 UTC [43] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:57:14.634 UTC [44] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:57:14.634 UTC [44] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
+backspace-postgres  | 2025-06-10 23:57:16.061 UTC [45] FATAL:  password authentication failed for user "backspace_user"
+backspace-postgres  | 2025-06-10 23:57:16.061 UTC [45] DETAIL:  Role "backspace_user" does not exist.
+backspace-postgres  |   Connection matched pg_hba.conf line 100: "host all all all scram-sha-256"
