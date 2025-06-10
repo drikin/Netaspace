@@ -34,9 +34,20 @@ const Admin: React.FC = () => {
   const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
   const isAdmin = (user as any)?.isAdmin;
 
+  // Debug authentication state
+  console.log('Admin page auth state:', { 
+    user, 
+    isAuthLoading, 
+    isAuthenticated, 
+    isAdmin,
+    showLoginForm 
+  });
+
   // Show login form if not authenticated
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
+    if (isAuthLoading) return; // Don't do anything while loading
+    
+    if (!isAuthenticated) {
       setShowLoginForm(true);
     } else if (isAuthenticated && isAdmin) {
       setShowLoginForm(false);
@@ -432,8 +443,8 @@ const Admin: React.FC = () => {
     );
   }
 
-  // If not admin and not loading, show login form
-  if (showLoginForm || (!isAuthenticated || !isAdmin)) {
+  // If not authenticated or not admin, show login form
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0 mb-6">
