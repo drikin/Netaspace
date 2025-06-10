@@ -76,18 +76,24 @@ SETUP_EOF
 deploy_application() {
     log_info "アプリケーションをデプロイしています..."
     
-    # rsyncを使用してより効率的にファイル同期
-    log_info "アプリケーションファイルを同期しています..."
-    rsync -avz --progress --delete \
-        --exclude='node_modules' \
-        --exclude='.git' \
-        --exclude='dist' \
-        --exclude='.replit' \
-        --exclude='.config' \
-        --exclude='app.tar.gz' \
+    # 現在のディレクトリからファイルを圧縮
+    log_info "アプリケーションファイルを圧縮しています..."
+    tar czf app.tar.gz \
+        --exclude=node_modules \
+        --exclude=.git \
+        --exclude=dist \
+        --exclude=.replit \
+        --exclude=.config \
+        --exclude=app.tar.gz \
         --exclude='*.log' \
-        -e "ssh -i $SSH_KEY" \
-        ./ $SERVER_USER@$SERVER_HOST:$APP_DIR/
+        .
+    
+    # サーバーにファイル転送
+    log_info "サーバーにファイルを転送しています..."
+    scp -i $SSH_KEY app.tar.gz $SERVER_USER@$SERVER_HOST:$APP_DIR/
+    
+    # 圧縮ファイルを削除
+    rm app.tar.gz
     
     # サーバー側でファイル展開・セットアップ
     ssh -i $SSH_KEY $SERVER_USER@$SERVER_HOST << DEPLOY_EOF
