@@ -141,7 +141,7 @@ const Admin: React.FC = () => {
     switch (activeTab) {
       case "deleted":
         // Show deleted topics from all weeks
-        filteredTopics = (deletedTopics as any) || [];
+        filteredTopics = Array.isArray(deletedTopics) ? deletedTopics : [];
         break;
       case "featured":
         // Show featured topics sorted by oldest featured first (featuredAt ascending)
@@ -166,7 +166,7 @@ const Admin: React.FC = () => {
     }
     
     // For non-featured tabs, sort by stars count (descending) - topics with more "聞きたい" votes appear first
-    return filteredTopics.sort((a, b) => b.starsCount - a.starsCount);
+    return Array.isArray(filteredTopics) ? filteredTopics.sort((a, b) => b.starsCount - a.starsCount) : [];
   };
 
   const filteredTopics = getFilteredTopics();
