@@ -89,7 +89,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <WeekSelector week={week} isLoading={isLoading} />
+      <WeekSelector week={week as any} isLoading={isLoading} />
 
       <div className="flex justify-between items-center mb-4">
         <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
