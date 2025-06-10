@@ -14,6 +14,7 @@ import TopicCard from "@/components/ui/topic-card";
 import TabNavigation from "@/components/tab-navigation";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { insertWeekSchema } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 
 const Admin: React.FC = () => {
   const { toast } = useToast();
@@ -52,46 +53,7 @@ const Admin: React.FC = () => {
     enabled: !!isAdmin && activeTab === "deleted",
   });
 
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: z.infer<typeof loginSchema>) => {
-      return apiRequest("POST", "/api/auth/login", credentials);
-    },
-    onSuccess: () => {
-      toast({
-        title: "ログイン成功",
-        description: "管理者としてログインしました。",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-    },
-    onError: (error) => {
-      console.error("Login failed:", error);
-      toast({
-        title: "ログインに失敗しました",
-        description: "ユーザー名またはパスワードが無効です。",
-        variant: "destructive",
-      });
-    },
-  });
 
-  // Form schemas
-  const loginSchema = z.object({
-    username: z.string().min(1, "ユーザー名を入力してください"),
-    password: z.string().min(1, "パスワードを入力してください"),
-  });
-
-  // Form setup
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
-
-  const onLoginSubmit = (values: z.infer<typeof loginSchema>) => {
-    loginMutation.mutate(values);
-  };
 
   // Handle tab change
   const handleTabChange = (tab: string) => {
@@ -400,52 +362,17 @@ const Admin: React.FC = () => {
             <CardTitle>ログイン</CardTitle>
           </CardHeader>
           <CardContent>
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                <FormField
-                  control={loginForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ユーザー名</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="admin"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>パスワード</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="●●●●●●"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loginForm.formState.isSubmitting}
-                >
-                  {loginForm.formState.isSubmitting ? "ログイン中..." : "ログイン"}
-                </Button>
-              </form>
-            </Form>
+            <div className="space-y-4">
+              <Button
+                className="w-full"
+                onClick={() => window.location.href = '/api/login'}
+              >
+                Replitでログイン
+              </Button>
+              <p className="text-sm text-gray-500 text-center">
+                管理者権限が設定されたReplitアカウントでログインしてください
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

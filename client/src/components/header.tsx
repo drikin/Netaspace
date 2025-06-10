@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { User } from "lucide-react";
 import { ReleaseNotesButton } from "@/components/ui/release-notes-dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const [location] = useLocation();
@@ -13,31 +13,16 @@ const Header = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Check if user is authenticated
-  const { data: auth } = useQuery({
-    queryKey: ["/api/auth/me"],
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  // Check if user is authenticated using Replit Auth
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = isAuthenticated;
 
-  const isAdmin = (auth as any)?.user?.isAdmin;
-
-  const handleLogout = async () => {
-    try {
-      await apiRequest("POST", "/api/auth/logout", {});
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      
-      toast({
-        title: "ログアウトしました",
-        description: "またのご利用をお待ちしております",
-      });
-    } catch (error) {
-      console.error("Logout failed:", error);
-      toast({
-        title: "ログアウトに失敗しました",
-        description: "もう一度お試しください",
-        variant: "destructive",
-      });
-    }
+  const handleLogout = () => {
+    toast({
+      title: "ログアウト中...",
+      description: "Replitログアウトページにリダイレクトします",
+    });
+    window.location.href = '/api/logout';
   };
 
   const isActive = (path: string) => location === path;
