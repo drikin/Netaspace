@@ -12,6 +12,7 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=./database/neta.sqlite
     restart: unless-stopped
+    user: "1001:1001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/version"]
       interval: 30s

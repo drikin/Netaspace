@@ -16,18 +16,20 @@ RUN npm ci --production=false
 # Copy source code
 COPY . .
 
-# Create database directory
-RUN mkdir -p database
-
 # Build the application
 RUN npm run build
+
+# Create database directory with proper permissions
+RUN mkdir -p database && chmod 755 database
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 
-# Change ownership of app directory
+# Change ownership of app directory including database
 RUN chown -R nodejs:nodejs /app
+RUN chmod -R 755 /app/database
+
 USER nodejs
 
 # Expose port

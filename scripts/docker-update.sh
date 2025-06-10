@@ -47,6 +47,12 @@ update_application() {
     print_status "Stopping current application..."
     docker-compose down
     
+    print_status "Fixing database permissions..."
+    chmod -R 755 database/
+    if [ -f "database/neta.sqlite" ]; then
+        chmod 664 database/neta.sqlite
+    fi
+    
     print_status "Rebuilding Docker image..."
     docker-compose build --no-cache
     

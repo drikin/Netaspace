@@ -69,6 +69,17 @@ Options:
 
 ## Troubleshooting
 
+### Database permission errors (SQLITE_READONLY)
+```bash
+# Fix permissions automatically
+./scripts/fix-permissions.sh
+
+# Or manually:
+chmod -R 755 database/
+chmod 664 database/neta.sqlite
+docker-compose restart
+```
+
 ### Application not starting
 ```bash
 # Check container status
@@ -94,11 +105,16 @@ lsof -i :5000
 
 ### Database issues
 ```bash
-# Check database file
+# Check database file permissions
 ls -la database/
 
 # View application logs for database errors
 ./scripts/docker-logs.sh | grep -i database
+
+# Rebuild with fresh database
+docker-compose down
+rm database/neta.sqlite
+docker-compose up -d
 ```
 
 ## Admin Access

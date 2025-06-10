@@ -84,7 +84,7 @@ function initializeSQLiteDatabase() {
   return sqlite;
 }
 
-function initializeTables(sqlite: Database) {
+function initializeTables(sqlite: any) {
   try {
     // Create users table
     sqlite.exec(`
