@@ -209,7 +209,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
               <User className="h-3 w-3 mr-1" />
               <span className="mr-3">{topic.submitter}</span>
               <Clock className="h-3 w-3 mr-1" />
-              <span>{formatDate(topic.createdAt as string)}</span>
+              <span>{formatDate(new Date(topic.createdAt))}</span>
             </div>
           </div>
 

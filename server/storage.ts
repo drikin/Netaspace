@@ -223,18 +223,19 @@ class PostgreSQLStorage implements IStorage {
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
     return this.executeWithMonitoring(async () => {
-      let whereCondition = eq(topics.status, status);
-      
-      if (weekId !== undefined) {
-        whereCondition = and(eq(topics.status, status), eq(topics.weekId, weekId));
-      }
-      
-      const topicsResult = await db
+      let query = db
         .select()
         .from(topics)
-        .where(whereCondition)
-        .orderBy(desc(topics.createdAt));
-        
+        .where(eq(topics.status, status));
+      
+      if (weekId !== undefined) {
+        query = db
+          .select()
+          .from(topics)
+          .where(and(eq(topics.status, status), eq(topics.weekId, weekId)));
+      }
+      
+      const topicsResult = await query.orderBy(desc(topics.createdAt));
       return await this.enrichTopicsWithCommentsAndStars(topicsResult);
     }, 'getTopicsByStatus');
   }
@@ -367,7 +368,7 @@ class PostgreSQLStorage implements IStorage {
   async getStarsCountByTopicId(topicId: number): Promise<number> {
     return this.executeWithMonitoring(async () => {
       const result = await db
-        .select({ count: stars.id })
+        .select()
         .from(stars)
         .where(eq(stars.topicId, topicId));
       
