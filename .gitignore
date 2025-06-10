@@ -4,3 +4,6 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Development database (use dev.sqlite for local development)
+database/dev.sqlite
