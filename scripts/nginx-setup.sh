@@ -66,7 +66,7 @@ server {
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate max-age=0;
+    gzip_proxied any;
     gzip_types text/css text/javascript text/xml text/plain text/x-component application/javascript application/json application/xml application/rss+xml application/atom+xml image/svg+xml;
 
     # Proxy to Node.js app
