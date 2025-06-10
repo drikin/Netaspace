@@ -107,14 +107,14 @@ const Admin: React.FC = () => {
     switch (activeTab) {
       case "deleted":
         // Show deleted topics from all weeks
-        filteredTopics = deletedTopics || [];
+        filteredTopics = (deletedTopics as any) || [];
         break;
       case "featured":
         // Show featured topics sorted by oldest featured first (featuredAt ascending)
-        if (!activeWeek?.topics) return [];
-        filteredTopics = activeWeek.topics
-          .filter(topic => topic.status === "featured")
-          .sort((a, b) => {
+        if (!(activeWeek as any)?.topics) return [];
+        filteredTopics = (activeWeek as any).topics
+          .filter((topic: any) => topic.status === "featured")
+          .sort((a: any, b: any) => {
             const aTime = a.featuredAt ? new Date(a.featuredAt).getTime() : 0;
             const bTime = b.featuredAt ? new Date(b.featuredAt).getTime() : 0;
             return aTime - bTime;
@@ -124,8 +124,8 @@ const Admin: React.FC = () => {
       case "all":
       default:
         // Show pending and approved topics (not deleted or featured)
-        if (!activeWeek?.topics) return [];
-        filteredTopics = activeWeek.topics.filter(topic => 
+        if (!(activeWeek as any)?.topics) return [];
+        filteredTopics = (activeWeek as any).topics.filter((topic: any) => 
           topic.status === "pending" || topic.status === "approved"
         );
         break;
@@ -234,9 +234,9 @@ const Admin: React.FC = () => {
 
   // Generate markdown list for featured topics
   const generateMarkdownList = () => {
-    const featuredTopics = activeWeek?.topics
-      ?.filter(topic => topic.status === "featured")
-      ?.sort((a, b) => {
+    const featuredTopics = (activeWeek as any)?.topics
+      ?.filter((topic: any) => topic.status === "featured")
+      ?.sort((a: any, b: any) => {
         const aTime = a.featuredAt ? new Date(a.featuredAt).getTime() : 0;
         const bTime = b.featuredAt ? new Date(b.featuredAt).getTime() : 0;
         return aTime - bTime;
@@ -247,7 +247,7 @@ const Admin: React.FC = () => {
     }
 
     const markdown = featuredTopics
-      .map((topic) => `- [${topic.title}](${topic.url})`)
+      .map((topic: any) => `- [${topic.title}](${topic.url})`)
       .join('\n');
 
     return markdown;
@@ -523,8 +523,8 @@ const Admin: React.FC = () => {
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {isBackupsLoading ? (
                   <p className="text-center text-muted-foreground">読み込み中...</p>
-                ) : backups && backups.length > 0 ? (
-                  backups.map((backup: any) => (
+                ) : (backups as any) && (backups as any).length > 0 ? (
+                  (backups as any).map((backup: any) => (
                     <div
                       key={backup.filename}
                       className="p-3 border rounded-lg hover:border-gray-300 transition-colors"
@@ -577,8 +577,8 @@ const Admin: React.FC = () => {
               <div className="space-y-3">
                 {isWeeksLoading ? (
                   <p className="text-center text-muted-foreground">読み込み中...</p>
-                ) : weeksData && weeksData.length > 0 ? (
-                  weeksData.map((week: any) => (
+                ) : (weeksData as any) && (weeksData as any).length > 0 ? (
+                  (weeksData as any).map((week: any) => (
                     <div
                       key={week.id}
                       className={`p-3 border rounded-lg cursor-pointer transition-colors ${
