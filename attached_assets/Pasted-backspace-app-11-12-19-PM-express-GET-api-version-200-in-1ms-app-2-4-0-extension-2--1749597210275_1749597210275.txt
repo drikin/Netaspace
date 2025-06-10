@@ -1,0 +1,64 @@
+backspace-app  | 11:12:19 PM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-app  | 11:12:30 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+backspace-app  | 11:12:30 PM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-app  | PostgreSQL connection established
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:32 PM [express] POST /api/auth/login 200 in 27ms :: {"user":{"id":1,"username":"admin","passwor…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:32 PM [express] GET /api/auth/me 200 in 5ms :: {"user":{"id":1,"username":"admin","password":"f…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:38 PM [express] POST /api/auth/login 200 in 7ms :: {"user":{"id":1,"username":"admin","password…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:38 PM [express] GET /api/auth/me 200 in 3ms :: {"user":{"id":1,"username":"admin","password":"f…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:41 PM [express] GET /api/auth/me 200 in 5ms :: {"user":{"id":1,"username":"admin","password":"f…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:41 PM [express] GET /api/version 200 in 16ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:42 PM [express] GET /api/weeks/active 404 in 8ms :: {"message":"No active week found"}
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:43 PM [express] GET /api/auth/me 200 in 4ms :: {"user":{"id":1,"username":"admin","password":"f…
+backspace-app  | PostgreSQL connection established
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:43 PM [express] GET /api/version 200 in 14ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:44 PM [express] GET /api/weeks/active 404 in 5ms :: {"message":"No active week found"}
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:47 PM [express] POST /api/auth/login 200 in 7ms :: {"user":{"id":1,"username":"admin","password…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:47 PM [express] GET /api/auth/me 200 in 4ms :: {"user":{"id":1,"username":"admin","password":"f…
+backspace-app  | 11:12:49 PM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | PostgreSQL connection acquired from pool
+backspace-app  | 11:12:55 PM [express] GET /api/weeks 200 in 6ms :: []
+
+=== PostgreSQLログ（最新20行） ===
+time="2025-06-11T08:13:12+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+backspace-postgres  | 
+backspace-postgres  | waiting for server to shut down...2025-06-10 23:08:36.471 UTC [48] LOG:  received fast shutdown request
+backspace-postgres  | .2025-06-10 23:08:36.473 UTC [48] LOG:  aborting any active transactions
+backspace-postgres  | 2025-06-10 23:08:36.476 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+backspace-postgres  | 2025-06-10 23:08:36.476 UTC [49] LOG:  shutting down
+backspace-postgres  | 2025-06-10 23:08:36.478 UTC [49] LOG:  checkpoint starting: shutdown immediate
+backspace-postgres  | 2025-06-10 23:08:36.616 UTC [49] LOG:  checkpoint complete: wrote 921 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.025 s, sync=0.108 s, total=0.140 s; sync files=301, longest=0.088 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+backspace-postgres  | 2025-06-10 23:08:36.625 UTC [48] LOG:  database system is shut down
+backspace-postgres  |  done
+backspace-postgres  | server stopped
+backspace-postgres  | 
+backspace-postgres  | PostgreSQL init process complete; ready for start up.
+backspace-postgres  | 
+backspace-postgres  | 2025-06-10 23:08:36.698 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+backspace-postgres  | 2025-06-10 23:08:36.698 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+backspace-postgres  | 2025-06-10 23:08:36.698 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+backspace-postgres  | 2025-06-10 23:08:36.702 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+backspace-postgres  | 2025-06-10 23:08:36.707 UTC [64] LOG:  database system was shut down at 2025-06-10 23:08:36 UTC
+backspace-postgres  | 2025-06-10 23:08:36.713 UTC [1] LOG:  database system is ready to accept connections
+backspace-postgres  | 2025-06-10 23:08:36.866 UTC [74] FATAL:  role "postgres" does not exist
+
+リアルタイムログを見るには: docker-compose -f docker-compose.prod.yml logs -f
