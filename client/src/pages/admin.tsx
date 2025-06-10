@@ -509,7 +509,7 @@ const Admin: React.FC = () => {
             投稿されたトピックを管理できます。不適切なトピックを削除してください。
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            ログイン中: {user?.username}
+            ログイン中: {(user as any)?.username}
           </p>
         </div>
         
