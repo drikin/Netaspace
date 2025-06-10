@@ -127,7 +127,7 @@ class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     return this.executeWithMonitoring(async () => {
       const result = await db
         .select()
@@ -139,27 +139,22 @@ class PostgreSQLStorage implements IStorage {
     }, 'getUser');
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.executeWithMonitoring(async () => {
-      const result = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username))
-        .limit(1);
-      
-      return result[0];
-    }, 'getUserByUsername');
-  }
-
-  async createUser(user: InsertUser): Promise<User> {
+  async upsertUser(userData: UpsertUser): Promise<User> {
     return this.executeWithMonitoring(async () => {
       const result = await db
         .insert(users)
-        .values(user)
+        .values(userData)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            ...userData,
+            updatedAt: new Date(),
+          },
+        })
         .returning();
       
       return result[0];
-    }, 'createUser');
+    }, 'upsertUser');
   }
 
   async getWeeks(): Promise<Week[]> {
