@@ -274,7 +274,7 @@ const Admin: React.FC = () => {
 
   // Database export functionality
   const exportDatabaseMutation = useMutation({
-    mutationFn: async (format: 'json' | 'csv' | 'sqlite') => {
+    mutationFn: async (format: 'json' | 'csv' | 'sql') => {
       const response = await fetch(`/api/admin/export/${format}`, {
         method: 'GET',
         credentials: 'include',
@@ -298,7 +298,7 @@ const Admin: React.FC = () => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        const formatName = format === 'sqlite' ? 'SQLite' : format.toUpperCase();
+        const formatName = format === 'sql' ? 'SQL' : format.toUpperCase();
         toast({
           title: "エクスポート完了",
           description: `データベースを${formatName}形式でダウンロードしました。`,
@@ -322,7 +322,7 @@ const Admin: React.FC = () => {
     },
   });
 
-  const handleExportDatabase = (format: 'json' | 'csv' | 'sqlite') => {
+  const handleExportDatabase = (format: 'json' | 'csv' | 'sql') => {
     exportDatabaseMutation.mutate(format);
   };
 
@@ -493,13 +493,13 @@ const Admin: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleExportDatabase('sqlite')}
+              onClick={() => handleExportDatabase('sql')}
               disabled={exportDatabaseMutation.isPending}
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
               </svg>
-              SQLite
+              SQL
             </Button>
           </div>
 
