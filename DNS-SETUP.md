@@ -9,10 +9,7 @@
 neta.backspace.fm    IN  A  [サーバーのIPアドレス]
 ```
 
-**CNAMEレコード（オプション - wwwサブドメイン）**:
-```
-www.neta.backspace.fm  IN  CNAME  neta.backspace.fm
-```
+> **注意**: `www.neta.backspace.fm`は使用しないため、CNAMEレコードの設定は不要です。
 
 ### 一般的なDNSプロバイダーでの設定例
 
