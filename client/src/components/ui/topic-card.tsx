@@ -1,20 +1,12 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "lucide-react";
+import { Link, User, Clock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import CommentsList from "./comments-list";
-import CommentForm from "./comment-form";
 import AdminControls from "../admin-controls";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars } from "@shared/schema";
-import { 
-  Accordion, 
-  AccordionContent, 
-  AccordionItem, 
-  AccordionTrigger 
-} from "@/components/ui/accordion";
 
 interface TopicCardProps {
   topic: TopicWithCommentsAndStars;
@@ -162,7 +154,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
     return null;
   };
 
-  const formatDate = (dateString: Date) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
@@ -213,8 +205,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
               {getStatusBadge()}
             </div>
             <div className="flex items-center text-xs text-gray-500 mt-1">
-              <span className="mr-3">投稿: {topic.submitter}</span>
-              <span>コメント: {topic.comments?.length || 0}</span>
+              <User className="h-3 w-3 mr-1" />
+              <span className="mr-3">{topic.submitter}</span>
+              <Clock className="h-3 w-3 mr-1" />
+              <span>{formatDate(topic.createdAt as string)}</span>
             </div>
           </div>
 
@@ -245,9 +239,29 @@ const TopicCard: React.FC<TopicCardProps> = ({
           </button>
         </div>
 
+        {/* Description - always visible if present */}
+        {topic.description && (
+          <div className="mt-2 text-gray-700 text-sm">
+            <p className="line-clamp-2">{topic.description}</p>
+          </div>
+        )}
+
+        {/* URL - compact display */}
+        <div className="mt-2">
+          <a
+            href={topic.url}
+            className="text-blue-600 hover:text-blue-800 text-xs flex items-center break-all"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Link className="mr-1 h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{topic.url}</span>
+          </a>
+        </div>
+
         {/* Admin controls - compact */}
         {isAdmin && (
-          <div className="mt-2">
+          <div className="mt-3 pt-2 border-t border-gray-100">
             <AdminControls
               topicId={topic.id}
               currentStatus={topic.status}
@@ -255,74 +269,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
             />
           </div>
         )}
-
-        {/* Collapsible details and comments */}
-        <div className="mt-3">
-          <Accordion type="single" collapsible className="border-none">
-            <AccordionItem value="details" className="border-none">
-              <AccordionTrigger className="py-2 hover:no-underline text-sm text-gray-600">
-                詳細を表示
-              </AccordionTrigger>
-              <AccordionContent>
-                {/* URL */}
-                <div className="mb-3">
-                  <a
-                    href={topic.url}
-                    className="text-primary hover:text-primary-700 text-sm flex items-center break-all"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Link className="mr-1 h-4 w-4 flex-shrink-0" />
-                    {topic.url}
-                  </a>
-                </div>
-
-                {/* Description */}
-                {topic.description && (
-                  <div className="mb-3 text-gray-700 text-sm">
-                    <p>{topic.description}</p>
-                  </div>
-                )}
-
-                {/* Metadata */}
-                <div className="mb-4 flex items-center text-xs text-gray-500">
-                  <span className="mr-4 flex items-center">
-                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    投稿者: {topic.submitter}
-                  </span>
-                  <span className="flex items-center">
-                    <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {formatDate(topic.createdAt)}
-                  </span>
-                </div>
-
-                {/* Comments section */}
-                <div className="border-t border-gray-100 pt-3">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    コメント ({topic.comments?.length || 0})
-                  </h4>
-                  
-                  <div className="mb-4">
-                    <CommentsList
-                      topicId={topic.id}
-                      comments={topic.comments || []}
-                    />
-                  </div>
-                  
-                  {/* Comment form */}
-                  <CommentForm
-                    topicId={topic.id}
-                    onCommentAdded={refetchTopics}
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
       </CardContent>
     </Card>
   );

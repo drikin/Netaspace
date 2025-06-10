@@ -50,17 +50,7 @@ export const stars = sqliteTable("stars", {
   topicFingerprintIdx: index("stars_topic_fingerprint_idx").on(table.topicId, table.fingerprint),
 }));
 
-export const comments = sqliteTable("comments", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  topicId: integer("topic_id").references(() => topics.id).notNull(),
-  commenter: text("commenter").notNull(),
-  fingerprint: text("fingerprint").notNull(),
-  content: text("content").notNull(),
-  createdAt: text("created_at").notNull(),
-}, (table) => ({
-  topicIdIdx: index("comments_topic_id_idx").on(table.topicId),
-  createdAtIdx: index("comments_created_at_idx").on(table.createdAt),
-}));
+// Comments functionality removed
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -92,12 +82,7 @@ export const insertStarSchema = createInsertSchema(stars).pick({
   fingerprint: true,
 });
 
-export const insertCommentSchema = createInsertSchema(comments).pick({
-  topicId: true,
-  commenter: true,
-  fingerprint: true,
-  content: true,
-});
+// Comment schema removed
 
 // Types
 export type User = typeof users.$inferSelect;
