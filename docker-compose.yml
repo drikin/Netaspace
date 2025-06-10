@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backspace-fm:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./database:/app/database
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=./database/neta.sqlite
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
