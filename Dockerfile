@@ -1,43 +1,27 @@
-# Node.js 20 Alpine image
+# 桜環境用 Dockerfile
 FROM node:20-alpine
 
-# Install required system dependencies
-RUN apk add --no-cache postgresql-client curl
-
-# Set working directory
+# 作業ディレクトリの設定
 WORKDIR /app
 
-# Copy package files
+# パッケージファイルをコピー
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --production=false
+# 依存関係のインストール
+RUN npm ci --only=production
 
-# Copy source code
+# アプリケーションコードをコピー
 COPY . .
 
-# Build the application
+# TypeScriptのビルド
 RUN npm run build
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Copy and make executable the scripts
-COPY scripts/start-app.sh /usr/local/bin/start-app.sh
-RUN chmod +x /usr/local/bin/start-app.sh
-
-# Change ownership of app directory
-RUN chown -R nodejs:nodejs /app
-
-USER nodejs
-
-# Expose port
+# ポート設定
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# ヘルスチェック
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/api/version || exit 1
 
-# Start the application with database permission fixes
-CMD ["/bin/sh", "/usr/local/bin/start-app.sh"]
+# アプリケーション起動
+CMD ["npm", "start"]
