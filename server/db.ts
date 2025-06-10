@@ -11,10 +11,47 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  // PostgreSQL connection pool settings
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  // Optimized PostgreSQL connection pool for deployment
+  max: 5, // Reduced for resource-constrained deployment
+  idleTimeoutMillis: 60000, // 1 minute idle timeout
+  connectionTimeoutMillis: 10000, // 10 second connection timeout
+  // Additional PostgreSQL specific settings
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 0,
+});
+
+// Handle pool errors gracefully
+pool.on('error', (err) => {
+  console.error('PostgreSQL pool error:', err);
+});
+
+pool.on('connect', (client) => {
+  console.log('PostgreSQL connection established');
+});
+
+pool.on('acquire', (client) => {
+  console.log('PostgreSQL connection acquired from pool');
+});
+
+pool.on('release', (err, client) => {
+  if (err) {
+    console.error('PostgreSQL connection release error:', err);
+  }
 });
 
 export const db = drizzle(pool, { schema });
+
+// Test database connection on startup
+async function testConnection() {
+  try {
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    console.log('PostgreSQL database connection test successful');
+  } catch (error) {
+    console.error('PostgreSQL database connection test failed:', error);
+  }
+}
+
+// Run connection test
+testConnection();
