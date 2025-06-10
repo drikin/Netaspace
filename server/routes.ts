@@ -312,7 +312,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.setActiveWeek(weekId);
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to set active week' });
+      console.error('Error setting active week:', error);
+      res.status(500).json({ 
+        message: 'Failed to set active week',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

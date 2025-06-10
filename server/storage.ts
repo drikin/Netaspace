@@ -247,16 +247,38 @@ class SQLiteStorage implements IStorage {
   }
 
   async setActiveWeek(weekId: number): Promise<void> {
-    // Deactivate all weeks first
-    await this.db
-      .update(weeks)
-      .set({ isActive: false });
-    
-    // Activate the specified week
-    await this.db
-      .update(weeks)
-      .set({ isActive: true })
-      .where(eq(weeks.id, weekId));
+    try {
+      console.log(`Setting active week to ${weekId}`);
+      
+      // First check if the week exists
+      const weekExists = await this.db
+        .select()
+        .from(weeks)
+        .where(eq(weeks.id, weekId))
+        .limit(1);
+      
+      if (weekExists.length === 0) {
+        throw new Error(`Week with ID ${weekId} does not exist`);
+      }
+      
+      // Deactivate all weeks first
+      console.log('Deactivating all weeks');
+      await this.db
+        .update(weeks)
+        .set({ isActive: false });
+      
+      // Activate the specified week
+      console.log(`Activating week ${weekId}`);
+      const result = await this.db
+        .update(weeks)
+        .set({ isActive: true })
+        .where(eq(weeks.id, weekId));
+      
+      console.log(`Set active week ${weekId} completed successfully`);
+    } catch (error) {
+      console.error(`Error in setActiveWeek for week ${weekId}:`, error);
+      throw error;
+    }
   }
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
