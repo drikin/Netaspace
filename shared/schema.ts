@@ -1,35 +1,36 @@
-import { pgTable, text, serial, integer, timestamp, boolean, json, index } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  isAdmin: boolean("is_admin").default(false).notNull(),
+  isAdmin: integer("is_admin", { mode: "boolean" }).default(false).notNull(),
   email: text("email").unique(),
+  createdAt: text("created_at").notNull(),
 });
 
-export const weeks = pgTable("weeks", {
-  id: serial("id").primaryKey(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
+export const weeks = sqliteTable("weeks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
   title: text("title").notNull(),
-  isActive: boolean("is_active").default(false).notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).default(false).notNull(),
 });
 
-export const topics = pgTable("topics", {
-  id: serial("id").primaryKey(),
+export const topics = sqliteTable("topics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   weekId: integer("week_id").references(() => weeks.id),
   title: text("title").notNull(),
   url: text("url").notNull(),
   description: text("description"),
   submitter: text("submitter").notNull(),
   fingerprint: text("fingerprint").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  status: text("status").default("pending").notNull(), // pending, approved, featured, rejected
+  createdAt: text("created_at").notNull(),
+  status: text("status").default("pending").notNull(),
   stars: integer("stars").default(0).notNull(),
-  featuredAt: timestamp("featured_at"), // 採用された時刻
+  featuredAt: text("featured_at"),
 }, (table) => ({
   weekIdIdx: index("topics_week_id_idx").on(table.weekId),
   statusIdx: index("topics_status_idx").on(table.status),
@@ -38,23 +39,24 @@ export const topics = pgTable("topics", {
   featuredAtIdx: index("topics_featured_at_idx").on(table.featuredAt),
 }));
 
-export const stars = pgTable("stars", {
-  id: serial("id").primaryKey(),
+export const stars = sqliteTable("stars", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   topicId: integer("topic_id").references(() => topics.id).notNull(),
   fingerprint: text("fingerprint").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: text("created_at").notNull(),
 }, (table) => ({
   topicIdIdx: index("stars_topic_id_idx").on(table.topicId),
   fingerprintIdx: index("stars_fingerprint_idx").on(table.fingerprint),
   topicFingerprintIdx: index("stars_topic_fingerprint_idx").on(table.topicId, table.fingerprint),
 }));
 
-export const comments = pgTable("comments", {
-  id: serial("id").primaryKey(),
+export const comments = sqliteTable("comments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   topicId: integer("topic_id").references(() => topics.id).notNull(),
-  name: text("name").notNull(),
+  commenter: text("commenter").notNull(),
+  fingerprint: text("fingerprint").notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: text("created_at").notNull(),
 }, (table) => ({
   topicIdIdx: index("comments_topic_id_idx").on(table.topicId),
   createdAtIdx: index("comments_created_at_idx").on(table.createdAt),
