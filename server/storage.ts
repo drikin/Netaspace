@@ -63,9 +63,9 @@ function getDatabasePath() {
   const dbPath = './database/neta.sqlite';
   const dbDir = path.dirname(dbPath);
   
-  // Ensure database directory exists
+  // Ensure database directory exists with proper permissions
   if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+    fs.mkdirSync(dbDir, { recursive: true, mode: 0o775 });
   }
   
   return dbPath;
@@ -77,6 +77,14 @@ function initializeSQLiteDatabase() {
 
   const sqlite = new Database(dbPath);
   console.log('SQLite database initialized successfully');
+  
+  // Set proper file permissions on the database file
+  try {
+    fs.chmodSync(dbPath, 0o664);
+    console.log('Database file permissions set successfully');
+  } catch (error) {
+    console.warn('Failed to set database file permissions:', error);
+  }
   
   // Initialize database with tables if they don't exist
   initializeTables(sqlite);

@@ -19,16 +19,22 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Create database directory with proper permissions
-RUN mkdir -p database && chmod 755 database
-
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 
+# Create database directory with proper permissions
+RUN mkdir -p database
+
+# Copy and make executable the scripts
+COPY scripts/fix-db-permissions.sh /usr/local/bin/fix-db-permissions.sh
+COPY scripts/start-app.sh /usr/local/bin/start-app.sh
+RUN chmod +x /usr/local/bin/fix-db-permissions.sh
+RUN chmod +x /usr/local/bin/start-app.sh
+
 # Change ownership of app directory including database
 RUN chown -R nodejs:nodejs /app
-RUN chmod -R 755 /app/database
+RUN chmod -R 775 /app/database
 
 USER nodejs
 
@@ -39,5 +45,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/api/version || exit 1
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Start the application with database permission fixes
+CMD ["/usr/local/bin/start-app.sh"]
