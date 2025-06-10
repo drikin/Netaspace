@@ -1,23 +1,26 @@
 #!/bin/bash
 
-# Fix database permissions for Docker deployment
+# Fix Docker container permissions for PostgreSQL deployment
 
-echo "Fixing database permissions..."
+echo "Fixing Docker container permissions..."
 
 # Stop containers
 docker-compose down
 
-# Fix host directory permissions
-sudo chown -R 1001:1001 database/ 2>/dev/null || chown -R 1001:1001 database/ 2>/dev/null || echo "Note: Could not change ownership, trying chmod..."
-chmod -R 755 database/
-
-# If database exists, make it writable
-if [ -f "database/neta.sqlite" ]; then
-    chmod 664 database/neta.sqlite
-    echo "Database file permissions updated"
+# Clean up old SQLite directories if they exist
+if [ -d "database" ]; then
+    echo "Removing old SQLite database directory..."
+    rm -rf database/
 fi
 
-# Restart containers
+# Create data directory for PostgreSQL persistence
+mkdir -p data/backups
+chmod -R 755 data/
+
+# Fix host directory permissions  
+sudo chown -R 1001:1001 data/ 2>/dev/null || chown -R 1001:1001 data/ 2>/dev/null || echo "Note: Could not change ownership"
+
+# Restart containers with PostgreSQL
 docker-compose up -d
 
-echo "Permissions fixed and containers restarted"
+echo "Container permissions fixed and PostgreSQL deployment restarted"

@@ -668,44 +668,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/export/sqlite', isAdmin, async (req, res) => {
+  // PostgreSQL database export (pg_dump format)
+  app.get('/api/admin/export/sql', isAdmin, async (req, res) => {
     try {
-      // Determine the current database path
-      const dbPath = process.env.REPLIT_DEPLOYMENT 
-        ? (process.env.REPLIT_DB_URL || './data/production.sqlite')
-        : './database/dev.sqlite';
+      const { spawn } = require('child_process');
+      const filename = `database-export-${new Date().toISOString().split('T')[0]}.sql`;
 
-      // Check if database file exists
-      if (!fs.existsSync(dbPath)) {
-        return res.status(404).json({ message: 'Database file not found' });
-      }
-
-      // Get file stats
-      const stats = fs.statSync(dbPath);
-      const filename = `database-export-${new Date().toISOString().split('T')[0]}.sqlite`;
-
-      // Set appropriate headers for SQLite file download
-      res.setHeader('Content-Type', 'application/x-sqlite3');
+      res.setHeader('Content-Type', 'application/sql');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', stats.size);
 
-      // Create read stream and pipe to response
-      const readStream = fs.createReadStream(dbPath);
-      readStream.on('error', (error) => {
-        console.error('SQLite export stream error:', error);
-        if (!res.headersSent) {
-          res.status(500).json({ message: 'Failed to stream database file' });
-        }
+      // Use pg_dump to export the database
+      const pgDump = spawn('pg_dump', [process.env.DATABASE_URL]);
+      
+      pgDump.stdout.pipe(res);
+      
+      pgDump.stderr.on('data', (data) => {
+        console.error('pg_dump error:', data.toString());
       });
 
-      readStream.pipe(res);
+      pgDump.on('error', (error) => {
+        console.error('pg_dump spawn error:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Failed to export PostgreSQL database' });
+        }
+      });
     } catch (error) {
-      console.error('SQLite export error:', error);
-      res.status(500).json({ message: 'Failed to export SQLite database' });
+      console.error('PostgreSQL export error:', error);
+      res.status(500).json({ message: 'Failed to export PostgreSQL database' });
     }
   });
 
-  // Backup management endpoints (admin only)
+  // PostgreSQL backup management endpoints (admin only)
   app.get('/api/admin/backups', isAdmin, async (req, res) => {
     try {
       const backupDir = './data/backups';
@@ -715,9 +708,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
-      // Read backup directory
+      // Read backup directory for SQL files
       const files = fs.readdirSync(backupDir);
-      const backupFiles = files.filter(file => file.endsWith('.sqlite'));
+      const backupFiles = files.filter(file => file.endsWith('.sql') || file.endsWith('.gz'));
 
       // Get file information
       const backups = backupFiles.map(filename => {
@@ -728,7 +721,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           filename,
           size: stats.size,
           createdAt: stats.birthtime,
-          modifiedAt: stats.mtime
+          modifiedAt: stats.mtime,
+          type: filename.endsWith('.gz') ? 'compressed' : 'sql'
         };
       });
 
@@ -748,8 +742,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const backupDir = './data/backups';
       const filePath = path.join(backupDir, filename);
 
-      // Security check: ensure filename is safe
-      if (!filename.endsWith('.sqlite') || filename.includes('..') || filename.includes('/')) {
+      // Security check: ensure filename is safe for PostgreSQL backups
+      if ((!filename.endsWith('.sql') && !filename.endsWith('.gz')) || filename.includes('..') || filename.includes('/')) {
         return res.status(400).json({ message: 'Invalid backup filename' });
       }
 
@@ -761,8 +755,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get file stats
       const stats = fs.statSync(filePath);
 
-      // Set appropriate headers for SQLite backup download
-      res.setHeader('Content-Type', 'application/x-sqlite3');
+      // Set appropriate headers for PostgreSQL backup download
+      const contentType = filename.endsWith('.gz') ? 'application/gzip' : 'application/sql';
+      res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', stats.size);
 
