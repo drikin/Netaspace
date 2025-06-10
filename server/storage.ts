@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, not } from 'drizzle-orm';
 import {
   users,
   weeks,
@@ -166,23 +166,25 @@ class SQLiteStorage implements IStorage {
     const topicsResult = await this.db
       .select()
       .from(topics)
-      .where(eq(topics.weekId, weekId))
+      .where(and(eq(topics.weekId, weekId), not(eq(topics.status, 'deleted'))))
       .orderBy(desc(topics.createdAt));
 
     return await this.enrichTopicsWithCommentsAndStars(topicsResult);
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
-    let whereConditions = eq(topics.status, status);
+    let whereCondition;
     
     if (weekId) {
-      whereConditions = and(eq(topics.status, status), eq(topics.weekId, weekId));
+      whereCondition = and(eq(topics.status, status), eq(topics.weekId, weekId));
+    } else {
+      whereCondition = eq(topics.status, status);
     }
 
     const topicsResult = await this.db
       .select()
       .from(topics)
-      .where(whereConditions)
+      .where(whereCondition)
       .orderBy(desc(topics.createdAt));
       
     return await this.enrichTopicsWithCommentsAndStars(topicsResult);
