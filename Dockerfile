@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --production=false
+RUN npm ci --only=production && npm cache clean --force
 
 # Copy source code
 COPY . .
