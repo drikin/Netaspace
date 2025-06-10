@@ -41,9 +41,7 @@ export interface IStorage {
   updateTopicStatus(id: number, status: string): Promise<Topic | undefined>;
   deleteTopic(id: number): Promise<boolean>;
   
-  // Comment operations
-  getCommentsByTopicId(topicId: number): Promise<Comment[]>;
-  createComment(comment: InsertComment): Promise<Comment>;
+  // Comment operations removed
   
   // Star operations
   addStar(star: InsertStar): Promise<boolean>;
@@ -184,7 +182,7 @@ function initializeTables(sqlite: any) {
 }
 
 const sqlite = initializeSQLiteDatabase();
-const db = drizzle(sqlite, { schema: { users, weeks, topics, comments, stars } });
+const db = drizzle(sqlite, { schema: { users, weeks, topics, stars } });
 
 class SQLiteStorage implements IStorage {
   db: ReturnType<typeof drizzle>;
@@ -318,12 +316,6 @@ class SQLiteStorage implements IStorage {
     const enrichedTopics: TopicWithCommentsAndStars[] = [];
 
     for (const topic of topicsResult) {
-      const topicComments = await this.db
-        .select()
-        .from(comments)
-        .where(eq(comments.topicId, topic.id))
-        .orderBy(desc(comments.createdAt));
-
       const starCount = await this.db
         .select({ count: stars.id })
         .from(stars)
@@ -331,7 +323,6 @@ class SQLiteStorage implements IStorage {
 
       enrichedTopics.push({
         ...topic,
-        comments: topicComments,
         starsCount: starCount.length
       });
     }
@@ -349,12 +340,6 @@ class SQLiteStorage implements IStorage {
     if (!result[0]) return undefined;
 
     const topic = result[0];
-    const topicComments = await this.db
-      .select()
-      .from(comments)
-      .where(eq(comments.topicId, topic.id))
-      .orderBy(desc(comments.createdAt));
-
     const starCount = await this.db
       .select({ count: stars.id })
       .from(stars)
@@ -372,7 +357,6 @@ class SQLiteStorage implements IStorage {
 
     return {
       ...topic,
-      comments: topicComments,
       starsCount: starCount.length,
       hasStarred
     };
@@ -411,8 +395,7 @@ class SQLiteStorage implements IStorage {
   }
 
   async deleteTopic(id: number): Promise<boolean> {
-    // Delete related comments and stars first
-    await this.db.delete(comments).where(eq(comments.topicId, id));
+    // Delete related stars first
     await this.db.delete(stars).where(eq(stars.topicId, id));
     
     const result = await this.db
@@ -423,25 +406,7 @@ class SQLiteStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getCommentsByTopicId(topicId: number): Promise<Comment[]> {
-    return await this.db
-      .select()
-      .from(comments)
-      .where(eq(comments.topicId, topicId))
-      .orderBy(desc(comments.createdAt));
-  }
-
-  async createComment(comment: InsertComment): Promise<Comment> {
-    const result = await this.db
-      .insert(comments)
-      .values({
-        ...comment,
-        createdAt: new Date().toISOString()
-      })
-      .returning();
-    
-    return result[0];
-  }
+  // Comment methods removed
 
   async addStar(star: InsertStar): Promise<boolean> {
     try {

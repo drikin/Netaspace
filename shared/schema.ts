@@ -97,8 +97,7 @@ export type InsertTopic = z.infer<typeof insertTopicSchema>;
 export type Star = typeof stars.$inferSelect;
 export type InsertStar = z.infer<typeof insertStarSchema>;
 
-export type Comment = typeof comments.$inferSelect;
-export type InsertComment = z.infer<typeof insertCommentSchema>;
+// Comment types removed
 
 // Extended schemas for form validation
 export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true, fingerprint: true }).extend({
@@ -113,11 +112,10 @@ export const createTopicSchema = insertTopicSchema.extend({
 
 export type CreateTopicData = z.infer<typeof createTopicSchema>;
 
-export const submitCommentSchema = insertCommentSchema.omit({ topicId: true });
+// Comment submission schema removed
 
 // Extended types for API responses
 export type TopicWithCommentsAndStars = Topic & {
-  comments: Comment[];
   starsCount: number;
   hasStarred?: boolean;
 };

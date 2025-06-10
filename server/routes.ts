@@ -4,11 +4,9 @@ import { createHash } from "crypto";
 import { storage } from "./storage";
 import { 
   insertTopicSchema, 
-  insertCommentSchema, 
   insertStarSchema,
   insertWeekSchema,
   submitTopicSchema,
-  submitCommentSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import session from 'express-session';
