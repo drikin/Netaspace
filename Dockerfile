@@ -46,4 +46,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/api/version || exit 1
 
 # Start the application with database permission fixes
-CMD ["/usr/local/bin/start-app.sh"]
+CMD ["/bin/sh", "/usr/local/bin/start-app.sh"]
