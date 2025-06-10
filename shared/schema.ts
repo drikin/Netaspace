@@ -94,7 +94,8 @@ export const insertStarSchema = createInsertSchema(stars).pick({
 
 export const insertCommentSchema = createInsertSchema(comments).pick({
   topicId: true,
-  name: true,
+  commenter: true,
+  fingerprint: true,
   content: true,
 });
 

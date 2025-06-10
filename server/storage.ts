@@ -114,7 +114,10 @@ class SQLiteStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const result = await this.db
       .insert(users)
-      .values(user)
+      .values({
+        ...user,
+        createdAt: new Date().toISOString()
+      })
       .returning();
     
     return result[0];
@@ -170,16 +173,18 @@ class SQLiteStorage implements IStorage {
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
-    let query = this.db
-      .select()
-      .from(topics)
-      .where(eq(topics.status, status));
-
+    let whereConditions = eq(topics.status, status);
+    
     if (weekId) {
-      query = query.where(and(eq(topics.status, status), eq(topics.weekId, weekId)));
+      whereConditions = and(eq(topics.status, status), eq(topics.weekId, weekId));
     }
 
-    const topicsResult = await query.orderBy(desc(topics.createdAt));
+    const topicsResult = await this.db
+      .select()
+      .from(topics)
+      .where(whereConditions)
+      .orderBy(desc(topics.createdAt));
+      
     return await this.enrichTopicsWithCommentsAndStars(topicsResult);
   }
 
@@ -260,7 +265,10 @@ class SQLiteStorage implements IStorage {
   async createTopic(topic: InsertTopic): Promise<Topic> {
     const result = await this.db
       .insert(topics)
-      .values(topic)
+      .values({
+        ...topic,
+        createdAt: new Date().toISOString()
+      })
       .returning();
     
     return result[0];
@@ -300,7 +308,10 @@ class SQLiteStorage implements IStorage {
   async createComment(comment: InsertComment): Promise<Comment> {
     const result = await this.db
       .insert(comments)
-      .values(comment)
+      .values({
+        ...comment,
+        createdAt: new Date().toISOString()
+      })
       .returning();
     
     return result[0];
@@ -310,7 +321,10 @@ class SQLiteStorage implements IStorage {
     try {
       await this.db
         .insert(stars)
-        .values(star);
+        .values({
+          ...star,
+          createdAt: new Date().toISOString()
+        });
       return true;
     } catch {
       return false;
