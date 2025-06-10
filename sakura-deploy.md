@@ -1,5 +1,15 @@
 # 桜環境デプロイメント設定
 
+桜環境向けの完全なデプロイ設定が準備されました。以下のファイルが作成されています：
+
+- `Dockerfile` - アプリケーションコンテナ設定
+- `docker-compose.yml` - 複数サービス構成
+- `nginx.conf` - リバースプロキシとSSL設定
+- `init.sql` - データベース初期化スクリプト
+- `.env.example` - 環境変数テンプレート
+- `deploy-scripts/deploy.sh` - 自動デプロイスクリプト
+- `deploy-scripts/setup-ssl.sh` - SSL証明書設定
+
 ## 必要な環境変数
 
 ### 認証関連
