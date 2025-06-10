@@ -38,12 +38,15 @@ const Admin: React.FC = () => {
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
       setShowLoginForm(true);
+    } else if (isAuthenticated && isAdmin) {
+      setShowLoginForm(false);
     } else if (isAuthenticated && !isAdmin) {
       toast({
         title: "Access Denied",
         description: "You don't have admin privileges",
         variant: "destructive",
       });
+      setShowLoginForm(true);
     }
   }, [isAuthLoading, isAuthenticated, isAdmin, toast]);
 
@@ -70,12 +73,14 @@ const Admin: React.FC = () => {
     mutationFn: async (credentials: z.infer<typeof loginSchema>) => {
       return apiRequest("POST", "/api/auth/login", credentials);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "ログイン成功",
         description: "管理者としてログインしました。",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      // Invalidate auth queries and wait for refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       setShowLoginForm(false);
     },
     onError: (error) => {
@@ -99,6 +104,25 @@ const Admin: React.FC = () => {
 
   const onLoginSubmit = (values: z.infer<typeof loginSchema>) => {
     loginMutation.mutate(values);
+  };
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/auth/logout", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "ログアウト完了",
+        description: "正常にログアウトしました。",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setShowLoginForm(true);
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
 
   // Handle tab change
@@ -392,8 +416,24 @@ const Admin: React.FC = () => {
     downloadBackupMutation.mutate(filename);
   };
 
+  // Show loading state during authentication
+  if (isAuthLoading) {
+    return (
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-0 mb-6">
+          <div className="text-center">
+            <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
+              <span className="sr-only">Loading...</span>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">認証状態を確認しています...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // If not admin and not loading, show login form
-  if (!isAdmin && !isAuthLoading) {
+  if (showLoginForm || (!isAuthenticated || !isAdmin)) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0 mb-6">
@@ -468,6 +508,21 @@ const Admin: React.FC = () => {
           <p className="mt-1 text-sm text-gray-600">
             投稿されたトピックを管理できます。不適切なトピックを削除してください。
           </p>
+          <p className="mt-1 text-xs text-gray-500">
+            ログイン中: {user?.username}
+          </p>
+        </div>
+        
+        {/* User Controls */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+          >
+            {logoutMutation.isPending ? "ログアウト中..." : "ログアウト"}
+          </Button>
         </div>
         
         {/* Management Buttons */}
