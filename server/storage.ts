@@ -55,7 +55,9 @@ export interface IStorage {
 }
 
 function getDatabasePath() {
-  const dbPath = './database/neta.sqlite';
+  // Use dev.sqlite for development in Replit, neta.sqlite for production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const dbPath = isDevelopment ? './database/dev.sqlite' : './database/neta.sqlite';
   const dbDir = path.dirname(dbPath);
   
   // Ensure database directory exists with proper permissions
