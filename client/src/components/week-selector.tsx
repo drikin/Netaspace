@@ -2,11 +2,11 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { PlusIcon } from "lucide-react";
-import { Week } from "@shared/schema";
+import { Week, WeekWithTopics } from "@shared/schema";
 import { formatDateRange } from "@/lib/date-utils";
 
 interface WeekSelectorProps {
-  week: Week | null;
+  week: WeekWithTopics | Week | null;
   isLoading?: boolean;
 }
 
@@ -29,7 +29,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
         <h1 className="text-2xl font-semibold text-gray-900">今週のネタ候補</h1>
         {week ? (
           <p className="mt-1 text-sm text-gray-600">
-            {formatDateRange(week.startDate, week.endDate)}
+            {formatDateRange(new Date(week.startDate), new Date(week.endDate))}
           </p>
         ) : (
           <p className="mt-1 text-sm text-gray-600">
