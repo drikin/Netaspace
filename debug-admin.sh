@@ -95,13 +95,12 @@ fix_admin_user() {
         echo "=== 管理者ユーザーの作成/更新 ==="
         docker-compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -d backspace_fm << 'SQL_EOF'
 -- 管理者ユーザーを作成または更新
-INSERT INTO users (username, password, is_admin, email, created_at, updated_at) 
-VALUES ('admin', 'fmbackspace55', true, 'admin@backspace.fm', NOW(), NOW())
+INSERT INTO users (username, password, is_admin, email, created_at) 
+VALUES ('admin', 'fmbackspace55', true, 'admin@backspace.fm', NOW())
 ON CONFLICT (username) DO UPDATE SET 
   password = EXCLUDED.password,
   is_admin = EXCLUDED.is_admin,
-  email = EXCLUDED.email,
-  updated_at = NOW();
+  email = EXCLUDED.email;
 
 -- 確認
 SELECT id, username, password, is_admin, email FROM users WHERE username='admin';
@@ -149,13 +148,13 @@ init_database_schema() {
         echo "=== 初期データ作成 ==="
         docker-compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -d backspace_fm << 'SQL_EOF'
 -- 管理者ユーザー作成
-INSERT INTO users (username, password, is_admin, email, created_at, updated_at) 
-VALUES ('admin', 'fmbackspace55', true, 'admin@backspace.fm', NOW(), NOW())
+INSERT INTO users (username, password, is_admin, email, created_at) 
+VALUES ('admin', 'fmbackspace55', true, 'admin@backspace.fm', NOW())
 ON CONFLICT (username) DO NOTHING;
 
 -- 初期週作成
-INSERT INTO weeks (title, start_date, end_date, is_active, created_at, updated_at)
-VALUES ('Week 1', '2025-01-06', '2025-01-12', true, NOW(), NOW())
+INSERT INTO weeks (title, start_date, end_date, is_active)
+VALUES ('Week 1', '2025-01-06', '2025-01-12', true)
 ON CONFLICT DO NOTHING;
 
 -- 確認
