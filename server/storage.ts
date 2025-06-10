@@ -139,17 +139,7 @@ function initializeTables(sqlite: any) {
       )
     `);
 
-    // Create comments table
-    sqlite.exec(`
-      CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        topic_id INTEGER REFERENCES topics(id) NOT NULL,
-        commenter TEXT NOT NULL,
-        fingerprint TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-    `);
+    // Comments table removed
 
     // Create indexes for better performance
     sqlite.exec(`
@@ -161,7 +151,6 @@ function initializeTables(sqlite: any) {
       CREATE INDEX IF NOT EXISTS stars_topic_id_idx ON stars(topic_id);
       CREATE INDEX IF NOT EXISTS stars_fingerprint_idx ON stars(fingerprint);
       CREATE INDEX IF NOT EXISTS stars_topic_fingerprint_idx ON stars(topic_id, fingerprint);
-      CREATE INDEX IF NOT EXISTS comments_topic_id_idx ON comments(topic_id);
     `);
 
     // Insert default admin user if not exists

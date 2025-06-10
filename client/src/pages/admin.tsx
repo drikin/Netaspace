@@ -27,7 +27,7 @@ const Admin: React.FC = () => {
     queryKey: ["/api/auth/me"],
   });
 
-  const isAdmin = auth?.user?.isAdmin;
+  const isAdmin = (auth as any)?.user?.isAdmin;
 
   // If not admin, redirect to login form
   useEffect(() => {

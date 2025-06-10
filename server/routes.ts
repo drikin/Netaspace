@@ -583,10 +583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allTopicsArrays = await Promise.all(allTopicsPromises);
       const allTopics = allTopicsArrays.flat();
 
-      // Get all comments
-      const allCommentsPromises = allTopics.map(topic => storage.getCommentsByTopicId(topic.id));
-      const allCommentsArrays = await Promise.all(allCommentsPromises);
-      const allComments = allCommentsArrays.flat();
+      // Comments functionality removed
 
       const exportData = {
         exportedAt: new Date().toISOString(),
@@ -594,11 +591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: {
           weeks: weeks,
           topics: allTopics,
-          comments: allComments,
           statistics: {
             totalWeeks: weeks.length,
             totalTopics: allTopics.length,
-            totalComments: allComments.length,
             featuredTopics: allTopics.filter(t => t.status === 'featured').length,
             pendingTopics: allTopics.filter(t => t.status === 'pending').length,
             deletedTopics: allTopics.filter(t => t.status === 'deleted').length
@@ -857,40 +852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Comment routes
-  app.post('/api/topics/:id/comments', async (req, res) => {
-    try {
-      const topicId = parseInt(req.params.id);
-      
-      if (isNaN(topicId)) {
-        return res.status(400).json({ message: 'Invalid topic ID' });
-      }
-      
-      // Validate using the submitCommentSchema
-      const commentData = submitCommentSchema.parse(req.body);
-      
-      // Check if the topic exists
-      const topic = await storage.getTopic(topicId);
-      if (!topic) {
-        return res.status(404).json({ message: 'Topic not found' });
-      }
-      
-      // Create the comment
-      const comment = await storage.createComment({
-        ...commentData,
-        topicId
-      });
-      
-      // トランザクションベース実装: リアルタイム更新を削除
-      
-      res.status(201).json(comment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid comment data', errors: error.errors });
-      }
-      res.status(500).json({ message: 'Failed to create comment' });
-    }
-  });
+  // Comment functionality removed
 
   // Star routes
   app.post('/api/topics/:id/star', async (req, res) => {
