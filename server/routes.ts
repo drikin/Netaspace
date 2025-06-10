@@ -9,7 +9,10 @@ import {
   submitTopicSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import session from 'express-session';
+import passport from 'passport';
+import { Strategy as LocalStrategy } from 'passport-local';
+import MemoryStore from 'memorystore';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import iconv from 'iconv-lite';
@@ -56,6 +59,8 @@ function checkRateLimit(ip: string): boolean {
 
 // リアルタイム更新を削除してトランザクションベースに変更
 // WebSocket機能を無効化してCompute Unit消費を削減
+
+const MemoryStoreSession = MemoryStore(session);
 
 // GoogleニュースのURLかどうかを確認する関数
 function isGoogleNewsURL(url: string): boolean {
@@ -170,26 +175,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Setup Replit authentication
-  await setupAuth(app);
+  // Session setup
+  app.use(session({
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    }),
+    secret: process.env.SESSION_SECRET || 'backspace-fm-podcast-topics-app',
+    resave: true,
+    saveUninitialized: true,
+    cookie: { 
+      secure: false, // デプロイ環境でもHTTPSが確実でない場合はfalseに設定
+      maxAge: 86400000, // 24 hours
+      sameSite: 'lax'
+    }
+  }));
 
-  // Auth routes for backward compatibility
+  // Passport setup
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Configure passport local strategy
+  passport.use(new LocalStrategy(async (username, password, done) => {
+    try {
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return done(null, false, { message: 'Incorrect username or password' });
+      }
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    }
+  }));
+
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (err) {
+      done(err);
+    }
+  });
+
+  // Auth routes
+  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
+    res.json({ user: req.user });
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout(() => {
+      res.json({ success: true });
+    });
+  });
+
   app.get('/api/auth/me', (req, res) => {
     if (req.isAuthenticated()) {
       res.json({ user: req.user });
     } else {
       res.status(401).json({ message: 'Not authenticated' });
-    }
-  });
-
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
@@ -522,9 +568,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Database export endpoints (admin only)
   app.get('/api/admin/export/json', isAdmin, async (req, res) => {
     try {
-      const [weeks, topics] = await Promise.all([
+      const [weeks, topics, users, comments, stars] = await Promise.all([
         storage.getWeeks(),
-        storage.getTopicsByStatus('featured')
+        storage.getTopicsByStatus('featured'),
+        // Get all users (admin only has access)
+        storage.getUser(1), // For simplicity, get basic user info
+        // Get comments for all topics
+        [], // We'll populate this below
+        [] // We'll populate this below
       ]);
 
       // Get all topics regardless of status for export
@@ -631,11 +682,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       pgDump.stdout.pipe(res);
       
-      pgDump.stderr.on('data', (data: Buffer) => {
+      pgDump.stderr.on('data', (data) => {
         console.error('pg_dump error:', data.toString());
       });
 
-      pgDump.on('error', (error: Error) => {
+      pgDump.on('error', (error) => {
         console.error('pg_dump spawn error:', error);
         if (!res.headersSent) {
           res.status(500).json({ message: 'Failed to export PostgreSQL database' });
@@ -888,17 +939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Middleware to check if user is authenticated and is an admin
 function isAdmin(req: Request, res: Response, next: Function) {
-  const user = req.user as any;
-  
-  if (!req.isAuthenticated() || !user.claims) {
-    return res.status(401).json({ message: 'Not authenticated' });
+  if (req.isAuthenticated() && (req.user as any)?.isAdmin) {
+    return next();
   }
-
-  // Check if this is the specific Replit user (replace with actual user ID)
-  const adminUserId = process.env.ADMIN_USER_ID || "your-replit-user-id";
-  if (user.claims.sub !== adminUserId) {
-    return res.status(403).json({ message: 'Access denied' });
-  }
-
-  return next();
+  res.status(403).json({ message: 'Access denied' });
 }

@@ -11,7 +11,6 @@ import {
   type Topic,
   type Star,
   type InsertUser,
-  type UpsertUser,
   type InsertWeek,
   type InsertTopic,
   type InsertStar,
@@ -75,9 +74,10 @@ class DatabasePerformanceMonitor {
 const performanceMonitor = new DatabasePerformanceMonitor();
 
 export interface IStorage {
-  // User operations - Updated for Replit Auth
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
   
   // Week operations
   getWeeks(): Promise<Week[]>;
@@ -127,7 +127,7 @@ class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: number): Promise<User | undefined> {
     return this.executeWithMonitoring(async () => {
       const result = await db
         .select()
@@ -139,22 +139,27 @@ class PostgreSQLStorage implements IStorage {
     }, 'getUser');
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+      
+      return result[0];
+    }, 'getUserByUsername');
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
     return this.executeWithMonitoring(async () => {
       const result = await db
         .insert(users)
-        .values(userData)
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
-            ...userData,
-            updatedAt: new Date(),
-          },
-        })
+        .values(user)
         .returning();
       
       return result[0];
-    }, 'upsertUser');
+    }, 'createUser');
   }
 
   async getWeeks(): Promise<Week[]> {
