@@ -8,7 +8,6 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import Home from "@/pages/home";
 import Submit from "@/pages/submit";
-import Archive from "@/pages/archive";
 import Extension from "@/pages/extension";
 import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
@@ -20,7 +19,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/submit" component={Submit} />
-      <Route path="/archive" component={Archive} />
       <Route path="/extension" component={Extension} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
