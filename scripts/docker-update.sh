@@ -32,15 +32,9 @@ print_error() {
 backup_database() {
     print_status "Creating database backup..."
     if [ -f "database/neta.sqlite" ]; then
-        # Create backups directory if it doesn't exist
-        mkdir -p database/backups
+        # Try to create backup in current directory if database dir is not writable
+        BACKUP_NAME="neta.sqlite.backup.$(date +%Y%m%d_%H%M%S)"
         
-        # Fix permissions first
-        chmod 755 database/ 2>/dev/null || true
-        chmod 644 database/neta.sqlite 2>/dev/null || true
-        
-        # Create backup
-        BACKUP_NAME="database/backups/neta.sqlite.backup.$(date +%Y%m%d_%H%M%S)"
         if cp "database/neta.sqlite" "$BACKUP_NAME" 2>/dev/null; then
             print_success "Database backed up to $BACKUP_NAME"
         else
