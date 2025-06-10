@@ -5,17 +5,20 @@ import TabNavigation from "@/components/tab-navigation";
 import TopicCard from "@/components/ui/topic-card";
 import { BookmarkletGenerator } from "@/components/bookmarklet-generator";
 import { useFingerprint } from "@/hooks/use-fingerprint";
-import { TopicWithCommentsAndStars } from "@shared/schema";
+import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle } from "lucide-react";
+import { RefreshCw, AlertCircle, Heart, Clock } from "lucide-react";
+
+type SortOrder = "stars" | "newest";
 
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("stars");
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
 
   // Fetch active week with topics
-  const { data: week, isLoading, refetch, error } = useQuery({
+  const { data: week, isLoading, refetch, error } = useQuery<WeekWithTopics>({
     queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!fingerprint,
     staleTime: 1000 * 60, // 1 minute
@@ -31,7 +34,7 @@ const Home: React.FC = () => {
   };
 
   // Check if user is authenticated and is admin
-  const { data: auth } = useQuery({
+  const { data: auth } = useQuery<{ user: { id: number; username: string; isAdmin: boolean } }>({
     queryKey: ["/api/auth/me"],
   });
 
@@ -59,8 +62,18 @@ const Home: React.FC = () => {
         break;
     }
 
-    // Sort by stars count (descending) - topics with more "聞きたい" votes appear first
-    return filteredTopics.sort((a, b) => b.starsCount - a.starsCount);
+    // Sort topics based on selected sort order
+    return filteredTopics.sort((a, b) => {
+      switch (sortOrder) {
+        case "newest":
+          // Sort by creation time (newest first)
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "stars":
+        default:
+          // Sort by stars count (descending) - topics with more "聞きたい" votes appear first
+          return b.starsCount - a.starsCount;
+      }
+    });
   };
 
   const handleTabChange = (tab: string) => {
@@ -101,6 +114,26 @@ const Home: React.FC = () => {
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Sort Controls */}
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={sortOrder === "stars" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setSortOrder("stars")}
+        >
+          <Heart className="h-4 w-4 mr-2" />
+          聞きたい順
+        </Button>
+        <Button
+          variant={sortOrder === "newest" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setSortOrder("newest")}
+        >
+          <Clock className="h-4 w-4 mr-2" />
+          新しい順
+        </Button>
       </div>
 
       {/* Error State */}
