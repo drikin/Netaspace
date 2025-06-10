@@ -78,7 +78,104 @@ function initializeSQLiteDatabase() {
   const sqlite = new Database(dbPath);
   console.log('SQLite database initialized successfully');
   
+  // Initialize database with tables if they don't exist
+  initializeTables(sqlite);
+  
   return sqlite;
+}
+
+function initializeTables(sqlite: Database) {
+  try {
+    // Create users table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        is_admin BOOLEAN DEFAULT FALSE NOT NULL,
+        email TEXT,
+        created_at TEXT NOT NULL
+      )
+    `);
+
+    // Create weeks table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS weeks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        title TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT FALSE NOT NULL
+      )
+    `);
+
+    // Create topics table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS topics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        week_id INTEGER REFERENCES weeks(id),
+        title TEXT NOT NULL,
+        url TEXT NOT NULL,
+        description TEXT,
+        submitter TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        status TEXT DEFAULT 'pending' NOT NULL,
+        stars INTEGER DEFAULT 0 NOT NULL,
+        featured_at TEXT
+      )
+    `);
+
+    // Create stars table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS stars (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic_id INTEGER REFERENCES topics(id) NOT NULL,
+        fingerprint TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `);
+
+    // Create comments table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic_id INTEGER REFERENCES topics(id) NOT NULL,
+        commenter TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `);
+
+    // Create indexes for better performance
+    sqlite.exec(`
+      CREATE INDEX IF NOT EXISTS topics_week_id_idx ON topics(week_id);
+      CREATE INDEX IF NOT EXISTS topics_status_idx ON topics(status);
+      CREATE INDEX IF NOT EXISTS topics_created_at_idx ON topics(created_at);
+      CREATE INDEX IF NOT EXISTS topics_week_status_idx ON topics(week_id, status);
+      CREATE INDEX IF NOT EXISTS topics_featured_at_idx ON topics(featured_at);
+      CREATE INDEX IF NOT EXISTS stars_topic_id_idx ON stars(topic_id);
+      CREATE INDEX IF NOT EXISTS stars_fingerprint_idx ON stars(fingerprint);
+      CREATE INDEX IF NOT EXISTS stars_topic_fingerprint_idx ON stars(topic_id, fingerprint);
+      CREATE INDEX IF NOT EXISTS comments_topic_id_idx ON comments(topic_id);
+    `);
+
+    // Insert default admin user if not exists
+    const adminExists = sqlite.prepare('SELECT COUNT(*) as count FROM users WHERE username = ?').get('admin') as { count: number };
+    if (adminExists.count === 0) {
+      sqlite.prepare(`
+        INSERT INTO users (username, password, is_admin, email, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run('admin', 'fmbackspace55', true, 'admin@backspace.fm', new Date().toISOString());
+      console.log('Default admin user created');
+    }
+
+    console.log('Database tables initialized successfully');
+  } catch (error) {
+    console.error('Error initializing database tables:', error);
+    throw error;
+  }
 }
 
 const sqlite = initializeSQLiteDatabase();
