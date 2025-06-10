@@ -150,7 +150,7 @@ const Header = () => {
                 {isAdmin ? "管理者" : "ゲスト"}
               </div>
               <div className="text-sm font-medium text-gray-500">
-                {isAdmin ? (auth as any)?.user?.username : "ログインしていません"}
+                {isAdmin ? user?.email || "管理者" : "ログインしていません"}
               </div>
             </div>
           </div>

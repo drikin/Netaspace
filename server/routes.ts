@@ -173,7 +173,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit authentication
   await setupAuth(app);
 
-  // Auth routes
+  // Auth routes for backward compatibility
+  app.get('/api/auth/me', (req, res) => {
+    if (req.isAuthenticated()) {
+      res.json({ user: req.user });
+    } else {
+      res.status(401).json({ message: 'Not authenticated' });
+    }
+  });
+
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
