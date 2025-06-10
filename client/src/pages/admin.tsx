@@ -14,6 +14,13 @@ import TopicCard from "@/components/ui/topic-card";
 import TabNavigation from "@/components/tab-navigation";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { insertWeekSchema } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+
+// Login form schema
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const Admin: React.FC = () => {
   const { toast } = useToast();
@@ -21,20 +28,24 @@ const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
   const [isWeekListDialogOpen, setIsWeekListDialogOpen] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
 
-  // Check if user is authenticated and is admin
-  const { data: auth, isLoading: isAuthLoading } = useQuery({
-    queryKey: ["/api/auth/me"],
-  });
+  // Use the auth hook
+  const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
+  const isAdmin = (user as any)?.isAdmin;
 
-  const isAdmin = (auth as any)?.user?.isAdmin;
-
-  // If not admin, redirect to login form
+  // Show login form if not authenticated
   useEffect(() => {
-    if (!isAuthLoading && !isAdmin) {
-      // Show login form
+    if (!isAuthLoading && !isAuthenticated) {
+      setShowLoginForm(true);
+    } else if (isAuthenticated && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have admin privileges",
+        variant: "destructive",
+      });
     }
-  }, [isAuthLoading, isAdmin]);
+  }, [isAuthLoading, isAuthenticated, isAdmin, toast]);
 
   // Fetch active week with topics
   const { data: activeWeek, isLoading: isWeekLoading, refetch: refetchActiveWeek } = useQuery({
@@ -65,6 +76,7 @@ const Admin: React.FC = () => {
         description: "管理者としてログインしました。",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setShowLoginForm(false);
     },
     onError: (error) => {
       console.error("Login failed:", error);
@@ -74,12 +86,6 @@ const Admin: React.FC = () => {
         variant: "destructive",
       });
     },
-  });
-
-  // Form schemas
-  const loginSchema = z.object({
-    username: z.string().min(1, "ユーザー名を入力してください"),
-    password: z.string().min(1, "パスワードを入力してください"),
   });
 
   // Form setup
