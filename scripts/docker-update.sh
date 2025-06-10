@@ -28,20 +28,21 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Backup database
+# Backup PostgreSQL database
 backup_database() {
-    print_status "Creating database backup..."
-    if [ -f "database/neta.sqlite" ]; then
-        # Try to create backup in current directory if database dir is not writable
-        BACKUP_NAME="neta.sqlite.backup.$(date +%Y%m%d_%H%M%S)"
+    print_status "Creating PostgreSQL database backup..."
+    
+    # Check if PostgreSQL container is running for backup
+    if docker-compose ps postgres | grep -q "Up"; then
+        BACKUP_NAME="backspace_fm_backup_$(date +%Y%m%d_%H%M%S).sql"
         
-        if cp "database/neta.sqlite" "$BACKUP_NAME" 2>/dev/null; then
-            print_success "Database backed up to $BACKUP_NAME"
+        if docker-compose exec -T postgres pg_dump -U backspace_user backspace_fm > "$BACKUP_NAME" 2>/dev/null; then
+            print_success "PostgreSQL database backed up to $BACKUP_NAME"
         else
-            print_warning "Could not create backup due to permissions, continuing without backup..."
+            print_warning "Could not create PostgreSQL backup, continuing without backup..."
         fi
     else
-        print_warning "No database found to backup"
+        print_warning "PostgreSQL container not running, skipping backup"
     fi
 }
 
@@ -53,19 +54,19 @@ update_application() {
     print_status "Stopping current application..."
     docker-compose down
     
-    print_status "Fixing database permissions..."
-    chmod -R 755 database/
-    if [ -f "database/neta.sqlite" ]; then
-        chmod 664 database/neta.sqlite
-    fi
-    
-    print_status "Rebuilding Docker image..."
+    print_status "Rebuilding Docker images..."
     docker-compose build --no-cache
     
-    print_status "Starting updated application..."
+    print_status "Starting updated application with PostgreSQL..."
     docker-compose up -d
     
-    print_success "Application updated successfully!"
+    print_status "Waiting for PostgreSQL to be ready..."
+    sleep 10
+    
+    print_status "Running database migrations..."
+    docker-compose exec backspace-fm npm run db:push
+    
+    print_success "Application updated successfully with PostgreSQL!"
 }
 
 # Wait for application to be ready

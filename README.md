@@ -20,9 +20,29 @@ A podcast topic management web application with community-driven content discove
 
 ## Quick Start
 
+### Development (with local PostgreSQL)
 ```bash
+# Install dependencies
 npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your PostgreSQL connection details
+
+# Push database schema
+npm run db:push
+
+# Start development server
 npm run dev
+```
+
+### Production Deployment (Docker)
+```bash
+# Set PostgreSQL password
+export POSTGRES_PASSWORD=your_secure_password
+
+# Start with Docker Compose (includes PostgreSQL)
+docker-compose up -d
 ```
 
 The application runs on port 5000 with both frontend and backend served together.
@@ -34,7 +54,7 @@ The application runs on port 5000 with both frontend and backend served together
 ├── server/           # Express backend  
 ├── shared/           # Shared schemas and types
 ├── chrome-extension/ # Chrome extension
-└── database/         # SQLite database
+└── scripts/          # Deployment scripts
 ```
 
 ## Chrome Extension
