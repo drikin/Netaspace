@@ -161,7 +161,7 @@ function initializeTables(sqlite: any) {
       sqlite.prepare(`
         INSERT INTO users (username, password, is_admin, email, created_at)
         VALUES (?, ?, ?, ?, ?)
-      `).run('admin', 'fmbackspace55', true, 'admin@backspace.fm', new Date().toISOString());
+      `).run('admin', 'fmbackspace55', 1, 'admin@backspace.fm', new Date().toISOString());
       console.log('Default admin user created');
     }
 
