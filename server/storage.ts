@@ -1,14 +1,27 @@
+import fs from 'fs';
+import path from 'path';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { eq, desc, and } from 'drizzle-orm';
 import {
-  Topic, InsertTopic, Comment, InsertComment,
-  Week, InsertWeek, Star, InsertStar, User, InsertUser,
-  topics, comments, weeks, stars, users,
-  WeekWithTopics, TopicWithCommentsAndStars
-} from "../shared/sqlite-schema";
-import { eq, desc, and, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import fs from "fs";
-import path from "path";
+  users,
+  weeks,
+  topics,
+  comments,
+  stars,
+  type User,
+  type Week,
+  type Topic,
+  type Comment,
+  type Star,
+  type InsertUser,
+  type InsertWeek,
+  type InsertTopic,
+  type InsertComment,
+  type InsertStar,
+  type TopicWithCommentsAndStars,
+  type WeekWithTopics
+} from '@shared/schema';
 
 export interface IStorage {
   // User operations
@@ -47,172 +60,29 @@ export interface IStorage {
 }
 
 function getDatabasePath() {
-  // Multiple persistent locations for maximum reliability
-  const persistentCandidates = [
-    '/tmp/persistent/production.sqlite',
-    '/home/runner/workspace/data/persistent/production.sqlite',
-    '/var/tmp/persistent/production.sqlite'
-  ];
+  const dbPath = './database/neta.sqlite';
+  const dbDir = path.dirname(dbPath);
   
-  const backupLocations = [
-    '/tmp/persistent/backups',
-    '/home/runner/workspace/data/backups',
-    './data/backups'
-  ];
-  
-  // Priority 1: Use existing persistent database
-  for (const persistentPath of persistentCandidates) {
-    if (fs.existsSync(persistentPath)) {
-      console.log(`Using persistent production database: ${persistentPath}`);
-      return persistentPath;
-    }
+  // Ensure database directory exists
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
   }
   
-  // Priority 2: Restore from backup if available
-  for (const backupDir of backupLocations) {
-    const latestBackupInfo = path.join(backupDir, 'latest-backup.json');
-    if (fs.existsSync(latestBackupInfo)) {
-      try {
-        const backupInfo = JSON.parse(fs.readFileSync(latestBackupInfo, 'utf8'));
-        if (fs.existsSync(backupInfo.backupFile)) {
-          console.log(`Restoring from backup: ${backupInfo.backupFile}`);
-          
-          // Create persistent directory and restore
-          const targetPath = persistentCandidates[0];
-          const targetDir = path.dirname(targetPath);
-          if (!fs.existsSync(targetDir)) {
-            fs.mkdirSync(targetDir, { recursive: true });
-          }
-          
-          fs.copyFileSync(backupInfo.backupFile, targetPath);
-          console.log(`Database restored to: ${targetPath}`);
-          return targetPath;
-        }
-      } catch (error) {
-        console.log(`Backup restore attempt failed: ${error.message}`);
-      }
-    }
-  }
-  
-  // Priority 3: Create persistent database from existing data
-  const fallbackPaths = ['./data/production.sqlite', './database/dev.sqlite'];
-  
-  for (const fallbackPath of fallbackPaths) {
-    if (fs.existsSync(fallbackPath)) {
-      console.log(`Migrating database to persistent storage: ${fallbackPath}`);
-      
-      // Copy to persistent location
-      const targetPath = persistentCandidates[0];
-      const targetDir = path.dirname(targetPath);
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
-      
-      fs.copyFileSync(fallbackPath, targetPath);
-      console.log(`Database migrated to: ${targetPath}`);
-      return targetPath;
-    }
-  }
-  
-  // Priority 4: Create new persistent database
-  const newDbPath = persistentCandidates[0];
-  const newDbDir = path.dirname(newDbPath);
-  if (!fs.existsSync(newDbDir)) {
-    fs.mkdirSync(newDbDir, { recursive: true });
-  }
-  
-  console.log(`Creating new persistent database: ${newDbPath}`);
-  return newDbPath;
-}
-
-function createAutoBackup(dbPath: string) {
-  try {
-    const backupDir = path.join(path.dirname(dbPath), 'backups');
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-    }
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(backupDir, `auto-backup-${timestamp}.sqlite`);
-    
-    fs.copyFileSync(dbPath, backupFile);
-    
-    // Update latest backup info
-    const backupInfo = {
-      timestamp,
-      backupFile,
-      sourceDb: dbPath,
-      createdAt: new Date().toISOString()
-    };
-    
-    fs.writeFileSync(
-      path.join(backupDir, 'latest-backup.json'),
-      JSON.stringify(backupInfo, null, 2)
-    );
-    
-    console.log(`Auto-backup created: ${backupFile}`);
-    
-    // Clean old backups (keep last 10)
-    const backupFiles = fs.readdirSync(backupDir)
-      .filter(file => file.startsWith('auto-backup-') && file.endsWith('.sqlite'))
-      .map(file => ({
-        name: file,
-        path: path.join(backupDir, file),
-        mtime: fs.statSync(path.join(backupDir, file)).mtime
-      }))
-      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-    
-    const toDelete = backupFiles.slice(10);
-    for (const file of toDelete) {
-      fs.unlinkSync(file.path);
-    }
-    
-    return backupFile;
-  } catch (error) {
-    console.warn('Auto-backup failed:', error.message);
-    return null;
-  }
+  return dbPath;
 }
 
 function initializeSQLiteDatabase() {
   const dbPath = getDatabasePath();
   console.log('Using SQLite database:', dbPath);
 
-  try {
-    const dir = path.dirname(dbPath);
-    if (!fs.existsSync(dir)) {
-      try {
-        fs.mkdirSync(dir, { recursive: true });
-        console.log('Created database directory:', dir);
-      } catch (error) {
-        console.warn('Could not create directory, using current directory:', (error as Error).message);
-        const fallbackPath = './fallback.sqlite';
-        console.log('Using fallback database path:', fallbackPath);
-        return new Database(fallbackPath);
-      }
-    }
-
-    const sqlite = new Database(dbPath);
-    console.log('SQLite database initialized successfully');
-    
-    // Create initial backup after successful initialization
-    createAutoBackup(dbPath);
-    
-    // Schedule periodic backups every 4 hours for production persistence
-    setInterval(() => {
-      createAutoBackup(dbPath);
-    }, 4 * 60 * 60 * 1000);
-    
-    return sqlite;
-  } catch (error) {
-    console.error('Failed to initialize SQLite database:', (error as Error).message);
-    console.log('Using in-memory database as final fallback');
-    return new Database(':memory:');
-  }
+  const sqlite = new Database(dbPath);
+  console.log('SQLite database initialized successfully');
+  
+  return sqlite;
 }
 
 const sqlite = initializeSQLiteDatabase();
-const db = drizzle(sqlite);
+const db = drizzle(sqlite, { schema: { users, weeks, topics, comments, stars } });
 
 class SQLiteStorage implements IStorage {
   db: ReturnType<typeof drizzle>;
@@ -227,6 +97,7 @@ class SQLiteStorage implements IStorage {
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
+    
     return result[0];
   }
 
@@ -236,25 +107,21 @@ class SQLiteStorage implements IStorage {
       .from(users)
       .where(eq(users.username, username))
       .limit(1);
+    
     return result[0];
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const userWithTimestamp = {
-      ...user,
-      createdAt: new Date().toISOString(),
-      isAdmin: user.isAdmin || false
-    };
-    
     const result = await this.db
       .insert(users)
-      .values(userWithTimestamp)
+      .values(user)
       .returning();
+    
     return result[0];
   }
 
   async getWeeks(): Promise<Week[]> {
-    return this.db
+    return await this.db
       .select()
       .from(weeks)
       .orderBy(desc(weeks.startDate));
@@ -266,29 +133,26 @@ class SQLiteStorage implements IStorage {
       .from(weeks)
       .where(eq(weeks.isActive, true))
       .limit(1);
+    
     return result[0];
   }
 
   async createWeek(week: InsertWeek): Promise<Week> {
-    const weekWithDefaults = {
-      ...week,
-      isActive: week.isActive || false
-    };
-    
     const result = await this.db
       .insert(weeks)
-      .values(weekWithDefaults)
+      .values(week)
       .returning();
+    
     return result[0];
   }
 
   async setActiveWeek(weekId: number): Promise<void> {
-    // First, set all weeks to inactive
+    // Deactivate all weeks first
     await this.db
       .update(weeks)
       .set({ isActive: false });
     
-    // Then set the specified week to active
+    // Activate the specified week
     await this.db
       .update(weeks)
       .set({ isActive: true })
@@ -302,62 +166,46 @@ class SQLiteStorage implements IStorage {
       .where(eq(topics.weekId, weekId))
       .orderBy(desc(topics.createdAt));
 
-    return this.enrichTopicsWithCommentsAndStars(topicsResult);
+    return await this.enrichTopicsWithCommentsAndStars(topicsResult);
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
     let query = this.db
       .select()
-      .from(topics);
+      .from(topics)
+      .where(eq(topics.status, status));
 
     if (weekId) {
       query = query.where(and(eq(topics.status, status), eq(topics.weekId, weekId)));
-    } else {
-      query = query.where(eq(topics.status, status));
     }
 
     const topicsResult = await query.orderBy(desc(topics.createdAt));
-    return this.enrichTopicsWithCommentsAndStars(topicsResult);
+    return await this.enrichTopicsWithCommentsAndStars(topicsResult);
   }
 
   private async enrichTopicsWithCommentsAndStars(topicsResult: Topic[]): Promise<TopicWithCommentsAndStars[]> {
-    if (topicsResult.length === 0) return [];
+    const enrichedTopics: TopicWithCommentsAndStars[] = [];
 
-    const topicIds = topicsResult.map(t => t.id);
-    
-    const [commentsResult, starsResult] = await Promise.all([
-      this.db
+    for (const topic of topicsResult) {
+      const topicComments = await this.db
         .select()
         .from(comments)
-        .where(inArray(comments.topicId, topicIds))
-        .orderBy(comments.createdAt),
-      this.db
-        .select()
+        .where(eq(comments.topicId, topic.id))
+        .orderBy(desc(comments.createdAt));
+
+      const starCount = await this.db
+        .select({ count: stars.id })
         .from(stars)
-        .where(inArray(stars.topicId, topicIds))
-    ]);
-    
-    const commentsMap = new Map<number, Comment[]>();
-    const starsMap = new Map<number, number>();
-    
-    commentsResult.forEach(comment => {
-      if (!commentsMap.has(comment.topicId)) {
-        commentsMap.set(comment.topicId, []);
-      }
-      commentsMap.get(comment.topicId)!.push(comment);
-    });
-    
-    // Count stars by topicId
-    starsResult.forEach(star => {
-      const currentCount = starsMap.get(star.topicId) || 0;
-      starsMap.set(star.topicId, currentCount + 1);
-    });
-    
-    return topicsResult.map(topic => ({
-      ...topic,
-      comments: commentsMap.get(topic.id) || [],
-      starsCount: starsMap.get(topic.id) || 0
-    }));
+        .where(eq(stars.topicId, topic.id));
+
+      enrichedTopics.push({
+        ...topic,
+        comments: topicComments,
+        starsCount: starCount.length
+      });
+    }
+
+    return enrichedTopics;
   }
 
   async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
@@ -366,22 +214,35 @@ class SQLiteStorage implements IStorage {
       .from(topics)
       .where(eq(topics.id, id))
       .limit(1);
-    
-    if (result.length === 0) return undefined;
-    
+
+    if (!result[0]) return undefined;
+
     const topic = result[0];
-    const comments = await this.getCommentsByTopicId(id);
-    const starsCount = await this.getStarsCountByTopicId(id);
+    const topicComments = await this.db
+      .select()
+      .from(comments)
+      .where(eq(comments.topicId, topic.id))
+      .orderBy(desc(comments.createdAt));
+
+    const starCount = await this.db
+      .select({ count: stars.id })
+      .from(stars)
+      .where(eq(stars.topicId, topic.id));
+
     let hasStarred = false;
-    
     if (fingerprint) {
-      hasStarred = await this.hasStarred(id, fingerprint);
+      const starResult = await this.db
+        .select()
+        .from(stars)
+        .where(and(eq(stars.topicId, topic.id), eq(stars.fingerprint, fingerprint)))
+        .limit(1);
+      hasStarred = starResult.length > 0;
     }
-    
+
     return {
       ...topic,
-      comments,
-      starsCount,
+      comments: topicComments,
+      starsCount: starCount.length,
       hasStarred
     };
   }
@@ -397,38 +258,18 @@ class SQLiteStorage implements IStorage {
   }
 
   async createTopic(topic: InsertTopic): Promise<Topic> {
-    const topicData = {
-      weekId: topic.weekId,
-      title: topic.title,
-      url: topic.url,
-      description: topic.description,
-      submitter: topic.submitter,
-      fingerprint: topic.fingerprint,
-      createdAt: new Date().toISOString(),
-      status: topic.status || 'pending',
-      stars: 0
-    };
-    
     const result = await this.db
       .insert(topics)
-      .values(topicData)
+      .values(topic)
       .returning();
     
     return result[0];
   }
 
   async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
-    const updateData: any = { status };
-    
-    if (status === "featured") {
-      updateData.featuredAt = new Date().toISOString();
-    } else if (status !== "featured") {
-      updateData.featuredAt = null;
-    }
-    
     const result = await this.db
       .update(topics)
-      .set(updateData)
+      .set({ status })
       .where(eq(topics.id, id))
       .returning();
     
@@ -436,11 +277,10 @@ class SQLiteStorage implements IStorage {
   }
 
   async deleteTopic(id: number): Promise<boolean> {
-    // First delete related comments and stars
+    // Delete related comments and stars first
     await this.db.delete(comments).where(eq(comments.topicId, id));
     await this.db.delete(stars).where(eq(stars.topicId, id));
     
-    // Then delete the topic
     const result = await this.db
       .delete(topics)
       .where(eq(topics.id, id))
@@ -450,22 +290,17 @@ class SQLiteStorage implements IStorage {
   }
 
   async getCommentsByTopicId(topicId: number): Promise<Comment[]> {
-    return this.db
+    return await this.db
       .select()
       .from(comments)
       .where(eq(comments.topicId, topicId))
-      .orderBy(comments.createdAt);
+      .orderBy(desc(comments.createdAt));
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
-    const commentWithTimestamp = {
-      ...comment,
-      createdAt: new Date().toISOString()
-    };
-    
     const result = await this.db
       .insert(comments)
-      .values(commentWithTimestamp)
+      .values(comment)
       .returning();
     
     return result[0];
@@ -473,18 +308,11 @@ class SQLiteStorage implements IStorage {
 
   async addStar(star: InsertStar): Promise<boolean> {
     try {
-      const starWithTimestamp = {
-        ...star,
-        createdAt: new Date().toISOString()
-      };
-      
       await this.db
         .insert(stars)
-        .values(starWithTimestamp);
-      
+        .values(star);
       return true;
-    } catch (error) {
-      // Star already exists or other error
+    } catch {
       return false;
     }
   }
@@ -510,7 +338,7 @@ class SQLiteStorage implements IStorage {
 
   async getStarsCountByTopicId(topicId: number): Promise<number> {
     const result = await this.db
-      .select()
+      .select({ count: stars.id })
       .from(stars)
       .where(eq(stars.topicId, topicId));
     
@@ -523,30 +351,18 @@ class SQLiteStorage implements IStorage {
       .from(weeks)
       .where(eq(weeks.id, weekId))
       .limit(1);
-    
-    if (week.length === 0) return undefined;
-    
-    let weekTopics = await this.getTopicsByWeekId(weekId);
-    
+
+    if (!week[0]) return undefined;
+
+    const weekTopics = await this.getTopicsByWeekId(weekId);
+
+    // Add hasStarred info if fingerprint provided
     if (fingerprint) {
-      const topicIds = weekTopics.map(t => t.id);
-      const userStars = await this.db
-        .select({ topicId: stars.topicId })
-        .from(stars)
-        .where(
-          and(
-            inArray(stars.topicId, topicIds),
-            eq(stars.fingerprint, fingerprint)
-          )
-        );
-      
-      const starredTopicIds = new Set(userStars.map(s => s.topicId));
-      
-      weekTopics.forEach(topic => {
-        topic.hasStarred = starredTopicIds.has(topic.id);
-      });
+      for (const topic of weekTopics) {
+        topic.hasStarred = await this.hasStarred(topic.id, fingerprint);
+      }
     }
-    
+
     return {
       ...week[0],
       topics: weekTopics
@@ -556,8 +372,8 @@ class SQLiteStorage implements IStorage {
   async getActiveWeekWithTopics(fingerprint?: string): Promise<WeekWithTopics | undefined> {
     const activeWeek = await this.getActiveWeek();
     if (!activeWeek) return undefined;
-    
-    return this.getWeekWithTopics(activeWeek.id, fingerprint);
+
+    return await this.getWeekWithTopics(activeWeek.id, fingerprint);
   }
 }
 
