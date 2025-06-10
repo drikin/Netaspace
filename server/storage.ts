@@ -303,13 +303,15 @@ class SQLiteStorage implements IStorage {
   }
 
   async getActiveWeek(): Promise<Week | undefined> {
-    const result = await this.db
-      .select()
-      .from(weeks)
-      .where(eq(weeks.isActive, true))
-      .limit(1);
-    
-    return result[0];
+    return this.executeWithMonitoring(async () => {
+      const result = await this.db
+        .select()
+        .from(weeks)
+        .where(eq(weeks.isActive, true))
+        .limit(1);
+      
+      return result[0];
+    }, 'getActiveWeek');
   }
 
   async createWeek(week: InsertWeek): Promise<Week> {
@@ -357,13 +359,15 @@ class SQLiteStorage implements IStorage {
   }
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
-    const topicsResult = await this.db
-      .select()
-      .from(topics)
-      .where(and(eq(topics.weekId, weekId), not(eq(topics.status, 'deleted'))))
-      .orderBy(desc(topics.createdAt));
+    return this.executeWithMonitoring(async () => {
+      const topicsResult = await this.db
+        .select()
+        .from(topics)
+        .where(and(eq(topics.weekId, weekId), not(eq(topics.status, 'deleted'))))
+        .orderBy(desc(topics.createdAt));
 
-    return await this.enrichTopicsWithCommentsAndStars(topicsResult);
+      return await this.enrichTopicsWithCommentsAndStars(topicsResult);
+    }, 'getTopicsByWeekId');
   }
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
