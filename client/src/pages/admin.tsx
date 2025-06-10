@@ -32,16 +32,8 @@ const Admin: React.FC = () => {
 
   // Use the auth hook
   const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
-  const isAdmin = (user as any)?.isAdmin;
+  const isAdmin = (user as any)?.user?.isAdmin;
 
-  // Debug authentication state
-  console.log('Admin page auth state:', { 
-    user, 
-    isAuthLoading, 
-    isAuthenticated, 
-    isAdmin,
-    showLoginForm 
-  });
 
   // Show login form if not authenticated
   useEffect(() => {
@@ -520,7 +512,7 @@ const Admin: React.FC = () => {
             投稿されたトピックを管理できます。不適切なトピックを削除してください。
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            ログイン中: {(user as any)?.username}
+            ログイン中: {(user as any)?.user?.username}
           </p>
         </div>
         
