@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link, User, Clock } from "lucide-react";
+import { Link, User, Clock, ExternalLink } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -197,9 +197,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
                 href={topic.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-lg font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200"
+                className="text-lg font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200 flex items-center"
                 title="記事を開く"
               >
+                <Link className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
                 {topic.title}
               </a>
               {getStatusBadge()}
@@ -246,18 +247,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
           </div>
         )}
 
-        {/* URL - compact display */}
-        <div className="mt-2">
-          <a
-            href={topic.url}
-            className="text-blue-600 hover:text-blue-800 text-xs flex items-center break-all"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Link className="mr-1 h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{topic.url}</span>
-          </a>
-        </div>
+
 
         {/* Admin controls - compact */}
         {isAdmin && (
