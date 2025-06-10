@@ -398,16 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get topics by status from all weeks (for admin deleted view)
-  app.get('/api/topics/status/:status', async (req, res) => {
-    try {
-      const status = req.params.status;
-      const topics = await storage.getTopicsByStatus(status);
-      res.json(topics);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch topics by status' });
-    }
-  });
+
 
   app.get('/api/topics/:id', async (req, res) => {
     try {

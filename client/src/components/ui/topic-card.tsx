@@ -7,6 +7,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import AdminControls from "../admin-controls";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars } from "@shared/schema";
+import { formatDate } from "@/lib/date-utils";
 
 interface TopicCardProps {
   topic: TopicWithCommentsAndStars;
@@ -209,7 +210,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
               <User className="h-3 w-3 mr-1" />
               <span className="mr-3">{topic.submitter}</span>
               <Clock className="h-3 w-3 mr-1" />
-              <span>{formatDate(topic.createdAt)}</span>
+              <span>{formatDate(topic.createdAt as any)}</span>
             </div>
           </div>
 
