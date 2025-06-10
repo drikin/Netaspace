@@ -1,36 +1,36 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, boolean, index, timestamp, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  isAdmin: integer("is_admin", { mode: "boolean" }).default(false).notNull(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
   email: text("email").unique(),
-  createdAt: text("created_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const weeks = sqliteTable("weeks", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const weeks = pgTable("weeks", {
+  id: serial("id").primaryKey(),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
   title: text("title").notNull(),
-  isActive: integer("is_active", { mode: "boolean" }).default(false).notNull(),
+  isActive: boolean("is_active").default(false).notNull(),
 });
 
-export const topics = sqliteTable("topics", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const topics = pgTable("topics", {
+  id: serial("id").primaryKey(),
   weekId: integer("week_id").references(() => weeks.id),
   title: text("title").notNull(),
   url: text("url").notNull(),
   description: text("description"),
   submitter: text("submitter").notNull(),
   fingerprint: text("fingerprint").notNull(),
-  createdAt: text("created_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   status: text("status").default("pending").notNull(),
   stars: integer("stars").default(0).notNull(),
-  featuredAt: text("featured_at"),
+  featuredAt: timestamp("featured_at"),
 }, (table) => ({
   weekIdIdx: index("topics_week_id_idx").on(table.weekId),
   statusIdx: index("topics_status_idx").on(table.status),
@@ -39,11 +39,11 @@ export const topics = sqliteTable("topics", {
   featuredAtIdx: index("topics_featured_at_idx").on(table.featuredAt),
 }));
 
-export const stars = sqliteTable("stars", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const stars = pgTable("stars", {
+  id: serial("id").primaryKey(),
   topicId: integer("topic_id").references(() => topics.id).notNull(),
   fingerprint: text("fingerprint").notNull(),
-  createdAt: text("created_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   topicIdIdx: index("stars_topic_id_idx").on(table.topicId),
   fingerprintIdx: index("stars_fingerprint_idx").on(table.fingerprint),
