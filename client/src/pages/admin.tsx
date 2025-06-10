@@ -67,7 +67,8 @@ const Admin: React.FC = () => {
 
   // Fetch deleted topics from all weeks (for deleted tab)
   const { data: deletedTopics, isLoading: isDeletedLoading } = useQuery({
-    queryKey: ["/api/topics/status/deleted"],
+    queryKey: ["/api/topics", { status: "deleted" }],
+    queryFn: () => apiRequest("GET", "/api/topics?status=deleted"),
     enabled: !!isAdmin && activeTab === "deleted",
   });
 
