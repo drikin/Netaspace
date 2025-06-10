@@ -57,10 +57,10 @@ app.use((req, res, next) => {
   }
 
   // Serve the app on port 5000
-  // In production, bind to localhost only for security
-  // In development, allow external access
+  // Always bind to 0.0.0.0 inside container for nginx proxy access
+  // External access is controlled by Docker port mapping and firewall
   const port = 5000;
-  const host = process.env.NODE_ENV === "production" ? "127.0.0.1" : "0.0.0.0";
+  const host = "0.0.0.0";
   
   server.listen({
     port,
