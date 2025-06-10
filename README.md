@@ -1,6 +1,6 @@
 # Backspace.fm Topic Management Platform
 
-A podcast topic management web application with community-driven content discovery. Features React frontend, Express backend, SQLite database, and Chrome extension integration.
+A podcast topic management web application with community-driven content discovery. Features React frontend, Express backend, PostgreSQL database, and Chrome extension integration.
 
 ## Features
 
@@ -14,7 +14,7 @@ A podcast topic management web application with community-driven content discove
 ## Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- **Backend**: Express.js, TypeScript, SQLite with Drizzle ORM
+- **Backend**: Express.js, TypeScript, PostgreSQL with Drizzle ORM
 - **Real-time**: WebSocket integration
 - **Authentication**: Passport.js with session management
 

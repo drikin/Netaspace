@@ -1,14 +1,23 @@
 #!/bin/bash
 
-# Application startup script with database permission fixes
+# Application startup script for PostgreSQL
 set -e
 
-echo "Starting application..."
+echo "Starting application with PostgreSQL..."
 
-# Fix database permissions before starting the app
-echo "Ensuring database permissions are correct..."
-mkdir -p /app/database
-chmod 775 /app/database
+# Wait for PostgreSQL to be ready if DATABASE_URL is provided
+if [ ! -z "$DATABASE_URL" ]; then
+    echo "Waiting for PostgreSQL to be ready..."
+    until pg_isready -d "$DATABASE_URL" >/dev/null 2>&1; do
+        echo "PostgreSQL is unavailable - sleeping"
+        sleep 1
+    done
+    echo "PostgreSQL is ready!"
+    
+    # Run database migrations
+    echo "Running database migrations..."
+    npm run db:push
+fi
 
 # Start the Node.js application
 echo "Starting Node.js server..."

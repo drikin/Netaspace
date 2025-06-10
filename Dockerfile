@@ -2,7 +2,7 @@
 FROM node:20-alpine
 
 # Install required system dependencies
-RUN apk add --no-cache sqlite
+RUN apk add --no-cache postgresql-client curl
 
 # Set working directory
 WORKDIR /app
@@ -23,18 +23,12 @@ RUN npm run build
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 
-# Create database directory with proper permissions
-RUN mkdir -p database
-
 # Copy and make executable the scripts
-COPY scripts/fix-db-permissions.sh /usr/local/bin/fix-db-permissions.sh
 COPY scripts/start-app.sh /usr/local/bin/start-app.sh
-RUN chmod +x /usr/local/bin/fix-db-permissions.sh
 RUN chmod +x /usr/local/bin/start-app.sh
 
-# Change ownership of app directory including database
+# Change ownership of app directory
 RUN chown -R nodejs:nodejs /app
-RUN chmod -R 775 /app/database
 
 USER nodejs
 
