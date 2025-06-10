@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { createHash } from "crypto";
-import { storage } from "./storage";
+import { storage, getDatabaseMetrics, resetDatabaseMetrics } from "./storage";
 import { 
   insertTopicSchema, 
   insertStarSchema,

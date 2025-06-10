@@ -3,6 +3,61 @@ import path from 'path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, desc, and, not } from 'drizzle-orm';
+
+// Performance monitoring
+interface PerformanceMetrics {
+  totalQueries: number;
+  slowQueries: number;
+  averageQueryTime: number;
+  totalQueryTime: number;
+  connectionCount: number;
+  errors: number;
+}
+
+class DatabasePerformanceMonitor {
+  private metrics: PerformanceMetrics = {
+    totalQueries: 0,
+    slowQueries: 0,
+    averageQueryTime: 0,
+    totalQueryTime: 0,
+    connectionCount: 0,
+    errors: 0
+  };
+
+  recordQuery(duration: number, queryType: string) {
+    this.metrics.totalQueries++;
+    this.metrics.totalQueryTime += duration;
+    this.metrics.averageQueryTime = this.metrics.totalQueryTime / this.metrics.totalQueries;
+    
+    // Log slow queries (over 100ms)
+    if (duration > 100) {
+      this.metrics.slowQueries++;
+      console.warn(`Slow query detected: ${queryType} took ${duration}ms`);
+    }
+  }
+
+  recordError(error: Error, queryType: string) {
+    this.metrics.errors++;
+    console.error(`Database error in ${queryType}:`, error.message);
+  }
+
+  getMetrics(): PerformanceMetrics {
+    return { ...this.metrics };
+  }
+
+  reset() {
+    this.metrics = {
+      totalQueries: 0,
+      slowQueries: 0,
+      averageQueryTime: 0,
+      totalQueryTime: 0,
+      connectionCount: 0,
+      errors: 0
+    };
+  }
+}
+
+const performanceMonitor = new DatabasePerformanceMonitor();
 import {
   users,
   weeks,
@@ -73,7 +128,15 @@ function initializeSQLiteDatabase() {
   console.log('Using SQLite database:', dbPath);
 
   const sqlite = new Database(dbPath);
-  console.log('SQLite database initialized successfully');
+  
+  // Enable WAL mode for better concurrency
+  sqlite.pragma('journal_mode = WAL');
+  sqlite.pragma('synchronous = NORMAL');
+  sqlite.pragma('cache_size = -64000'); // 64MB cache
+  sqlite.pragma('temp_store = MEMORY');
+  sqlite.pragma('mmap_size = 268435456'); // 256MB memory map
+  
+  console.log('SQLite database initialized successfully with WAL mode');
   
   // Set proper file permissions on the database file
   try {
@@ -180,6 +243,24 @@ class SQLiteStorage implements IStorage {
 
   constructor(database: ReturnType<typeof drizzle>) {
     this.db = database;
+  }
+
+  private async executeWithMonitoring<T>(
+    operation: () => Promise<T>,
+    operationType: string
+  ): Promise<T> {
+    const startTime = Date.now();
+    try {
+      const result = await operation();
+      const duration = Date.now() - startTime;
+      performanceMonitor.recordQuery(duration, operationType);
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      performanceMonitor.recordError(error as Error, operationType);
+      performanceMonitor.recordQuery(duration, operationType);
+      throw error;
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -364,15 +445,17 @@ class SQLiteStorage implements IStorage {
   }
 
   async createTopic(topic: InsertTopic): Promise<Topic> {
-    const result = await this.db
-      .insert(topics)
-      .values({
-        ...topic,
-        createdAt: new Date().toISOString()
-      })
-      .returning();
-    
-    return result[0];
+    return this.executeWithMonitoring(async () => {
+      const result = await this.db
+        .insert(topics)
+        .values({
+          ...topic,
+          createdAt: new Date().toISOString()
+        })
+        .returning();
+      
+      return result[0];
+    }, 'createTopic');
   }
 
   async updateTopicStatus(id: number, status: string): Promise<Topic | undefined> {
@@ -400,17 +483,19 @@ class SQLiteStorage implements IStorage {
   // Comment methods removed
 
   async addStar(star: InsertStar): Promise<boolean> {
-    try {
-      await this.db
-        .insert(stars)
-        .values({
-          ...star,
-          createdAt: new Date().toISOString()
-        });
-      return true;
-    } catch {
-      return false;
-    }
+    return this.executeWithMonitoring(async () => {
+      try {
+        await this.db
+          .insert(stars)
+          .values({
+            ...star,
+            createdAt: new Date().toISOString()
+          });
+        return true;
+      } catch {
+        return false;
+      }
+    }, 'addStar');
   }
 
   async removeStar(topicId: number, fingerprint: string): Promise<boolean> {
@@ -474,3 +559,12 @@ class SQLiteStorage implements IStorage {
 }
 
 export const storage: IStorage = new SQLiteStorage(db);
+
+// Export performance monitoring functions
+export function getDatabaseMetrics(): PerformanceMetrics {
+  return performanceMonitor.getMetrics();
+}
+
+export function resetDatabaseMetrics(): void {
+  performanceMonitor.reset();
+}
