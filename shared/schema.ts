@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, index, timestamp, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, index, timestamp, serial, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -10,6 +10,17 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Session storage table for PostgreSQL-based session management
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
 
 export const weeks = pgTable("weeks", {
   id: serial("id").primaryKey(),

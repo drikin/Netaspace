@@ -12,7 +12,7 @@ import { z } from "zod";
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import MemoryStore from 'memorystore';
+import connectPg from 'connect-pg-simple';
 import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import iconv from 'iconv-lite';
@@ -59,8 +59,6 @@ function checkRateLimit(ip: string): boolean {
 
 // リアルタイム更新を削除してトランザクションベースに変更
 // WebSocket機能を無効化してCompute Unit消費を削減
-
-const MemoryStoreSession = MemoryStore(session);
 
 // GoogleニュースのURLかどうかを確認する関数
 function isGoogleNewsURL(url: string): boolean {
@@ -175,18 +173,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Session setup
+  // PostgreSQL session store setup
+  const pgSession = connectPg(session);
+  const sessionStore = new pgSession({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false, // テーブルは既に作成済み
+    ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+    tableName: 'sessions',
+  });
+
+  // Session setup with PostgreSQL store
   app.use(session({
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    }),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'backspace-fm-podcast-topics-app',
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     cookie: { 
-      secure: false, // デプロイ環境でもHTTPSが確実でない場合はfalseに設定
-      maxAge: 86400000, // 24 hours
-      sameSite: 'lax'
+      secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: 'lax',
+      httpOnly: true
     }
   }));
 
