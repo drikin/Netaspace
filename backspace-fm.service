@@ -1,0 +1,21 @@
+[Unit]
+Description=Backspace.fm Topic Manager
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/backspace-fm-clean
+ExecStart=/usr/bin/node production-server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Logging
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=backspace-fm
+
+[Install]
+WantedBy=multi-user.target
