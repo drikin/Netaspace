@@ -1,78 +1,138 @@
-# Backspace.fm Topic Management Platform
+# Backspace.fm Topic Manager
 
-A podcast topic management web application with community-driven content discovery. Features React frontend, Express backend, PostgreSQL database, and Chrome extension integration.
+A podcast topic management platform for backspace.fm that enables community-driven content discovery through an interactive web interface and Chrome extension.
 
 ## Features
 
-- Topic submission and voting system
-- Admin dashboard for content moderation
-- Chrome extension for seamless topic submission
-- Real-time updates via WebSocket
-- Japanese language support
-- Performance monitoring and caching
+- **Interactive Web Interface**: Modern React-based UI for topic submission and management
+- **Chrome Extension**: Easy topic submission directly from web pages
+- **Community Voting**: Star-based voting system for topic popularity
+- **Admin Dashboard**: Comprehensive management interface for podcast hosts
+- **Week-based Organization**: Topics organized by podcast weeks
+- **Responsive Design**: Mobile-friendly interface with Japanese language support
 
-## Technology Stack
+## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- **Backend**: Express.js, TypeScript, PostgreSQL with Drizzle ORM
-- **Real-time**: WebSocket integration
-- **Authentication**: Passport.js with session management
+- **Frontend**: React, TypeScript, Tailwind CSS, Wouter (routing)
+- **Backend**: Express.js, Node.js
+- **Database**: PostgreSQL (Neon)
+- **Build Tools**: Vite, ESBuild
+- **UI Components**: Radix UI, Shadcn/ui
+- **State Management**: TanStack Query
 
 ## Quick Start
 
-### Development (with local PostgreSQL)
-```bash
-# Install dependencies
-npm install
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your PostgreSQL connection details
+2. **Environment Setup**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database URL
+   ```
 
-# Push database schema
-npm run db:push
+3. **Database Setup**:
+   ```bash
+   npm run db:push
+   ```
 
-# Start development server
-npm run dev
-```
+4. **Development**:
+   ```bash
+   npm run dev
+   ```
 
-### Production Deployment (Docker)
-```bash
-# Set PostgreSQL password
-export POSTGRES_PASSWORD=your_secure_password
-
-# Start with Docker Compose (includes PostgreSQL)
-docker-compose up -d
-```
-
-The application runs on port 5000 with both frontend and backend served together.
+5. **Production Build**:
+   ```bash
+   npm run build
+   ```
 
 ## Project Structure
 
 ```
-├── client/           # React frontend
-├── server/           # Express backend  
-├── shared/           # Shared schemas and types
-├── chrome-extension/ # Chrome extension
-└── scripts/          # Deployment scripts
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Page components
+│   │   ├── hooks/          # Custom React hooks
+│   │   └── lib/            # Utility functions
+├── server/                 # Express backend
+│   ├── db.ts              # Database connection
+│   ├── routes.ts          # API routes
+│   ├── storage.ts         # Data access layer
+│   └── index.ts           # Server entry point
+├── shared/                 # Shared types and schemas
+│   ├── schema.ts          # Database schema (Drizzle)
+│   └── version.ts         # App version info
+├── chrome-extension/       # Chrome extension files
+└── dist/                  # Build output
 ```
 
-## Chrome Extension
+## Environment Variables
 
-Install from `chrome-extension/` directory to submit topics directly from web pages with auto-extracted metadata.
+```bash
+DATABASE_URL=your_postgresql_connection_string
+NODE_ENV=development|production
+```
 
-## API Overview
+## Admin Access
 
-**Public**: `/api/weeks/active`, `/api/topics`, `/api/topics/:id/star`
-**Admin**: `/api/admin/weeks`, `/api/admin/topics/:id/status`, `/api/metrics`
+Default admin credentials:
+- Username: `admin`
+- Password: `fmbackspace55`
 
-## Performance
+## API Endpoints
 
-- URL metadata caching (24h TTL)
-- Rate limiting (30 req/min per IP)  
-- React Query client-side caching
-- SQLite with optimized queries
+### Public Endpoints
+- `GET /api/version` - Get app version info
+- `GET /api/weeks/active` - Get current active week with topics
+- `POST /api/topics` - Submit new topic
+- `POST /api/topics/:id/star` - Add star to topic
+- `DELETE /api/topics/:id/star` - Remove star from topic
+
+### Admin Endpoints
+- `POST /api/auth/login` - Admin login
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/logout` - Admin logout
+- `GET /api/weeks` - Get all weeks
+- `POST /api/weeks` - Create new week
+- `POST /api/weeks/:id/setActive` - Set active week
+- `PUT /api/topics/:id/status` - Update topic status
+- `DELETE /api/topics/:id` - Delete topic
+
+## Development
+
+### Database Migrations
+```bash
+npm run db:push  # Push schema changes to database
+```
+
+### Building
+```bash
+npm run build    # Build both frontend and backend
+```
+
+## Deployment
+
+The application is designed for deployment on various platforms:
+
+1. **Build the application**:
+   ```bash
+   npm run build
+   ```
+
+2. **Set environment variables**:
+   - `DATABASE_URL`: PostgreSQL connection string
+   - `NODE_ENV=production`
+
+3. **Start the server**:
+   ```bash
+   node dist/index.js
+   ```
+
+The server serves both the API and static frontend files.
 
 ## License
 
-MIT
+MIT License
