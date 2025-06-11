@@ -1,0 +1,241 @@
+ose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+
+=== 最新アプリケーションログ（最新10行） ===
+time="2025-06-11T10:14:56+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+
+================================================
+-e [SUCCESS] 最新コードのデプロイメントが完了しました！
+================================================
+
+🌐 ウェブサイト: https://neta.backspace.fm
+🔧 管理画面: https://neta.backspace.fm/admin
+
+📊 ステータス確認:
+   curl https://neta.backspace.fm/api/version
+
+🔍 ログ確認:
+   ssh -i ~/.ssh/id_ed25519 ubuntu@153.125.147.133
+   cd /home/ubuntu/backspace-fm-app && docker-compose logs -f
+
+~/workspace$ ssh 153.125.147.133 -l ubuntu -i ~/.ssh/id_ed25519
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Wed Jun 11 10:14:55 AM JST 2025
+
+  System load:  0.26               Processes:             532
+  Usage of /:   40.6% of 19.51GB   Users logged in:       1
+  Memory usage: 1%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+3 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+Last login: Wed Jun 11 06:07:17 2025 from 34.145.48.96
+ubuntu@neta:~$ docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+ubuntu@neta:~$ docker-compose start
+no configuration file provided: not found
+ubuntu@neta:~$ exit
+logout
+Connection to 153.125.147.133 closed.
+~/workspace$ sh ./deploy.sh 
+================================================
+  Backspace.fm 本番サーバーデプロイメント
+================================================
+
+デプロイ先: neta.backspace.fm (153.125.147.133)
+SSH Key: ~/.ssh/id_ed25519
+
+-e [INFO] SSH接続をテストしています...
+-e [SUCCESS] SSH接続が確認されました
+-e [INFO] 既存環境への更新デプロイメントを開始します
+-e [INFO] アプリケーションをデプロイしています...
+-e [INFO] アプリケーションファイルを圧縮しています...
+-e [INFO] サーバーにファイルを転送しています...
+app.tar.gz                                                 100%  174MB   5.6MB/s   00:31    
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Wed Jun 11 10:15:56 AM JST 2025
+
+  System load:  0.09               Processes:             530
+  Usage of /:   40.6% of 19.51GB   Users logged in:       1
+  Memory usage: 1%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+3 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+tar (child): app.tar.gz: Cannot open: No such file or directory
+tar (child): Error is not recoverable: exiting now
+tar: Child returned status 2
+tar: Error is not recoverable: exiting now
+rm: cannot remove 'app.tar.gz': No such file or directory
+アプリケーションファイルの展開が完了しました
+-e [SUCCESS] アプリケーションファイルがサーバーに転送されました
+-e [INFO] アプリケーションを起動しています...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Wed Jun 11 10:15:56 AM JST 2025
+
+  System load:  0.09               Processes:             530
+  Usage of /:   40.6% of 19.51GB   Users logged in:       1
+  Memory usage: 1%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+3 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+time="2025-06-11T10:16:40+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-06-11T10:16:40+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+#1 [internal] load local bake definitions
+#1 reading from stdin 412B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2B done
+#2 DONE 0.0s
+failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
+time="2025-06-11T10:16:40+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+#1 [internal] load local bake definitions
+#1 reading from stdin 388B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2B done
+#2 DONE 0.0s
+failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
+アプリケーションの起動を待機しています...
+起動待機中... (1/30)
+起動待機中... (2/30)
+起動待機中... (3/30)
+起動待機中... (4/30)
+起動待機中... (5/30)
+起動待機中... (6/30)
+起動待機中... (7/30)
+起動待機中... (8/30)
+起動待機中... (9/30)
+起動待機中... (10/30)
+起動待機中... (11/30)
+起動待機中... (12/30)
+起動待機中... (13/30)
+起動待機中... (14/30)
+起動待機中... (15/30)
+起動待機中... (16/30)
+起動待機中... (17/30)
+起動待機中... (18/30)
+起動待機中... (19/30)
+起動待機中... (20/30)
+起動待機中... (21/30)
+起動待機中... (22/30)
+起動待機中... (23/30)
+起動待機中... (24/30)
+起動待機中... (25/30)
+起動待機中... (26/30)
+起動待機中... (27/30)
+起動待機中... (28/30)
+起動待機中... (29/30)
+起動待機中... (30/30)
+time="2025-06-11T10:19:11+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+-e [SUCCESS] アプリケーションが起動しました
+-e [INFO] デプロイメントを検証しています...
+-e [INFO] HTTP接続をテストしています...
+-e [SUCCESS] HTTP接続が確認されました
+-e [INFO] バージョン情報: <html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx/1.24.0 (Ubuntu)</center>
+</body>
+</html>
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Wed Jun 11 10:19:12 AM JST 2025
+
+  System load:  0.0                Processes:             505
+  Usage of /:   41.5% of 19.51GB   Users logged in:       1
+  Memory usage: 1%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+3 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+=== サービス状態 ===
+sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+
+=== Docker Container状態 ===
+time="2025-06-11T10:19:13+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+
+=== アプリケーションログ（最新10行） ===
+time="2025-06-11T10:19:13+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+
+================================================
+-e [SUCCESS] デプロイメントが完了しました！
+================================================
+
+🌐 ウェブサイト: http://neta.backspace.fm
+🔧 管理画面: http://neta.backspace.fm/admin
+
+📊 ステータス確認:
+   curl http://neta.backspace.fm/api/version
+
+🔍 ログ確認:
+   ssh -i ~/.ssh/id_ed25519 ubuntu@153.125.147.133
+   cd /home/ubuntu/backspace-fm-app && docker-compose -f docker-compose.prod.yml logs -f
+
+🔄 再デプロイ:
+   ./deploy.sh
+
+~/workspace$ 
