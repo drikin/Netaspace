@@ -11,13 +11,16 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  // Optimized PostgreSQL connection pool for deployment
-  max: 5, // Reduced for resource-constrained deployment
-  idleTimeoutMillis: 60000, // 1 minute idle timeout
-  connectionTimeoutMillis: 10000, // 10 second connection timeout
-  // Additional PostgreSQL specific settings
+  // Optimized PostgreSQL connection pool for production with Neon
+  max: 10, // Increased for better concurrency
+  min: 2, // Maintain minimum connections
+  idleTimeoutMillis: 300000, // 5 minutes idle timeout for better connection reuse
+  connectionTimeoutMillis: 15000, // 15 second connection timeout for remote DB
+  // Additional PostgreSQL specific settings for remote connections
   keepAlive: true,
-  keepAliveInitialDelayMillis: 0,
+  keepAliveInitialDelayMillis: 10000, // 10 second delay before keepalive
+  query_timeout: 30000, // 30 second query timeout
+  statement_timeout: 30000, // 30 second statement timeout
 });
 
 // Handle pool errors gracefully

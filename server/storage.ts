@@ -43,8 +43,9 @@ class DatabasePerformanceMonitor {
     this.metrics.totalQueryTime += duration;
     this.metrics.averageQueryTime = this.metrics.totalQueryTime / this.metrics.totalQueries;
     
-    // Log slow queries (over 100ms)
-    if (duration > 100) {
+    // Log slow queries (over 500ms for production with remote DB)
+    const threshold = process.env.NODE_ENV === 'production' ? 500 : 100;
+    if (duration > threshold) {
       this.metrics.slowQueries++;
       console.warn(`Slow query detected: ${queryType} took ${duration}ms`);
     }
