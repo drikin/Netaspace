@@ -1,41 +1,18 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: backspace_fm
-      POSTGRES_USER: backspace_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backspace_secure_password}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5432:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U backspace_user -d backspace_fm"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   backspace-fm:
     build: .
     ports:
       - "127.0.0.1:5000:5000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://backspace_user:${POSTGRES_PASSWORD:-backspace_secure_password}@postgres:5432/backspace_fm
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     user: "1001:1001"
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/version"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-volumes:
-  postgres_data:

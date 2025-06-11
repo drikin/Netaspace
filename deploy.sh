@@ -113,7 +113,7 @@ deploy_application() {
         # 本番用環境変数ファイル作成
         cat > .env << 'ENV_EOF'
 NODE_ENV=production
-POSTGRES_PASSWORD=backspace_secure_password_2024
+DATABASE_URL=postgresql://neondb_owner:npg_GFeXV6cr7anp@ep-hidden-thunder-a65mlh9x.us-west-2.aws.neon.tech/neondb?sslmode=require
 SESSION_SECRET=backspace_session_secret_2024
 ENV_EOF
         
@@ -122,44 +122,25 @@ ENV_EOF
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: backspace-postgres
-    environment:
-      POSTGRES_DB: backspace_fm
-      POSTGRES_USER: backspace_user
-      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-backspace_secure_password_2024}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    ports:
-      - "127.0.0.1:5432:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U backspace_user -d backspace_fm"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   backspace-fm:
     build: .
     container_name: backspace-app
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://backspace_user:\${POSTGRES_PASSWORD:-backspace_secure_password_2024}@postgres:5432/backspace_fm
+      DATABASE_URL: \${DATABASE_URL}
       SESSION_SECRET: \${SESSION_SECRET:-backspace_session_secret_2024}
       PORT: 5000
     ports:
       - "127.0.0.1:5000:5000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
     volumes:
       - ./data:/app/data
-
-volumes:
-  postgres_data:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 COMPOSE_EOF
         
         # バックアップディレクトリ作成
@@ -206,17 +187,7 @@ server {
         proxy_read_timeout 60s;
     }
     
-    # WebSocket対応
-    location /ws {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+
     
     # 静的ファイル配信（必要に応じて）
     location /static {
