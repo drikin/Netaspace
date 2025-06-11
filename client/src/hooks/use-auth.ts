@@ -10,10 +10,11 @@ interface AuthResponse {
 }
 
 export function useAuth() {
-  const { data: authData, isLoading, error } = useQuery<AuthResponse>({
+  const { data: authData, isLoading, error, refetch } = useQuery<AuthResponse>({
     queryKey: ["/api/auth/me"],
     retry: false,
     refetchOnWindowFocus: false,
+    staleTime: 0, // Always consider stale to ensure fresh data
   });
 
   // Extract user from response
@@ -22,9 +23,11 @@ export function useAuth() {
   const isAdmin = user?.username === 'admin';
 
   return {
-    user: authData,
+    user,
+    authData,
     isLoading,
     isAuthenticated,
     isAdmin,
+    refetch,
   };
 }

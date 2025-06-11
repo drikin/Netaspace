@@ -31,7 +31,7 @@ const Admin: React.FC = () => {
   const [showLoginForm, setShowLoginForm] = useState(false);
 
   // Use the auth hook
-  const { user, isLoading: isAuthLoading, isAuthenticated, isAdmin } = useAuth();
+  const { user, isLoading: isAuthLoading, isAuthenticated, isAdmin, refetch: refetchAuth } = useAuth();
 
 
   // Show login form if not authenticated
@@ -76,9 +76,11 @@ const Admin: React.FC = () => {
         title: "ログイン成功",
         description: "管理者としてログインしました。",
       });
-      // Invalidate auth queries and wait for refetch
+      // Invalidate all auth-related queries
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+      // Force refetch to get fresh auth data
+      await refetchAuth();
+      // Update login form state
       setShowLoginForm(false);
     },
     onError: (error) => {

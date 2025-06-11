@@ -19,7 +19,7 @@ const Header = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const isAdmin = (auth as any)?.user?.isAdmin;
+  const isAdmin = (auth as any)?.user?.username === 'admin';
 
   const handleLogout = async () => {
     try {
