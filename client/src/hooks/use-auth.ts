@@ -1,14 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
 
+interface AuthUser {
+  id: number;
+  username: string;
+}
+
+interface AuthResponse {
+  user: AuthUser;
+}
+
 export function useAuth() {
-  const { data: user, isLoading } = useQuery({
+  const { data: authData, isLoading, error } = useQuery<AuthResponse>({
     queryKey: ["/api/auth/me"],
     retry: false,
+    refetchOnWindowFocus: false,
   });
 
+  // Extract user from response
+  const user = authData?.user;
+  const isAuthenticated = !!user && !error;
+  const isAdmin = user?.username === 'admin';
+
   return {
-    user,
+    user: authData,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
+    isAdmin,
   };
 }

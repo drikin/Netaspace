@@ -31,8 +31,7 @@ const Admin: React.FC = () => {
   const [showLoginForm, setShowLoginForm] = useState(false);
 
   // Use the auth hook
-  const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
-  const isAdmin = (user as any)?.user?.isAdmin;
+  const { user, isLoading: isAuthLoading, isAuthenticated, isAdmin } = useAuth();
 
 
   // Show login form if not authenticated
