@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import WeekSelector from "@/components/week-selector";
 import TabNavigation from "@/components/tab-navigation";
@@ -17,14 +17,29 @@ const Home: React.FC = () => {
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
 
-  // Fetch active week with topics
+  // Fetch active week with topics with automatic refresh
   const { data: week, isLoading, refetch, error } = useQuery<WeekWithTopics>({
     queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!fingerprint,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 30, // 30 seconds
+    refetchInterval: 1000 * 30, // Auto-refresh every 30 seconds for new topics
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false, // Only refresh when tab is active
   });
+
+  // Enhanced auto-refresh when returning to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && fingerprint) {
+        // Immediate refresh when user returns to tab
+        refetch();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refetch, fingerprint]);
 
   // Force cache clear for production issues
   const handleForceClear = () => {
@@ -93,27 +108,16 @@ const Home: React.FC = () => {
 
       <div className="flex justify-between items-center mb-4">
         <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
-        <div className="flex gap-2">
+        {error && (
           <Button
-            variant="outline"
+            variant="destructive"
             size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
+            onClick={handleForceClear}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            更新
+            <AlertCircle className="h-4 w-4 mr-2" />
+            完全リセット
           </Button>
-          {error && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleForceClear}
-            >
-              <AlertCircle className="h-4 w-4 mr-2" />
-              完全リセット
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Sort Controls */}
