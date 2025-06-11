@@ -36,6 +36,13 @@ const server = createServer((req, res) => {
     pathname = pathname.slice(0, -1);
   }
   
+  // Health check endpoint
+  if (pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+    return;
+  }
+  
   // API endpoints (minimal implementation)
   if (pathname.startsWith('/api/')) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
