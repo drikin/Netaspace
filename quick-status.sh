@@ -5,29 +5,23 @@ SERVER_USER="ubuntu"
 SSH_KEY="~/.ssh/id_ed25519"
 
 ssh -i $SSH_KEY $SERVER_USER@$SERVER_HOST << 'STATUS_EOF'
-cd /home/ubuntu/backspace-fm-app
-
-echo "=== Container Status ==="
-docker-compose -f docker-compose.prod.yml ps
-
-echo -e "\n=== Quick API Test ==="
-if curl -s --connect-timeout 5 http://127.0.0.1:5000/api/version; then
-    echo -e "\n✅ Application is responding"
+    cd /home/ubuntu/backspace-fm-app
     
-    echo -e "\n=== Admin Login Test ==="
-    LOGIN=$(curl -s -X POST -H "Content-Type: application/json" \
-         -d '{"username":"admin","password":"fmbackspace55"}' \
-         -c /tmp/test.txt http://127.0.0.1:5000/api/auth/login)
-    echo "Login: $LOGIN"
+    echo "=== Build Status ==="
+    docker ps -a | grep backspace
     
-    AUTH=$(curl -s -b /tmp/test.txt http://127.0.0.1:5000/api/auth/me)
-    echo "Auth: $AUTH"
+    echo "=== Build Logs ==="
+    docker-compose logs --tail=20 2>/dev/null || echo "No logs available"
     
-    rm -f /tmp/test.txt
-else
-    echo -e "\n❌ Application not ready yet"
+    echo "=== Docker Images ==="
+    docker images | grep backspace
     
-    echo -e "\n=== Container Logs ==="
-    docker-compose -f docker-compose.prod.yml logs --tail=10 backspace-fm
-fi
+    echo "=== Restart Container ==="
+    docker-compose up -d
+    
+    sleep 10
+    
+    echo "=== Final Status ==="
+    docker-compose ps
+    curl -s http://127.0.0.1:5000/api/version || echo "Still not responding"
 STATUS_EOF
