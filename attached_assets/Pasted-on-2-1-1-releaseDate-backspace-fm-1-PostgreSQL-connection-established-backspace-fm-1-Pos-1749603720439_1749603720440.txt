@@ -1,0 +1,146 @@
+on":"2.1.1","releaseDate"…
+backspace-fm-1  | PostgreSQL connection established
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL database connection test successful
+backspace-fm-1  | 1:00:52 AM [express] GET /api/version 200 in 2ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+-e [SUCCESS] 最新コードのデプロイが完了しました
+-e [INFO] 最新デプロイメントを検証しています...
+-e [INFO] HTTPS接続をテストしています...
+-e [SUCCESS] HTTPS接続が確認されました
+-e [INFO] バージョン情報: {"app":"2.4.0","extension":"2.1.1","releaseDate":"2025-06-07"}
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Wed Jun 11 10:00:21 AM JST 2025
+
+  System load:  0.02               Processes:             512
+  Usage of /:   39.9% of 19.51GB   Users logged in:       1
+  Memory usage: 1%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+3 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+=== 最新アプリケーション状態 ===
+time="2025-06-11T10:00:54+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+NAME                              IMAGE                           COMMAND                  SERVICE        CREATED          STATUS                    PORTS
+backspace-fm-app-backspace-fm-1   backspace-fm-app-backspace-fm   "docker-entrypoint.s…"   backspace-fm   15 seconds ago   Up 14 seconds (healthy)   127.0.0.1:5000->5000/tcp
+
+=== 最新アプリケーションログ（最新10行） ===
+time="2025-06-11T10:00:54+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+backspace-fm-1  | 
+backspace-fm-1  | Using PostgreSQL database with connection pool
+backspace-fm-1  | 1:00:49 AM [express] serving on 0.0.0.0:5000
+backspace-fm-1  | 1:00:50 AM [express] GET /api/version 200 in 6ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | PostgreSQL connection established
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL database connection test successful
+backspace-fm-1  | 1:00:52 AM [express] GET /api/version 200 in 2ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:00:52 AM [express] GET /api/version 200 in 2ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:00:53 AM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+
+================================================
+-e [SUCCESS] 最新コードのデプロイメントが完了しました！
+================================================
+
+🌐 ウェブサイト: https://neta.backspace.fm
+🔧 管理画面: https://neta.backspace.fm/admin
+
+📊 ステータス確認:
+   curl https://neta.backspace.fm/api/version
+
+🔍 ログ確認:
+   ssh -i ~/.ssh/id_ed25519 ubuntu@153.125.147.133
+   cd /home/ubuntu/backspace-fm-app && docker-compose logs -f
+
+~/workspace$ sh ./server-management.sh logs
+-e [INFO] アプリケーションログを表示しています...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Wed Jun 11 10:01:42 AM JST 2025
+
+  System load:  0.0                Processes:             532
+  Usage of /:   40.2% of 19.51GB   Users logged in:       1
+  Memory usage: 1%                 IPv4 address for eth0: 153.125.147.133
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+3 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+=== アプリケーションログ（最新50行） ===
+time="2025-06-11T10:01:42+09:00" level=warning msg="/home/ubuntu/backspace-fm-app/docker-compose.prod.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+backspace-fm-1  | Starting Node.js server...
+backspace-fm-1  | 
+backspace-fm-1  | > rest-express@1.0.0 start
+backspace-fm-1  | > NODE_ENV=production node dist/index.js
+backspace-fm-1  | 
+backspace-fm-1  | Using PostgreSQL database with connection pool
+backspace-fm-1  | 1:00:49 AM [express] serving on 0.0.0.0:5000
+backspace-fm-1  | 1:00:50 AM [express] GET /api/version 200 in 6ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | PostgreSQL connection established
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL database connection test successful
+backspace-fm-1  | 1:00:52 AM [express] GET /api/version 200 in 2ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:00:52 AM [express] GET /api/version 200 in 2ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:00:53 AM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:01:03 AM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:01:03 AM [express] GET /api/auth/me 401 in 2ms :: {"message":"Not authenticated"}
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getActiveWeek took 153ms
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getStarsCountByTopicId took 151ms
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getStarsCountByTopicId took 151ms
+backspace-fm-1  | Slow query detected: getTopicsByWeekId took 453ms
+backspace-fm-1  | Slow query detected: getWeekWithTopics took 603ms
+backspace-fm-1  | Slow query detected: getActiveWeekWithTopics took 756ms
+backspace-fm-1  | 1:01:03 AM [express] GET /api/weeks/active 200 in 757ms :: {"id":2,"startDate":"2025-06-10","endDate…
+backspace-fm-1  | 1:01:04 AM [express] GET /api/auth/me 401 in 3ms :: {"message":"Not authenticated"}
+backspace-fm-1  | 1:01:04 AM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getActiveWeek took 149ms
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getStarsCountByTopicId took 150ms
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getStarsCountByTopicId took 149ms
+backspace-fm-1  | Slow query detected: getTopicsByWeekId took 448ms
+backspace-fm-1  | Slow query detected: getWeekWithTopics took 598ms
+backspace-fm-1  | Slow query detected: getActiveWeekWithTopics took 747ms
+backspace-fm-1  | 1:01:05 AM [express] GET /api/weeks/active 200 in 748ms :: {"id":2,"startDate":"2025-06-10","endDate…
+backspace-fm-1  | 1:01:20 AM [express] GET /api/version 200 in 1ms :: {"app":"2.4.0","extension":"2.1.1","releaseDate"…
+backspace-fm-1  | 1:01:29 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getUserByUsername took 150ms
+backspace-fm-1  | 1:01:33 AM [express] POST /api/auth/login 200 in 1478ms :: {"user":{"id":1,"username":"admin","passw…
+backspace-fm-1  | PostgreSQL connection acquired from pool
+backspace-fm-1  | Slow query detected: getUser took 149ms
+backspace-fm-1  | 1:01:34 AM [express] GET /api/auth/me 200 in 443ms :: {"user":{"id":1,"username":"admin","password":…
+
+=== PostgreSQLログ（最新20行） ===

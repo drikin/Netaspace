@@ -1,73 +1,88 @@
 #!/bin/bash
 
-# Quick fix for production database connection
 SERVER_HOST="153.125.147.133"
 SERVER_USER="ubuntu"
 SSH_KEY="~/.ssh/id_ed25519"
 APP_DIR="/home/ubuntu/backspace-fm-app"
 
-echo "Applying quick fix to production database configuration..."
+echo "Fixing production deployment with complete file set..."
 
-# Update production environment variables and restart the application
-ssh -i $SSH_KEY $SERVER_USER@$SERVER_HOST << 'QUICK_FIX_EOF'
+# Create complete production package
+tar czf production-fix.tar.gz \
+    --exclude=node_modules \
+    --exclude=.git \
+    --exclude=dist \
+    --exclude='.replit*' \
+    --exclude='.config' \
+    --exclude='*.tar.gz' \
+    --exclude='*.log' \
+    --exclude=attached_assets \
+    .
+
+scp -i $SSH_KEY production-fix.tar.gz $SERVER_USER@$SERVER_HOST:/tmp/
+
+ssh -i $SSH_KEY $SERVER_USER@$SERVER_HOST << 'FIX_EOF'
     cd /home/ubuntu/backspace-fm-app
     
-    echo "Stopping existing application..."
-    sudo docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
-    sudo docker-compose down 2>/dev/null || true
+    # Stop and clean
+    docker-compose down 2>/dev/null || true
+    docker system prune -f
     
-    echo "Updating environment configuration..."
-    cat > .env << 'ENV_EOF'
+    # Backup current and extract new
+    mv .env .env.backup 2>/dev/null || true
+    rm -rf ./* 2>/dev/null || true
+    
+    cd /tmp
+    tar xzf production-fix.tar.gz -C /home/ubuntu/backspace-fm-app/
+    rm production-fix.tar.gz
+    
+    cd /home/ubuntu/backspace-fm-app
+    
+    # Restore environment
+    if [ -f .env.backup ]; then
+        cp .env.backup .env
+    else
+        cat > .env << 'ENV_EOF'
 NODE_ENV=production
 DATABASE_URL=postgresql://neondb_owner:npg_GFeXV6cr7anp@ep-hidden-thunder-a65mlh9x.us-west-2.aws.neon.tech/neondb?sslmode=require
 SESSION_SECRET=backspace_session_secret_2024
 ENV_EOF
-
-    echo "Creating updated Docker Compose configuration..."
-    cat > docker-compose.yml << 'COMPOSE_EOF'
-version: '3.8'
-
-services:
-  backspace-fm:
-    build: .
-    container_name: backspace-app
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      SESSION_SECRET: ${SESSION_SECRET:-backspace_session_secret_2024}
-      PORT: 5000
-    ports:
-      - "127.0.0.1:5000:5000"
-    restart: unless-stopped
-    volumes:
-      - ./data:/app/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/version"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-COMPOSE_EOF
-
-    echo "Starting application with Neon database..."
-    sudo docker-compose build --no-cache
-    sudo docker-compose up -d
+    fi
     
-    echo "Waiting for application to start..."
-    sleep 30
+    # Make scripts executable
+    chmod +x scripts/*.sh
     
-    echo "Checking application status..."
-    sudo docker-compose ps
+    # Build and start fresh
+    docker-compose build --no-cache
+    docker-compose up -d
     
-    echo "Testing API endpoint..."
-    curl -s http://127.0.0.1:5000/api/version || echo "API not yet ready"
+    # Wait and verify
+    sleep 25
     
-    echo "Recent application logs:"
-    sudo docker-compose logs --tail=20 backspace-fm
-QUICK_FIX_EOF
+    echo "=== Application Status ==="
+    docker-compose ps
+    
+    echo "=== Recent Logs ==="
+    docker-compose logs --tail=10 backspace-fm
+    
+    echo "=== Local API Test ==="
+    curl -s http://127.0.0.1:5000/api/version || echo "Local API not responding"
+FIX_EOF
 
-echo "Quick fix applied. Testing production endpoint..."
-sleep 5
-curl -s http://neta.backspace.fm/api/version || echo "Site not yet accessible"
+rm production-fix.tar.gz
 
-echo "Production database configuration updated to use Neon database."
+# Test production endpoint
+sleep 15
+echo "=== Testing Production API ==="
+for i in {1..3}; do
+    response=$(curl -s https://neta.backspace.fm/api/version)
+    if [[ $response == *"app"* ]]; then
+        echo "Success: $response"
+        break
+    else
+        echo "Attempt $i: Not ready yet"
+        sleep 10
+    fi
+done
+
+echo "Production fix deployment completed."
