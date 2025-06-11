@@ -1,5 +1,5 @@
 import { createServer } from 'http';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { parse } from 'url';
@@ -22,7 +22,6 @@ const ADMIN_USER = {
 };
 
 // Persistent data storage with JSON file backup
-import { writeFileSync, readFileSync, existsSync } from 'fs';
 
 const DATA_FILE = '/home/ubuntu/neta-data.json';
 
