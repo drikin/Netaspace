@@ -2,6 +2,30 @@
 
 A podcast topic management platform for backspace.fm that enables community-driven content discovery through an interactive web interface and Chrome extension.
 
+## Production Deployment
+
+**Live Application**: https://neta.backspace.fm/
+
+The production environment runs a complete version with all features:
+- Topic submission and management
+- Admin authentication system
+- URL information extraction
+- Star/vote functionality
+- Weekly topic organization
+
+### Admin Access
+- Username: `admin`
+- Password: `fmbackspace55`
+
+### Production Guarantees
+
+The application is configured to always deploy with full functionality:
+
+1. **Automated Deployment**: Use `./deploy-full-production.sh` for reliable deployments
+2. **Continuous Monitoring**: `./monitor-production.sh` ensures system health
+3. **Service Management**: Systemd service with auto-restart capabilities
+4. **Complete Feature Set**: All API endpoints and functionality available
+
 ## Features
 
 - **Interactive Web Interface**: Modern React-based UI for topic submission and management
