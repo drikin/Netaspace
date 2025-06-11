@@ -21,16 +21,50 @@ const ADMIN_USER = {
   password: 'fmbackspace55'
 };
 
-// In-memory data storage
-let weeks = [{
-  id: 2,
-  startDate: '2025-06-10',
-  endDate: '2025-06-17',
-  isActive: true
-}];
+// Persistent data storage with JSON file backup
+import { writeFileSync, readFileSync, existsSync } from 'fs';
 
-let topics = [];
-let topicIdCounter = 1;
+const DATA_FILE = '/home/ubuntu/neta-data.json';
+
+// Load existing data or initialize
+let persistentData = {
+  weeks: [{
+    id: 2,
+    startDate: '2025-06-10',
+    endDate: '2025-06-17',
+    isActive: true
+  }],
+  topics: [],
+  topicIdCounter: 1
+};
+
+// Load data from file if exists
+if (existsSync(DATA_FILE)) {
+  try {
+    const savedData = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
+    persistentData = { ...persistentData, ...savedData };
+    console.log(`Loaded ${persistentData.topics.length} topics from persistent storage`);
+  } catch (error) {
+    console.log('Could not load persistent data, using defaults');
+  }
+}
+
+let weeks = persistentData.weeks;
+let topics = persistentData.topics;
+let topicIdCounter = Math.max(persistentData.topicIdCounter, ...topics.map(t => t.id), 0) + 1;
+
+// Save data to file
+function saveData() {
+  try {
+    writeFileSync(DATA_FILE, JSON.stringify({
+      weeks,
+      topics,
+      topicIdCounter
+    }, null, 2));
+  } catch (error) {
+    console.error('Failed to save data:', error);
+  }
+}
 
 // MIME type mapping
 const mimeTypes = {
@@ -285,6 +319,7 @@ const server = createServer(async (req, res) => {
     };
 
     topics.push(newTopic);
+    saveData(); // Persist data after adding topic
     
     res.writeHead(201, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(newTopic));
@@ -311,6 +346,7 @@ const server = createServer(async (req, res) => {
     }
 
     topics[topicIndex].status = status;
+    saveData(); // Persist data after status update
     
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(topics[topicIndex]));
@@ -335,6 +371,7 @@ const server = createServer(async (req, res) => {
     }
 
     topics.splice(topicIndex, 1);
+    saveData(); // Persist data after deletion
     
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true }));
