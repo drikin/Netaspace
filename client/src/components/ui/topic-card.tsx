@@ -63,7 +63,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
     
     // X (Twitter) sharing
     const shareText = `このネタを聞きたい！「${topic.title}」 #backspacefm`;
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(topic.url)}`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent('https://neta.backspace.fm/')}`;
     window.open(shareUrl, '_blank', 'width=550,height=420');
   };
 
