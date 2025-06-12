@@ -190,7 +190,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>「聞きたい」を追加しました！</DialogTitle>
+            <DialogTitle>投票ありがとうございます！</DialogTitle>
             <DialogDescription>
               いつもbackspace.fmを応援してくれてありがとうございます。この内容をXに投稿してシェアしてくれると嬉しいです。
               <br />
