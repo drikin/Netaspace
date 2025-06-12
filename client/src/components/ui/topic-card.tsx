@@ -191,7 +191,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
           <AlertDialogHeader>
             <AlertDialogTitle>このネタをXで共有しませんか？</AlertDialogTitle>
             <AlertDialogDescription>
-              「聞きたい」を追加すると同時に、このネタについてXで共有することができます。
+              いつもbackspace.fmを応援してくれてありがとうございます。この内容をXに投稿してシェアしてくれると嬉しいです。
               <br />
               <span className="text-sm text-gray-500 mt-2 block">
                 投稿内容: 「このネタを聞きたい！「{topic.title}」 #backspacefm」
