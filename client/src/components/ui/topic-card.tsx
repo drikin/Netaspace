@@ -8,6 +8,7 @@ import AdminControls from "../admin-controls";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars } from "@shared/schema";
 import { formatDate } from "@/lib/date-utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface TopicCardProps {
   topic: TopicWithCommentsAndStars;
@@ -26,6 +27,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const [isStarring, setIsStarring] = useState(false);
   const [starsCount, setStarsCount] = useState(topic.starsCount);
   const [hasStarred, setHasStarred] = useState(topic.hasStarred || false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   // Star/unstar toggle mutation with proper API call
   const addStarMutation = useMutation({
@@ -137,9 +139,33 @@ const TopicCard: React.FC<TopicCardProps> = ({
       return;
     }
     
+    // If user hasn't starred yet, show share dialog
+    if (!hasStarred) {
+      setShowShareDialog(true);
+    } else {
+      // If already starred, just unstar without dialog
+      setIsStarring(true);
+      addStarMutation.mutate();
+    }
+  };
+
+  const handleStarWithoutShare = () => {
+    setShowShareDialog(false);
     setIsStarring(true);
-    // 楽観的UI更新を使ったミューテーション実行
     addStarMutation.mutate();
+  };
+
+  const handleStarAndShare = () => {
+    setShowShareDialog(false);
+    setIsStarring(true);
+    addStarMutation.mutate();
+    
+    // Create X share URL
+    const shareText = `このネタを聞きたい！「${topic.title}」 #backspacefm`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(topic.url)}`;
+    
+    // Open X share dialog
+    window.open(shareUrl, '_blank', 'width=550,height=420');
   };
 
   const getStatusBadge = () => {
@@ -188,8 +214,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const cardBg = getCardBackgroundStyle();
 
   return (
-    <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
-      <CardContent className="p-4">
+    <>
+      <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
+        <CardContent className="p-4">
         {/* Compact header - always visible */}
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -261,7 +288,32 @@ const TopicCard: React.FC<TopicCardProps> = ({
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* X Share Confirmation Dialog */}
+      <AlertDialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>このネタをXで共有しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              「聞きたい」を追加すると同時に、このネタについてXで共有することができます。
+              <br />
+              <span className="text-sm text-gray-500 mt-2 block">
+                投稿内容: 「このネタを聞きたい！「{topic.title}」 #backspacefm」
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleStarWithoutShare}>
+              共有せずに聞きたいを追加
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleStarAndShare}>
+              Xで共有して聞きたいを追加
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
