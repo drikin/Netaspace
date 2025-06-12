@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TopicWithCommentsAndStars } from "@shared/schema";
 import { formatDate } from "@/lib/date-utils";
+import { useFingerprint } from "@/hooks/use-fingerprint";
 
 interface TopicCardProps {
   topic: TopicWithCommentsAndStars;
@@ -21,11 +22,14 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   const [showShareDialog, setShowShareDialog] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const fingerprint = useFingerprint();
 
   const starMutation = useMutation({
     mutationFn: async (action: 'add' | 'remove') => {
       const method = action === 'add' ? 'POST' : 'DELETE';
-      const response = await apiRequest(method, `/api/topics/${topic.id}/star`);
+      const response = await apiRequest(method, `/api/topics/${topic.id}/star`, {
+        fingerprint
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -68,7 +72,6 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
 
   const getStatusBadge = () => {
     const statusMap = {
-      pending: { label: "審査中", variant: "secondary" as const },
       approved: { label: "承認済み", variant: "default" as const },
       rejected: { label: "却下", variant: "destructive" as const },
       completed: { label: "放送済み", variant: "outline" as const }
