@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import WeekSelector from "@/components/week-selector";
 import TabNavigation from "@/components/tab-navigation";
 import TopicCard from "@/components/ui/topic-card";
-import { BookmarkletGenerator } from "@/components/bookmarklet-generator";
+
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -221,9 +221,6 @@ const Home: React.FC = () => {
             </p>
           </div>
         )}
-        
-        {/* Bookmarklet Generator */}
-        <BookmarkletGenerator className="mt-8" />
       </div>
     </div>
   );
