@@ -51,23 +51,24 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
     if (topic.hasStarred) {
       starMutation.mutate('remove');
     } else {
+      // Immediately add the star first
+      starMutation.mutate('add');
+      // Then show dialog for X sharing
       setShowShareDialog(true);
     }
   };
 
-  const handleStarWithoutShare = () => {
+  const handleShareToX = () => {
     setShowShareDialog(false);
-    starMutation.mutate('add');
-  };
-
-  const handleStarAndShare = () => {
-    setShowShareDialog(false);
-    starMutation.mutate('add');
     
     // X (Twitter) sharing
     const shareText = `このネタを聞きたい！「${topic.title}」 #backspacefm`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(topic.url)}`;
     window.open(shareUrl, '_blank', 'width=550,height=420');
+  };
+
+  const handleSkipShare = () => {
+    setShowShareDialog(false);
   };
 
   const getStatusBadge = () => {
@@ -189,7 +190,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>このネタをXで共有しませんか？</DialogTitle>
+            <DialogTitle>「聞きたい」を追加しました！</DialogTitle>
             <DialogDescription>
               いつもbackspace.fmを応援してくれてありがとうございます。この内容をXに投稿してシェアしてくれると嬉しいです。
               <br />
@@ -199,11 +200,11 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={handleStarWithoutShare}>
-              共有せずに聞きたいを追加
+            <Button variant="outline" onClick={handleSkipShare}>
+              今回は共有しない
             </Button>
-            <Button onClick={handleStarAndShare}>
-              Xで共有して聞きたいを追加
+            <Button onClick={handleShareToX}>
+              Xで共有する
             </Button>
           </DialogFooter>
         </DialogContent>
