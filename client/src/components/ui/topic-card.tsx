@@ -193,10 +193,6 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
             <DialogTitle>投票ありがとうございます！</DialogTitle>
             <DialogDescription>
               いつもbackspace.fmを応援してくれてありがとうございます。この内容をXに投稿してシェアしてくれると嬉しいです。
-              <br />
-              <span className="text-sm text-gray-500 mt-2 block">
-                投稿内容: 「このネタを聞きたい！「{topic.title}」 #backspacefm」
-              </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
