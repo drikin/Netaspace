@@ -20,7 +20,7 @@ interface AdminControlsProps {
   onStatusChange: () => void;
 }
 
-const AdminControls: React.FC<AdminControlsProps> = ({
+export const AdminControls: React.FC<AdminControlsProps> = ({
   topicId,
   currentStatus,
   onStatusChange,
@@ -159,4 +159,4 @@ const AdminControls: React.FC<AdminControlsProps> = ({
   );
 };
 
-export default AdminControls;
+
