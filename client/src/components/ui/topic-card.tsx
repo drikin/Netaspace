@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Heart, ExternalLink, Link, Calendar, User } from "lucide-react";
 import { AdminControls } from "@/components/admin-controls";
 import { apiRequest } from "@/lib/queryClient";
@@ -186,28 +186,28 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
         </CardContent>
       </Card>
       {/* X Share Confirmation Dialog */}
-      <AlertDialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <AlertDialogContent onPointerDownOutside={() => setShowShareDialog(false)}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>このネタをXで共有しませんか？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>このネタをXで共有しませんか？</DialogTitle>
+            <DialogDescription>
               いつもbackspace.fmを応援してくれてありがとうございます。この内容をXに投稿してシェアしてくれると嬉しいです。
               <br />
               <span className="text-sm text-gray-500 mt-2 block">
                 投稿内容: 「このネタを聞きたい！「{topic.title}」 #backspacefm」
               </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleStarWithoutShare}>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleStarWithoutShare}>
               共有せずに聞きたいを追加
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleStarAndShare}>
+            </Button>
+            <Button onClick={handleStarAndShare}>
               Xで共有して聞きたいを追加
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
