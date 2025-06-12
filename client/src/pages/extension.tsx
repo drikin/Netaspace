@@ -1,4 +1,5 @@
 import { ExtensionInstaller } from '@/components/extension-installer';
+import { BookmarkletGenerator } from '@/components/bookmarklet-generator';
 
 export default function ExtensionPage() {
   return (
@@ -36,6 +37,11 @@ export default function ExtensionPage() {
               <li>• デベロッパーモードが有効</li>
             </ul>
           </div>
+        </div>
+
+        {/* ブックマークレットセクションを最下部に追加 */}
+        <div className="mt-12">
+          <BookmarkletGenerator />
         </div>
       </div>
     </div>
