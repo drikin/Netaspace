@@ -187,7 +187,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       </Card>
       {/* X Share Confirmation Dialog */}
       <AlertDialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent onPointerDownOutside={() => setShowShareDialog(false)}>
           <AlertDialogHeader>
             <AlertDialogTitle>このネタをXで共有しませんか？</AlertDialogTitle>
             <AlertDialogDescription>
