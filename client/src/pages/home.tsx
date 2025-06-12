@@ -125,24 +125,31 @@ const Home: React.FC = () => {
         )}
       </div>
 
-      {/* Sort Controls */}
-      <div className="flex gap-2 mb-4">
-        <Button
-          variant={sortOrder === "stars" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSortOrder("stars")}
-        >
-          <Heart className="h-4 w-4 mr-2" />
-          聞きたい順
-        </Button>
-        <Button
-          variant={sortOrder === "newest" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSortOrder("newest")}
-        >
-          <Clock className="h-4 w-4 mr-2" />
-          新しい順
-        </Button>
+      {/* Sort Controls and Total Count */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-2">
+          <Button
+            variant={sortOrder === "stars" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSortOrder("stars")}
+          >
+            <Heart className="h-4 w-4 mr-2" />
+            聞きたい順
+          </Button>
+          <Button
+            variant={sortOrder === "newest" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSortOrder("newest")}
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            新しい順
+          </Button>
+        </div>
+        {week?.topics && (
+          <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
+            総ネタ数: {week.topics.length}件
+          </div>
+        )}
       </div>
 
       {/* Error State */}
