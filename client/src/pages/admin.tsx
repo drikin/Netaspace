@@ -547,17 +547,6 @@ const Admin: React.FC = () => {
               </svg>
               CSV
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleExportDatabase('sqlite')}
-              disabled={exportDatabaseMutation.isPending}
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-              </svg>
-              SQLite
-            </Button>
           </div>
 
           {/* Backup Management */}
