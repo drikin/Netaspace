@@ -54,6 +54,7 @@ const Home: React.FC = () => {
   });
 
   const isAdmin = auth?.user?.isAdmin;
+  const isAuthenticated = !!auth?.user;
 
   const getFilteredTopics = (): TopicWithCommentsAndStars[] => {
     if (!week || !week.topics) return [];
@@ -92,6 +93,11 @@ const Home: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
+    // Prevent non-authenticated users from accessing authenticated-only tabs
+    if (!isAuthenticated && (tab === "featured")) {
+      setActiveTab("all");
+      return;
+    }
     // Prevent non-admin users from accessing admin-only tabs
     if (!isAdmin && tab === "performance") {
       setActiveTab("all");
@@ -107,7 +113,7 @@ const Home: React.FC = () => {
       <WeekSelector week={week as any} isLoading={isLoading} />
 
       <div className="flex justify-between items-center mb-4">
-        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} />
+        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
         {error && (
           <Button
             variant="destructive"

@@ -4,11 +4,15 @@ interface TabNavigationProps {
   onTabChange: (tab: string) => void;
   activeTab: string;
   isAdmin?: boolean;
+  isAuthenticated?: boolean;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false }) => {
-  const baseTabs = [
+const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false, isAuthenticated = false }) => {
+  const publicTabs = [
     { id: "all", label: "すべて" },
+  ];
+  
+  const authenticatedTabs = [
     { id: "featured", label: "採用" },
   ];
   
@@ -16,7 +20,13 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, i
     { id: "performance", label: "パフォーマンス" },
   ];
   
-  const tabs = isAdmin ? [...baseTabs, ...adminTabs] : baseTabs;
+  let tabs = publicTabs;
+  if (isAuthenticated) {
+    tabs = [...publicTabs, ...authenticatedTabs];
+  }
+  if (isAdmin) {
+    tabs = [...tabs, ...adminTabs];
+  }
 
   return (
     <div className="px-4 sm:px-0 mb-4 border-b border-gray-200">
