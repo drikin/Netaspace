@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Heart, ExternalLink, Link, Calendar, User } from "lucide-react";
+import { Mic, ExternalLink, Link, Calendar, User } from "lucide-react";
 import { AdminControls } from "@/components/admin-controls";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -152,7 +152,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   topic.hasStarred ? 'text-red-600 hover:text-red-700' : 'text-gray-500 hover:text-red-600'
                 }`}
               >
-                <Heart 
+                <Mic 
                   className={`h-4 w-4 ${topic.hasStarred ? 'fill-current' : ''}`} 
                 />
                 <span className="text-sm font-medium">{topic.starsCount}</span>
