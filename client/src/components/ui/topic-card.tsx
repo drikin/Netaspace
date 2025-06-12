@@ -185,12 +185,11 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
           )}
         </CardContent>
       </Card>
-
       {/* X Share Confirmation Dialog */}
       <AlertDialog open={showShareDialog} onOpenChange={setShowShareDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>このネタをXで共有しますか？</AlertDialogTitle>
+            <AlertDialogTitle>このネタをXで共有しませんか？</AlertDialogTitle>
             <AlertDialogDescription>
               「聞きたい」を追加すると同時に、このネタについてXで共有することができます。
               <br />
