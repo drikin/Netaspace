@@ -8,11 +8,13 @@ interface TabNavigationProps {
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false, isAuthenticated = false }) => {
-  const publicTabs = [
-    { id: "all", label: "すべて" },
-  ];
-  
+  // Don't show any tabs if user is not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const authenticatedTabs = [
+    { id: "all", label: "すべて" },
     { id: "featured", label: "採用" },
   ];
   
@@ -20,10 +22,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, i
     { id: "performance", label: "パフォーマンス" },
   ];
   
-  let tabs = publicTabs;
-  if (isAuthenticated) {
-    tabs = [...publicTabs, ...authenticatedTabs];
-  }
+  let tabs = authenticatedTabs;
   if (isAdmin) {
     tabs = [...tabs, ...adminTabs];
   }

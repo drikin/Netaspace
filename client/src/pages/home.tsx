@@ -93,9 +93,8 @@ const Home: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
-    // Prevent non-authenticated users from accessing authenticated-only tabs
-    if (!isAuthenticated && (tab === "featured")) {
-      setActiveTab("all");
+    // Prevent non-authenticated users from accessing any tabs
+    if (!isAuthenticated) {
       return;
     }
     // Prevent non-admin users from accessing admin-only tabs
