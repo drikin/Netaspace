@@ -217,15 +217,15 @@ const TopicCard: React.FC<TopicCardProps> = ({
     <>
       <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
         <CardContent className="p-4">
-        {/* Compact header - always visible */}
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center">
-              <a
-                href={topic.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-lg font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200 flex items-center"
+          {/* Compact header - always visible */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center">
+                <a
+                  href={topic.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lg font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200 flex items-center"
                 title="記事を開く"
               >
                 <Link className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
