@@ -118,15 +118,10 @@ export function useReleaseNotification() {
   useEffect(() => {
     try {
       const lastSeenVersion = localStorage.getItem('lastSeenVersion');
-      console.log('Last seen version:', lastSeenVersion, 'Current version:', APP_VERSION);
-      
-      // For testing - clear localStorage to always show dialog
-      localStorage.removeItem('lastSeenVersion');
       
       if (lastSeenVersion !== APP_VERSION) {
         // Show notification after a short delay for better UX
         const timer = setTimeout(() => {
-          console.log('Showing release dialog');
           setShowDialog(true);
         }, 2000);
         return () => clearTimeout(timer);
@@ -138,10 +133,8 @@ export function useReleaseNotification() {
 
   const handleClose = () => {
     try {
-      console.log('Closing release dialog');
       setShowDialog(false);
       localStorage.setItem('lastSeenVersion', APP_VERSION);
-      console.log('Saved version to localStorage:', APP_VERSION);
     } catch (error) {
       console.error('Error closing dialog:', error);
     }

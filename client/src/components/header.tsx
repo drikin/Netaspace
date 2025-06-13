@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "lucide-react";
-import { ReleaseNotesButton } from "@/components/ui/release-notes-dialog";
+
 
 const Header = () => {
   const [location] = useLocation();
@@ -64,8 +64,6 @@ const Header = () => {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <div className="flex items-center gap-3">
-              {/* リリースノートボタン */}
-              <ReleaseNotesButton />
               
               {isAdmin ? (
                 <div className="flex items-center space-x-4">
