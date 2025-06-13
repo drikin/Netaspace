@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User } from "lucide-react";
-
+import { User, Bell } from "lucide-react";
+import { ReleaseNotesDialog } from "@/components/ui/release-notes-dialog";
 
 const Header = () => {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -64,6 +65,16 @@ const Header = () => {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <div className="flex items-center gap-3">
+              {/* Release Notes Bell Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReleaseNotes(true)}
+                className="text-gray-500 hover:text-blue-600 transition-colors"
+                title="更新履歴を見る"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
               
               {isAdmin ? (
                 <div className="flex items-center space-x-4">
@@ -144,6 +155,13 @@ const Header = () => {
             </div>
           </div>
           <div className="mt-3 space-y-1">
+            <button
+              onClick={() => setShowReleaseNotes(true)}
+              className="flex items-center w-full px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              更新履歴
+            </button>
             {isAdmin ? (
               <>
                 <Link 
@@ -170,6 +188,12 @@ const Header = () => {
           </div>
         </div>
       </div>
+      
+      {/* Release Notes Dialog */}
+      <ReleaseNotesDialog
+        isOpen={showReleaseNotes}
+        onClose={() => setShowReleaseNotes(false)}
+      />
     </header>
   );
 };
