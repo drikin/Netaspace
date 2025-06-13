@@ -118,10 +118,10 @@ pm2 delete $SERVICE_NAME 2>/dev/null || true
 
 # Start application with PM2
 log "Starting application with PM2..."
-if [[ -f pm2.config.js ]]; then
-    pm2 start pm2.config.js
+if [[ -f ecosystem.config.js ]]; then
+    pm2 start ecosystem.config.js
 else
-    pm2 start dist/index.js --name "$SERVICE_NAME" -i 1 --max-memory-restart 300M
+    PORT=5000 pm2 start dist/index.js --name "$SERVICE_NAME" -i 1 --max-memory-restart 300M
 fi
 
 pm2 save

@@ -7,7 +7,7 @@ module.exports = {
     max_memory_restart: '300M',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000,
+      PORT: 5000,
       DATABASE_URL: 'postgresql://neondb_owner:npg_GFeXV6cr7anp@ep-hidden-thunder-a65mlh9x.us-west-2.aws.neon.tech/neondb?sslmode=require',
       SESSION_SECRET: 'neta-backspace-fm-super-secret-session-key-2025',
       DOMAIN: 'neta.backspace.fm',
