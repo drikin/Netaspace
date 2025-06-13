@@ -43,8 +43,8 @@ class DatabasePerformanceMonitor {
     this.metrics.totalQueryTime += duration;
     this.metrics.averageQueryTime = this.metrics.totalQueryTime / this.metrics.totalQueries;
     
-    // Log slow queries (over 500ms for production with remote DB)
-    const threshold = process.env.NODE_ENV === 'production' ? 500 : 100;
+    // Log slow queries (over 200ms for production with remote DB)
+    const threshold = SLOW_QUERY_THRESHOLD;
     if (duration > threshold) {
       this.metrics.slowQueries++;
       console.warn(`Slow query detected: ${queryType} took ${duration}ms`);
@@ -73,6 +73,9 @@ class DatabasePerformanceMonitor {
 }
 
 const performanceMonitor = new DatabasePerformanceMonitor();
+
+// Simple performance optimization: reduce slow query threshold for production
+const SLOW_QUERY_THRESHOLD = process.env.NODE_ENV === 'production' ? 200 : 100;
 
 export interface IStorage {
   // User operations
@@ -242,36 +245,19 @@ class PostgreSQLStorage implements IStorage {
   }
 
   private async enrichTopicsWithCommentsAndStars(topicsResult: Topic[]): Promise<TopicWithCommentsAndStars[]> {
-    if (topicsResult.length === 0) return [];
+    const enrichedTopics: TopicWithCommentsAndStars[] = [];
     
-    // Use a single query with LEFT JOIN to get topics and their star counts efficiently
-    const topicIds = topicsResult.map(topic => topic.id);
+    for (const topic of topicsResult) {
+      const starsCount = await this.getStarsCountByTopicId(topic.id);
+      
+      enrichedTopics.push({
+        ...topic,
+        starsCount,
+        hasStarred: false // Will be set by the caller if fingerprint is provided
+      });
+    }
     
-    // Build a raw SQL query for better performance with multiple topic IDs
-    const starCountsQuery = `
-      SELECT 
-        t.id as topic_id,
-        COALESCE(COUNT(s.id), 0)::int as stars_count
-      FROM topics t
-      LEFT JOIN stars s ON t.id = s.topic_id
-      WHERE t.id = ANY($1)
-      GROUP BY t.id
-    `;
-    
-    const starCountsResult = await db.execute(starCountsQuery);
-    
-    // Create lookup map for O(1) access
-    const starCountMap = new Map<number, number>();
-    starCountsResult.rows.forEach((row: any) => {
-      starCountMap.set(row.topic_id, row.stars_count);
-    });
-    
-    // Enrich topics with star counts
-    return topicsResult.map(topic => ({
-      ...topic,
-      starsCount: starCountMap.get(topic.id) || 0,
-      hasStarred: false // Will be set by the caller if fingerprint is provided
-    }));
+    return enrichedTopics;
   }
 
   async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
