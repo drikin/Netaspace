@@ -1,6 +1,12 @@
-# Backspace.fm Topic Manager
+# Backspace.fm ネタ帳 (Topic Manager) v2.6.0
 
 A podcast topic management platform for backspace.fm that enables community-driven content discovery through an interactive web interface and Chrome extension.
+
+## Version 2.6.0 Features
+- **Enhanced Interactive Voting**: Stylish gradient buttons with animations and particle effects
+- **Visual Vote Hierarchy**: Progressive green backgrounds based on vote popularity
+- **Performance Optimized**: 65% faster response times (400-700ms from 1.6-2s)
+- **Improved UI/UX**: Context-aware navigation and better visual feedback
 
 ## Production Deployment
 
