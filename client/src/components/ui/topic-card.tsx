@@ -25,15 +25,15 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   const fingerprint = useFingerprint();
 
   const starMutation = useMutation({
-    mutationFn: async (action: 'add' | 'remove') => {
-      // POSTエンドポイントのみ存在するため、actionに関わらずPOSTを使用
+    mutationFn: async () => {
+      // POSTエンドポイントは現在のスター状態を見て自動的に切り替える
       const response = await apiRequest('POST', `/api/topics/${topic.id}/star`, {
         fingerprint
       });
-      return response.json();
+      return await response.json();
     },
     // Optimistic update for better UX
-    onMutate: async (action) => {
+    onMutate: async () => {
       // Cancel outgoing refetches for all related queries
       await queryClient.cancelQueries({ 
         predicate: (query) => 
@@ -43,6 +43,9 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       
       // Snapshot the previous value
       const previousData = queryClient.getQueryData(['/api/weeks/active', fingerprint]);
+      
+      // Determine the action based on current state
+      const action = topic.hasStarred ? 'remove' : 'add';
       
       // Optimistically update
       queryClient.setQueryData(['/api/weeks/active', fingerprint], (old: any) => {
@@ -96,14 +99,12 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
 
   // Memoize event handlers to prevent child re-renders
   const handleStarClick = useCallback(() => {
-    if (topic.hasStarred) {
-      starMutation.mutate('remove');
-    } else {
-      // Immediately add the star first
-      starMutation.mutate('add');
-      // Then show dialog for X sharing
+    if (!topic.hasStarred) {
+      // Show dialog for X sharing when starring
       setShowShareDialog(true);
     }
+    // Toggle star state - API will handle the current state automatically
+    starMutation.mutate();
   }, [topic.hasStarred, starMutation]);
 
   const handleShareToX = useCallback(() => {

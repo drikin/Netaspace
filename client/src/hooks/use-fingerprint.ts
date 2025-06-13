@@ -9,31 +9,38 @@ export function useFingerprint() {
   const [fingerprint, setFingerprint] = useState<string>(() => {
     // Try to get from localStorage synchronously
     try {
-      const storedFingerprint = localStorage.getItem("fingerprint");
-      if (storedFingerprint) {
-        return storedFingerprint;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const storedFingerprint = localStorage.getItem("fingerprint");
+        if (storedFingerprint && storedFingerprint.length > 10) {
+          return storedFingerprint;
+        }
       }
     } catch (error) {
       console.warn('localStorage not available:', error);
     }
     
-    // Generate fallback fingerprint
-    return 'temp-' + Math.random().toString(36).substring(2, 15);
+    // Generate fallback fingerprint with timestamp for uniqueness
+    return 'temp-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10);
   });
 
   useEffect(() => {
     // Ensure we have a persistent fingerprint
     try {
-      const storedFingerprint = localStorage.getItem("fingerprint");
-      
-      if (!storedFingerprint || storedFingerprint.startsWith('temp-')) {
-        // Generate a proper random ID as fingerprint
-        const newFingerprint = Math.random().toString(36).substring(2, 15) + 
-                               Math.random().toString(36).substring(2, 15);
-        localStorage.setItem("fingerprint", newFingerprint);
-        setFingerprint(newFingerprint);
-      } else if (storedFingerprint !== fingerprint) {
-        setFingerprint(storedFingerprint);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const storedFingerprint = localStorage.getItem("fingerprint");
+        
+        if (!storedFingerprint || storedFingerprint.startsWith('temp-') || storedFingerprint.length < 10) {
+          // Generate a proper random ID as fingerprint with better entropy
+          const newFingerprint = Date.now().toString(36) + '-' + 
+                                 Math.random().toString(36).substring(2, 15) + '-' +
+                                 Math.random().toString(36).substring(2, 15);
+          localStorage.setItem("fingerprint", newFingerprint);
+          setFingerprint(newFingerprint);
+          console.log('Generated new fingerprint:', newFingerprint);
+        } else if (storedFingerprint !== fingerprint) {
+          setFingerprint(storedFingerprint);
+          console.log('Using stored fingerprint:', storedFingerprint);
+        }
       }
     } catch (error) {
       console.warn('Failed to persist fingerprint:', error);
