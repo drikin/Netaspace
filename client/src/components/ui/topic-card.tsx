@@ -151,7 +151,6 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   <Link className={`h-4 w-4 mr-2 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`} />
                   {topic.title}
                 </a>
-                <ExternalLink className={`h-4 w-4 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-400'}`} />
                 {getStatusBadge()}
               </div>
               
