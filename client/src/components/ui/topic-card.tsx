@@ -136,33 +136,33 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   return (
     <>
       <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
-        <CardContent className="p-4">
-          {/* Compact header - always visible */}
-          <div className="flex items-start justify-between">
+        <CardContent className="p-3">
+          {/* Ultra-compact header */}
+          <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center">
+              <div className="flex items-center gap-1">
                 <a
                   href={topic.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`text-lg font-semibold ${cardBg.textClass} hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200 flex items-center`}
+                  className={`text-base font-medium ${cardBg.textClass} hover:text-blue-600 line-clamp-1 cursor-pointer transition-colors duration-200 flex items-center flex-1 min-w-0`}
                   title="記事を開く"
                 >
-                  <Link className={`h-4 w-4 mr-2 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`} />
-                  {topic.title}
+                  <Link className={`h-3.5 w-3.5 mr-1.5 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`} />
+                  <span className="truncate">{topic.title}</span>
                 </a>
-                <ExternalLink className={`h-4 w-4 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-400'}`} />
+                <ExternalLink className={`h-3.5 w-3.5 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-400'}`} />
                 {getStatusBadge()}
               </div>
               {topic.description && (
-                <p className={`text-sm mt-1 line-clamp-3 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-600'}`}>
+                <p className={`text-xs mt-1 line-clamp-2 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-600'}`}>
                   {topic.description}
                 </p>
               )}
             </div>
 
-            {/* Vote button */}
-            <div className="ml-4 flex-shrink-0">
+            {/* Compact vote button */}
+            <div className="flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -170,7 +170,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 disabled={starMutation.isPending}
                 className={`
                   group relative overflow-hidden transition-all duration-300 ease-out
-                  flex items-center space-x-2 px-4 py-2.5 rounded-full font-medium text-sm
+                  flex items-center space-x-1.5 px-3 py-1.5 rounded-full font-medium text-xs
                   transform hover:scale-105 active:scale-95
                   ${topic.hasStarred 
                     ? 'bg-gradient-to-r from-pink-500 via-red-500 to-orange-500 text-white shadow-lg hover:shadow-xl border-0 animate-pulse' 
@@ -184,7 +184,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 )}
                 
                 <Mic 
-                  className={`h-4 w-4 transition-all duration-300 ${
+                  className={`h-3.5 w-3.5 transition-all duration-300 ${
                     topic.hasStarred 
                       ? 'fill-current drop-shadow-sm animate-bounce' 
                       : 'group-hover:scale-110 group-hover:text-red-500'
@@ -194,7 +194,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   {topic.hasStarred ? '聞きたい！' : '聞きたい'}
                 </span>
                 <div className={`
-                  relative z-10 flex items-center justify-center min-w-[22px] h-6 px-2 rounded-full font-bold text-xs
+                  relative z-10 flex items-center justify-center min-w-[18px] h-5 px-1.5 rounded-full font-bold text-xs
                   transition-all duration-300 transform
                   ${topic.hasStarred 
                     ? 'bg-white/30 text-white backdrop-blur-sm shadow-inner' 
@@ -207,17 +207,17 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 {/* Floating particles effect for voted state */}
                 {topic.hasStarred && (
                   <>
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full opacity-60 animate-ping" />
-                    <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-orange-300 rounded-full opacity-40 animate-bounce delay-300" />
+                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-300 rounded-full opacity-60 animate-ping" />
+                    <div className="absolute -bottom-0.5 -left-0.5 w-1 h-1 bg-orange-300 rounded-full opacity-40 animate-bounce delay-300" />
                   </>
                 )}
               </Button>
             </div>
           </div>
 
-          {/* Meta information */}
-          <div className={`flex items-center justify-between mt-3 pt-3 border-t ${cardBg.textClass === 'text-white' ? 'border-gray-300' : 'border-gray-100'}`}>
-            <div className={`flex items-center space-x-4 text-xs ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`}>
+          {/* Inline meta information */}
+          <div className={`flex items-center justify-between mt-2 pt-2 border-t ${cardBg.textClass === 'text-white' ? 'border-gray-300' : 'border-gray-100'}`}>
+            <div className={`flex items-center space-x-3 text-xs ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`}>
               <div className="flex items-center">
                 <User className="h-3 w-3 mr-1" />
                 <span>{topic.submitter}</span>
@@ -227,18 +227,17 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 <span>{formatDate(topic.createdAt)}</span>
               </div>
             </div>
+            {/* Inline admin controls */}
+            {isAdmin && (
+              <div className="flex-shrink-0">
+                <AdminControls
+                  topicId={topic.id}
+                  currentStatus={topic.status}
+                  onStatusChange={refetchTopics}
+                />
+              </div>
+            )}
           </div>
-
-          {/* Admin controls */}
-          {isAdmin && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <AdminControls
-                topicId={topic.id}
-                currentStatus={topic.status}
-                onStatusChange={refetchTopics}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
       {/* X Share Confirmation Dialog */}
