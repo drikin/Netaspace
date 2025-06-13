@@ -141,21 +141,28 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
               )}
             </div>
 
-            {/* Star button */}
+            {/* Vote button */}
             <div className="ml-4 flex-shrink-0">
               <Button
-                variant="ghost"
+                variant={topic.hasStarred ? "default" : "outline"}
                 size="sm"
                 onClick={handleStarClick}
                 disabled={starMutation.isPending}
-                className={`flex items-center space-x-1 ${
-                  topic.hasStarred ? 'text-red-600 hover:text-red-700' : 'text-gray-500 hover:text-red-600'
+                className={`flex items-center space-x-2 px-3 py-2 ${
+                  topic.hasStarred 
+                    ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
+                    : 'text-gray-700 hover:text-red-600 hover:border-red-600 border-gray-300'
                 }`}
               >
                 <Mic 
                   className={`h-4 w-4 ${topic.hasStarred ? 'fill-current' : ''}`} 
                 />
-                <span className="text-sm font-medium">{topic.starsCount}</span>
+                <span className="text-sm font-medium">
+                  {topic.hasStarred ? '聞きたい!' : '聞きたい'}
+                </span>
+                <span className="text-sm font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                  {topic.starsCount}
+                </span>
               </Button>
             </div>
           </div>
