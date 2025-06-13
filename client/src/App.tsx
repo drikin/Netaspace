@@ -48,9 +48,7 @@ function App() {
         <div className="min-h-screen bg-gray-50 flex flex-col">
           <Header />
           <main className="flex-grow">
-            {fingerprint && (
-              <Router />
-            )}
+            <Router />
           </main>
           <Footer />
           {/* 新機能のお知らせコンポーネント */}
