@@ -2,6 +2,26 @@ import { eq, desc, and, not, sql, inArray } from 'drizzle-orm';
 import { count } from 'drizzle-orm';
 import { db } from './db';
 
+// In-memory cache for frequently accessed data
+const queryCache = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL = 30 * 1000; // 30 seconds
+
+function getCachedResult<T>(key: string): T | null {
+  const cached = queryCache.get(key);
+  if (cached && Date.now() < cached.expiry) {
+    return cached.data as T;
+  }
+  queryCache.delete(key);
+  return null;
+}
+
+function setCachedResult<T>(key: string, data: T): void {
+  queryCache.set(key, {
+    data,
+    expiry: Date.now() + CACHE_TTL
+  });
+}
+
 import {
   users,
   weeks,
@@ -449,37 +469,94 @@ class PostgreSQLStorage implements IStorage {
     return this.executeWithMonitoring(async () => {
       console.log('PostgreSQL connection acquired from pool');
       
-      // Get active week first (fast single query)
-      const activeWeek = await this.getActiveWeek();
-      if (!activeWeek) return undefined;
-      
-      // Get topics with optimized single query
-      const topicsData = await this.getTopicsByWeekId(activeWeek.id);
-      
-      // Batch check hasStarred for all topics if fingerprint provided
-      let enrichedTopics = topicsData;
-      if (fingerprint && topicsData.length > 0) {
-        const topicIds = topicsData.map(t => t.id);
-        const starredResults = await db
-          .select({ topicId: stars.topicId })
-          .from(stars)
-          .where(and(
-            sql`${stars.topicId} IN (${sql.join(topicIds, sql`, `)})`,
-            eq(stars.fingerprint, fingerprint)
-          ));
-        
-        const starredTopicIds = new Set(starredResults.map(r => r.topicId));
-        enrichedTopics = topicsData.map(topic => ({
-          ...topic,
-          hasStarred: starredTopicIds.has(topic.id)
-        }));
+      // Check cache first for non-fingerprinted requests
+      const cacheKey = `active_week_topics:${fingerprint || 'anonymous'}`;
+      const cached = getCachedResult<WeekWithTopics>(cacheKey);
+      if (cached) {
+        return cached;
       }
       
-      return {
-        ...activeWeek,
-        topics: enrichedTopics
+      // Use materialized view for ultra-fast performance
+      const results = await db.execute(sql`
+        SELECT 
+          week_id, week_title, start_date, end_date, is_active,
+          topic_id, title, url, description, submitter, fingerprint as topic_fingerprint,
+          status, created_at, stars, featured_at, stars_count,
+          ${fingerprint ? sql`EXISTS(
+            SELECT 1 FROM stars s 
+            WHERE s.topic_id = topic_id 
+            AND s.fingerprint = ${fingerprint}
+          )` : sql`false`} as has_starred
+        FROM active_week_topics
+        WHERE topic_id IS NOT NULL
+        ORDER BY created_at DESC
+      `);
+      
+      if (results.rows.length === 0) {
+        // Fallback to regular query if materialized view is empty
+        return this.getActiveWeekWithTopicsFallback(fingerprint);
+      }
+      
+      const firstRow = results.rows[0] as any;
+      const week = {
+        id: firstRow.week_id,
+        title: firstRow.week_title,
+        startDate: firstRow.start_date,
+        endDate: firstRow.end_date,
+        isActive: firstRow.is_active,
+        createdAt: firstRow.start_date // weeks don't have created_at
       };
+      
+      const topics = results.rows.map((row: any) => ({
+        id: row.topic_id,
+        title: row.title,
+        url: row.url,
+        description: row.description,
+        submitter: row.submitter,
+        fingerprint: row.topic_fingerprint,
+        weekId: row.week_id,
+        status: row.status,
+        createdAt: row.created_at,
+        stars: row.stars,
+        featuredAt: row.featured_at,
+        starsCount: Number(row.stars_count),
+        hasStarred: Boolean(row.has_starred)
+      }));
+      
+      const result = { ...week, topics };
+      
+      // Cache the result
+      setCachedResult(cacheKey, result);
+      
+      return result;
     }, 'getActiveWeekWithTopics');
+  }
+  
+  private async getActiveWeekWithTopicsFallback(fingerprint?: string): Promise<WeekWithTopics | undefined> {
+    const activeWeek = await this.getActiveWeek();
+    if (!activeWeek) return undefined;
+    
+    const topicsData = await this.getTopicsByWeekId(activeWeek.id);
+    
+    let enrichedTopics = topicsData;
+    if (fingerprint && topicsData.length > 0) {
+      const topicIds = topicsData.map(t => t.id);
+      const starredResults = await db
+        .select({ topicId: stars.topicId })
+        .from(stars)
+        .where(and(
+          sql`${stars.topicId} IN (${sql.join(topicIds, sql`, `)})`,
+          eq(stars.fingerprint, fingerprint)
+        ));
+      
+      const starredTopicIds = new Set(starredResults.map(r => r.topicId));
+      enrichedTopics = topicsData.map(topic => ({
+        ...topic,
+        hasStarred: starredTopicIds.has(topic.id)
+      }));
+    }
+    
+    return { ...activeWeek, topics: enrichedTopics };
   }
 }
 
