@@ -303,7 +303,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(week);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch active week' });
+      console.error('Error in /api/weeks/active:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch active week',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
