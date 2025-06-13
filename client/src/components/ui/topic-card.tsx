@@ -87,26 +87,46 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   };
 
   const getCardBackgroundStyle = () => {
+    // Calculate green intensity based on vote count (backspace.fm theme)
+    const getGreenIntensity = (starsCount: number) => {
+      if (starsCount === 0) return { bg: 'bg-white', border: 'border-gray-200' };
+      
+      // Progressive green intensity based on vote count
+      if (starsCount >= 10) return { bg: 'bg-green-600', border: 'border-green-700', text: 'text-white' };
+      if (starsCount >= 8) return { bg: 'bg-green-500', border: 'border-green-600', text: 'text-white' };
+      if (starsCount >= 6) return { bg: 'bg-green-400', border: 'border-green-500', text: 'text-white' };
+      if (starsCount >= 4) return { bg: 'bg-green-300', border: 'border-green-400', text: 'text-gray-900' };
+      if (starsCount >= 2) return { bg: 'bg-green-200', border: 'border-green-300', text: 'text-gray-900' };
+      return { bg: 'bg-green-100', border: 'border-green-200', text: 'text-gray-900' };
+    };
+
+    // Status-based styling takes precedence for admin states
     switch (topic.status) {
       case 'completed':
         return {
-          className: 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200',
-          style: {}
+          className: 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200',
+          style: {},
+          textClass: 'text-gray-900'
         };
       case 'approved':
         return {
           className: 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200',
-          style: {}
+          style: {},
+          textClass: 'text-gray-900'
         };
       case 'rejected':
         return {
           className: 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200',
-          style: {}
+          style: {},
+          textClass: 'text-gray-900'
         };
       default:
+        // Use vote-based green intensity for pending/default topics
+        const intensity = getGreenIntensity(topic.starsCount);
         return {
-          className: 'bg-white border-gray-200',
-          style: {}
+          className: `${intensity.bg} ${intensity.border}`,
+          style: {},
+          textClass: intensity.text || 'text-gray-900'
         };
     }
   };
@@ -125,17 +145,17 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   href={topic.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-lg font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200 flex items-center"
+                  className={`text-lg font-semibold ${cardBg.textClass} hover:text-blue-600 line-clamp-2 mr-2 cursor-pointer transition-colors duration-200 flex items-center`}
                   title="記事を開く"
                 >
-                  <Link className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
+                  <Link className={`h-4 w-4 mr-2 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`} />
                   {topic.title}
                 </a>
-                <ExternalLink className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <ExternalLink className={`h-4 w-4 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-400'}`} />
                 {getStatusBadge()}
               </div>
               {topic.description && (
-                <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                <p className={`text-sm mt-1 line-clamp-3 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-600'}`}>
                   {topic.description}
                 </p>
               )}
@@ -170,8 +190,8 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
           </div>
 
           {/* Meta information */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center space-x-4 text-xs text-gray-500">
+          <div className={`flex items-center justify-between mt-3 pt-3 border-t ${cardBg.textClass === 'text-white' ? 'border-gray-300' : 'border-gray-100'}`}>
+            <div className={`flex items-center space-x-4 text-xs ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`}>
               <div className="flex items-center">
                 <User className="h-3 w-3 mr-1" />
                 <span>{topic.submitter}</span>
