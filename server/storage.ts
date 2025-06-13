@@ -22,6 +22,15 @@ function setCachedResult<T>(key: string, data: T): void {
   });
 }
 
+function clearActiveWeekCache(): void {
+  // Clear all active week related cache entries
+  for (const key of queryCache.keys()) {
+    if (key.startsWith('active_week_topics:')) {
+      queryCache.delete(key);
+    }
+  }
+}
+
 import {
   users,
   weeks,
@@ -367,6 +376,9 @@ class PostgreSQLStorage implements IStorage {
         // Don't fail the topic creation if view refresh fails
       }
       
+      // Clear cache to ensure immediate UI updates
+      clearActiveWeekCache();
+      
       return result[0];
     }, 'createTopic');
   }
@@ -386,6 +398,9 @@ class PostgreSQLStorage implements IStorage {
       } catch (error) {
         console.warn('Failed to refresh materialized view:', error);
       }
+      
+      // Clear cache to ensure immediate UI updates
+      clearActiveWeekCache();
       
       return result[0];
     }, 'updateTopicStatus');
@@ -411,6 +426,9 @@ class PostgreSQLStorage implements IStorage {
         console.warn('Failed to refresh materialized view:', error);
       }
       
+      // Clear cache to ensure immediate UI updates
+      clearActiveWeekCache();
+      
       return true;
     }, 'deleteTopic');
   }
@@ -429,6 +447,9 @@ class PostgreSQLStorage implements IStorage {
         } catch (error) {
           console.warn('Failed to refresh materialized view:', error);
         }
+        
+        // Clear cache to ensure immediate UI updates
+        clearActiveWeekCache();
         
         return true;
       } catch (error) {
@@ -451,6 +472,9 @@ class PostgreSQLStorage implements IStorage {
       } catch (error) {
         console.warn('Failed to refresh materialized view:', error);
       }
+      
+      // Clear cache to ensure immediate UI updates
+      clearActiveWeekCache();
       
       return true;
     }, 'removeStar');
