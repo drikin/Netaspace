@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -154,6 +154,26 @@ const Submit: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [watchedUrl, form]);
+
+  // Keyboard shortcut for returning to home (Esc key)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only trigger if Esc key is pressed and no modifiers are pressed
+      if (
+        event.key === 'Escape' && 
+        !event.ctrlKey && 
+        !event.metaKey && 
+        !event.altKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        navigate('/');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   // トピック投稿のミューテーション（楽観的UI更新対応）
   const createTopicMutation = useMutation({
