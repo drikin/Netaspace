@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ interface AdminControlsProps {
   onStatusChange: () => void;
 }
 
-export const AdminControls: React.FC<AdminControlsProps> = ({
+const AdminControls: React.FC<AdminControlsProps> = ({
   topicId,
   currentStatus,
   onStatusChange,
@@ -159,4 +159,10 @@ export const AdminControls: React.FC<AdminControlsProps> = ({
   );
 };
 
-
+// Memoize AdminControls to prevent unnecessary re-renders
+export default React.memo(AdminControls, (prevProps, nextProps) => {
+  return (
+    prevProps.topicId === nextProps.topicId &&
+    prevProps.currentStatus === nextProps.currentStatus
+  );
+});

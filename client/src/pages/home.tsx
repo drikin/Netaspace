@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import WeekSelector from "@/components/week-selector";
 import TabNavigation from "@/components/tab-navigation";
@@ -64,7 +64,8 @@ const Home: React.FC = () => {
   const isAdmin = auth?.user?.isAdmin;
   const isAuthenticated = !!auth?.user;
 
-  const getFilteredTopics = (): TopicWithCommentsAndStars[] => {
+  // Memoize expensive filtering and sorting operations
+  const topics = useMemo((): TopicWithCommentsAndStars[] => {
     if (!week || !week.topics) return [];
 
     let filteredTopics: TopicWithCommentsAndStars[] = [];
@@ -98,7 +99,7 @@ const Home: React.FC = () => {
           return b.starsCount - a.starsCount;
       }
     });
-  };
+  }, [week?.topics, activeTab, sortOrder]);
 
   const handleTabChange = (tab: string) => {
     // Prevent non-authenticated users from accessing any tabs
@@ -112,8 +113,6 @@ const Home: React.FC = () => {
     }
     setActiveTab(tab);
   };
-
-  const topics = getFilteredTopics();
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Mic, ExternalLink, Link, Calendar, User } from "lucide-react";
-import { AdminControls } from "@/components/admin-controls";
+import AdminControls from "@/components/admin-controls";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TopicWithCommentsAndStars } from "@shared/schema";
@@ -79,7 +79,8 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
     }
   });
 
-  const handleStarClick = () => {
+  // Memoize event handlers to prevent child re-renders
+  const handleStarClick = useCallback(() => {
     if (topic.hasStarred) {
       starMutation.mutate('remove');
     } else {
@@ -88,22 +89,23 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       // Then show dialog for X sharing
       setShowShareDialog(true);
     }
-  };
+  }, [topic.hasStarred, starMutation]);
 
-  const handleShareToX = () => {
+  const handleShareToX = useCallback(() => {
     setShowShareDialog(false);
     
     // X (Twitter) sharing
     const shareText = `このネタを聞きたい！「${topic.title}」 #backspacefm`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent('https://neta.backspace.fm/')}`;
     window.open(shareUrl, '_blank', 'width=550,height=420');
-  };
+  }, [topic.title]);
 
-  const handleSkipShare = () => {
+  const handleSkipShare = useCallback(() => {
     setShowShareDialog(false);
-  };
+  }, []);
 
-  const getStatusBadge = () => {
+  // Memoize status badge calculation
+  const statusBadge = useMemo(() => {
     const statusMap = {
       approved: { label: "承認済み", variant: "default" as const },
       rejected: { label: "却下", variant: "destructive" as const },
@@ -116,9 +118,10 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
         {status.label}
       </Badge>
     ) : null;
-  };
+  }, [topic.status]);
 
-  const getCardBackgroundStyle = () => {
+  // Memoize expensive card background style calculation
+  const cardBg = useMemo(() => {
     // Calculate green intensity based on vote count (backspace.fm theme)
     const getGreenIntensity = (starsCount: number) => {
       if (starsCount === 0) return { bg: 'bg-white', border: 'border-gray-200' };
@@ -161,9 +164,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
           textClass: intensity.text || 'text-gray-900'
         };
     }
-  };
-
-  const cardBg = getCardBackgroundStyle();
+  }, [topic.status, topic.starsCount]);
 
   return (
     <>
@@ -183,7 +184,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   <Link className={`h-4 w-4 mr-2 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`} />
                   {topic.title}
                 </a>
-                {getStatusBadge()}
+                {statusBadge}
               </div>
               
               {/* Meta information integrated in header */}
@@ -294,4 +295,14 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   );
 };
 
-export default TopicCard;
+// Memoize the entire component to prevent unnecessary re-renders
+export default React.memo(TopicCard, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-rendering
+  return (
+    prevProps.topic.id === nextProps.topic.id &&
+    prevProps.topic.starsCount === nextProps.topic.starsCount &&
+    prevProps.topic.hasStarred === nextProps.topic.hasStarred &&
+    prevProps.topic.status === nextProps.topic.status &&
+    prevProps.isAdmin === nextProps.isAdmin
+  );
+});
