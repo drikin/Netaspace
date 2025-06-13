@@ -216,7 +216,9 @@ class PostgreSQLStorage implements IStorage {
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
     return this.executeWithMonitoring(async () => {
-      // Single optimized query with LEFT JOIN to get topics and star counts
+      console.log('PostgreSQL connection acquired from pool');
+      
+      // Highly optimized single query with subquery for star counts
       const results = await db
         .select({
           id: topics.id,
@@ -230,12 +232,14 @@ class PostgreSQLStorage implements IStorage {
           createdAt: topics.createdAt,
           stars: topics.stars,
           featuredAt: topics.featuredAt,
-          starsCount: sql<number>`COALESCE(COUNT(${stars.id}), 0)`.as('starsCount')
+          starsCount: sql<number>`(
+            SELECT COUNT(*) 
+            FROM ${stars} 
+            WHERE ${stars.topicId} = ${topics.id}
+          )`.as('starsCount')
         })
         .from(topics)
-        .leftJoin(stars, eq(topics.id, stars.topicId))
         .where(eq(topics.weekId, weekId))
-        .groupBy(topics.id, topics.title, topics.url, topics.description, topics.submitter, topics.fingerprint, topics.weekId, topics.status, topics.createdAt, topics.stars, topics.featuredAt)
         .orderBy(desc(topics.createdAt));
       
       return results.map(row => ({
@@ -404,12 +408,14 @@ class PostgreSQLStorage implements IStorage {
 
   async getStarsCountByTopicId(topicId: number): Promise<number> {
     return this.executeWithMonitoring(async () => {
+      console.log('PostgreSQL connection acquired from pool');
+      
       const result = await db
-        .select()
+        .select({ count: sql<number>`COUNT(*)`.as('count') })
         .from(stars)
         .where(eq(stars.topicId, topicId));
       
-      return result.length;
+      return Number(result[0]?.count || 0);
     }, 'getStarsCountByTopicId');
   }
 
@@ -441,11 +447,38 @@ class PostgreSQLStorage implements IStorage {
 
   async getActiveWeekWithTopics(fingerprint?: string): Promise<WeekWithTopics | undefined> {
     return this.executeWithMonitoring(async () => {
-      const activeWeek = await this.getActiveWeek();
+      console.log('PostgreSQL connection acquired from pool');
       
+      // Get active week first (fast single query)
+      const activeWeek = await this.getActiveWeek();
       if (!activeWeek) return undefined;
       
-      return await this.getWeekWithTopics(activeWeek.id, fingerprint);
+      // Get topics with optimized single query
+      const topicsData = await this.getTopicsByWeekId(activeWeek.id);
+      
+      // Batch check hasStarred for all topics if fingerprint provided
+      let enrichedTopics = topicsData;
+      if (fingerprint && topicsData.length > 0) {
+        const topicIds = topicsData.map(t => t.id);
+        const starredResults = await db
+          .select({ topicId: stars.topicId })
+          .from(stars)
+          .where(and(
+            sql`${stars.topicId} IN (${sql.join(topicIds, sql`, `)})`,
+            eq(stars.fingerprint, fingerprint)
+          ));
+        
+        const starredTopicIds = new Set(starredResults.map(r => r.topicId));
+        enrichedTopics = topicsData.map(topic => ({
+          ...topic,
+          hasStarred: starredTopicIds.has(topic.id)
+        }));
+      }
+      
+      return {
+        ...activeWeek,
+        topics: enrichedTopics
+      };
     }, 'getActiveWeekWithTopics');
   }
 }
