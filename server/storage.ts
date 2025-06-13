@@ -358,6 +358,15 @@ class PostgreSQLStorage implements IStorage {
         .values(topic)
         .returning();
       
+      // Refresh materialized view after topic creation to ensure UI consistency
+      try {
+        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
+        console.log('Materialized view refreshed after topic creation');
+      } catch (error) {
+        console.warn('Failed to refresh materialized view:', error);
+        // Don't fail the topic creation if view refresh fails
+      }
+      
       return result[0];
     }, 'createTopic');
   }
@@ -369,6 +378,14 @@ class PostgreSQLStorage implements IStorage {
         .set({ status })
         .where(eq(topics.id, id))
         .returning();
+      
+      // Refresh materialized view after status update to ensure UI consistency
+      try {
+        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
+        console.log('Materialized view refreshed after topic status update');
+      } catch (error) {
+        console.warn('Failed to refresh materialized view:', error);
+      }
       
       return result[0];
     }, 'updateTopicStatus');
@@ -386,6 +403,14 @@ class PostgreSQLStorage implements IStorage {
         .delete(topics)
         .where(eq(topics.id, id));
       
+      // Refresh materialized view after topic deletion to ensure UI consistency
+      try {
+        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
+        console.log('Materialized view refreshed after topic deletion');
+      } catch (error) {
+        console.warn('Failed to refresh materialized view:', error);
+      }
+      
       return true;
     }, 'deleteTopic');
   }
@@ -396,6 +421,15 @@ class PostgreSQLStorage implements IStorage {
         await db
           .insert(stars)
           .values(star);
+        
+        // Refresh materialized view after star addition to update star counts
+        try {
+          await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
+          console.log('Materialized view refreshed after star addition');
+        } catch (error) {
+          console.warn('Failed to refresh materialized view:', error);
+        }
+        
         return true;
       } catch (error) {
         // Handle unique constraint violation (user already starred this topic)
@@ -409,6 +443,14 @@ class PostgreSQLStorage implements IStorage {
       const result = await db
         .delete(stars)
         .where(and(eq(stars.topicId, topicId), eq(stars.fingerprint, fingerprint)));
+      
+      // Refresh materialized view after star removal to update star counts
+      try {
+        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
+        console.log('Materialized view refreshed after star removal');
+      } catch (error) {
+        console.warn('Failed to refresh materialized view:', error);
+      }
       
       return true;
     }, 'removeStar');
@@ -476,59 +518,65 @@ class PostgreSQLStorage implements IStorage {
         return cached;
       }
       
-      // Use materialized view for ultra-fast performance
-      const results = await db.execute(sql`
-        SELECT 
-          week_id, week_title, start_date, end_date, is_active,
-          topic_id, title, url, description, submitter, fingerprint as topic_fingerprint,
-          status, created_at, stars, featured_at, stars_count,
-          ${fingerprint ? sql`EXISTS(
-            SELECT 1 FROM stars s 
-            WHERE s.topic_id = topic_id 
-            AND s.fingerprint = ${fingerprint}
-          )` : sql`false`} as has_starred
-        FROM active_week_topics
-        WHERE topic_id IS NOT NULL
-        ORDER BY created_at DESC
-      `);
-      
-      if (results.rows.length === 0) {
-        // Fallback to regular query if materialized view is empty
+      try {
+        // Try to use materialized view for ultra-fast performance
+        const results = await db.execute(sql`
+          SELECT 
+            week_id, week_title, start_date, end_date, is_active,
+            topic_id, title, url, description, submitter, fingerprint as topic_fingerprint,
+            status, created_at, stars, featured_at, stars_count,
+            ${fingerprint ? sql`EXISTS(
+              SELECT 1 FROM stars s 
+              WHERE s.topic_id = topic_id 
+              AND s.fingerprint = ${fingerprint}
+            )` : sql`false`} as has_starred
+          FROM active_week_topics
+          WHERE topic_id IS NOT NULL
+          ORDER BY created_at DESC
+        `);
+        
+        if (results.rows.length === 0) {
+          // Fallback to regular query if materialized view is empty
+          return this.getActiveWeekWithTopicsFallback(fingerprint);
+        }
+        
+        const firstRow = results.rows[0] as any;
+        const week = {
+          id: firstRow.week_id,
+          title: firstRow.week_title,
+          startDate: firstRow.start_date,
+          endDate: firstRow.end_date,
+          isActive: firstRow.is_active,
+          createdAt: firstRow.start_date // weeks don't have created_at
+        };
+        
+        const topics = results.rows.map((row: any) => ({
+          id: row.topic_id,
+          title: row.title,
+          url: row.url,
+          description: row.description,
+          submitter: row.submitter,
+          fingerprint: row.topic_fingerprint,
+          weekId: row.week_id,
+          status: row.status,
+          createdAt: row.created_at,
+          stars: row.stars,
+          featuredAt: row.featured_at,
+          starsCount: Number(row.stars_count),
+          hasStarred: Boolean(row.has_starred)
+        }));
+        
+        const result = { ...week, topics };
+        
+        // Cache the result
+        setCachedResult(cacheKey, result);
+        
+        return result;
+      } catch (error) {
+        // If materialized view doesn't exist or query fails, fall back to regular query
+        console.log('Materialized view query failed, using fallback method:', error.message);
         return this.getActiveWeekWithTopicsFallback(fingerprint);
       }
-      
-      const firstRow = results.rows[0] as any;
-      const week = {
-        id: firstRow.week_id,
-        title: firstRow.week_title,
-        startDate: firstRow.start_date,
-        endDate: firstRow.end_date,
-        isActive: firstRow.is_active,
-        createdAt: firstRow.start_date // weeks don't have created_at
-      };
-      
-      const topics = results.rows.map((row: any) => ({
-        id: row.topic_id,
-        title: row.title,
-        url: row.url,
-        description: row.description,
-        submitter: row.submitter,
-        fingerprint: row.topic_fingerprint,
-        weekId: row.week_id,
-        status: row.status,
-        createdAt: row.created_at,
-        stars: row.stars,
-        featuredAt: row.featured_at,
-        starsCount: Number(row.stars_count),
-        hasStarred: Boolean(row.has_starred)
-      }));
-      
-      const result = { ...week, topics };
-      
-      // Cache the result
-      setCachedResult(cacheKey, result);
-      
-      return result;
     }, 'getActiveWeekWithTopics');
   }
   
