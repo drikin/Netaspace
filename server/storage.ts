@@ -216,13 +216,33 @@ class PostgreSQLStorage implements IStorage {
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
     return this.executeWithMonitoring(async () => {
-      const topicsResult = await db
-        .select()
+      // Single optimized query with LEFT JOIN to get topics and star counts
+      const results = await db
+        .select({
+          id: topics.id,
+          title: topics.title,
+          url: topics.url,
+          description: topics.description,
+          submitter: topics.submitter,
+          fingerprint: topics.fingerprint,
+          weekId: topics.weekId,
+          status: topics.status,
+          createdAt: topics.createdAt,
+          stars: topics.stars,
+          featuredAt: topics.featuredAt,
+          starsCount: sql<number>`COALESCE(COUNT(${stars.id}), 0)`.as('starsCount')
+        })
         .from(topics)
+        .leftJoin(stars, eq(topics.id, stars.topicId))
         .where(eq(topics.weekId, weekId))
+        .groupBy(topics.id, topics.title, topics.url, topics.description, topics.submitter, topics.fingerprint, topics.weekId, topics.status, topics.createdAt, topics.stars, topics.featuredAt)
         .orderBy(desc(topics.createdAt));
       
-      return await this.enrichTopicsWithCommentsAndStars(topicsResult);
+      return results.map(row => ({
+        ...row,
+        starsCount: Number(row.starsCount),
+        hasStarred: false
+      }));
     }, 'getTopicsByWeekId');
   }
 
