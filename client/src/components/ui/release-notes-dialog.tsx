@@ -1,165 +1,154 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Bell, Check, Info } from 'lucide-react';
-import { useReleaseNotes } from '@/lib/use-release-notes';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Bell, Sparkles, Layout, Zap, X } from 'lucide-react';
+import { APP_VERSION } from '@shared/version';
 
 interface ReleaseNotesDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initialReleaseId?: string; // 最初に表示するリリースID
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function ReleaseNotesDialog({
-  open,
-  onOpenChange,
-  initialReleaseId,
-}: ReleaseNotesDialogProps) {
-  const [selectedReleaseId, setSelectedReleaseId] = useState<string | undefined>(initialReleaseId);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const { releaseNotes, readReleases, markAllAsRead, isRead } = useReleaseNotes();
-  
-  // 初期表示時、選択がなければ最新のリリースを選択
-  useEffect(() => {
-    if (open && !isLoaded) {
-      setIsLoaded(true);
-      if (!selectedReleaseId && releaseNotes.length > 0) {
-        setSelectedReleaseId(releaseNotes[0].id);
-      }
-    }
-  }, [open, selectedReleaseId, isLoaded, releaseNotes]);
-  
-  // ダイアログが開かれるとき、全ての未読リリースを既読にする
-  useEffect(() => {
-    if (open && isLoaded) {
-      markAllAsRead();
-    }
-  }, [open, isLoaded, markAllAsRead]);
-  
-  // 選択されたリリースノートを取得
-  const selectedRelease = releaseNotes.find(note => note.id === selectedReleaseId);
-
+export function ReleaseNotesDialog({ isOpen, onClose }: ReleaseNotesDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            リリースノート
-          </DialogTitle>
+          <div className="flex items-center space-x-2">
+            <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-2 rounded-full">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-semibold">
+                新機能のお知らせ
+              </DialogTitle>
+              <Badge variant="secondary" className="mt-1">
+                v{APP_VERSION}
+              </Badge>
+            </div>
+          </div>
           <DialogDescription>
-            アプリケーションの更新履歴と新機能のお知らせです
+            backspace.fmのネタ帳がさらに使いやすくなりました！
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col sm:flex-row gap-4 flex-1 overflow-hidden mt-4">
-          {/* リリース一覧（サイドバー） */}
-          <div className="w-full sm:w-1/3 border-r pr-2">
-            <ScrollArea className="h-[300px] sm:h-[400px]">
-              <div className="space-y-2 pr-3">
-                {releaseNotes.map((note) => {
-                  const isSelected = note.id === selectedReleaseId;
-                  const noteIsRead = isRead(note.id);
-                  
-                  return (
-                    <Button
-                      key={note.id}
-                      variant={isSelected ? "default" : "ghost"}
-                      className={`w-full justify-start py-2 px-3 h-auto text-left ${
-                        isSelected ? "" : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                      onClick={() => setSelectedReleaseId(note.id)}
-                    >
-                      <div className="flex flex-col items-start">
-                        <div className="flex items-center w-full justify-between">
-                          <span className="font-medium truncate">{note.version}</span>
-                          {!noteIsRead && (
-                            <Badge variant="default" className="ml-2 bg-blue-500">新着</Badge>
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{note.date}</span>
-                      </div>
-                    </Button>
-                  );
-                })}
+        <div className="space-y-4 py-4">
+          {/* New Features */}
+          <div className="space-y-3">
+            <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg border border-pink-200">
+              <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-1 rounded-full mt-0.5">
+                <Sparkles className="h-3 w-3 text-white" />
               </div>
-            </ScrollArea>
-          </div>
-          
-          {/* リリースノート詳細 */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            {selectedRelease ? (
-              <ScrollArea className="flex-1">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xl font-bold">{selectedRelease.title}</h3>
-                    <div className="flex items-center mt-1 gap-2">
-                      <Badge variant="outline" className="bg-gray-100">v{selectedRelease.version}</Badge>
-                      <span className="text-sm text-gray-500">{selectedRelease.date}</span>
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-700 dark:text-gray-300">
-                    {selectedRelease.description}
-                  </p>
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">新機能</h4>
-                    <ul className="space-y-1 list-disc pl-5">
-                      {selectedRelease.features.map((feature, index) => (
-                        <li key={index} className="text-gray-700 dark:text-gray-300">
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                リリースを選択してください
+              <div className="flex-1">
+                <h4 className="font-medium text-sm text-gray-900">
+                  ✨ 投票ボタンの大幅リニューアル
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  グラデーション、アニメーション、パーティクル効果でより楽しく投票できます
+                </p>
               </div>
-            )}
+            </div>
+
+            <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+              <div className="bg-green-500 p-1 rounded-full mt-0.5">
+                <Zap className="h-3 w-3 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm text-gray-900">
+                  🚀 人気度ビジュアル表示
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  投票数に応じて背景色が緑色に変化。人気のネタが一目でわかります
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="bg-blue-500 p-1 rounded-full mt-0.5">
+                <Layout className="h-3 w-3 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm text-gray-900">
+                  📱 レイアウト最適化
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  よりコンパクトで見やすいカードデザインに改善しました
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="bg-purple-500 p-1 rounded-full mt-0.5">
+                <Zap className="h-3 w-3 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm text-gray-900">
+                  ⚡ 65%高速化
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  データベース最適化により、ページ読み込みが大幅に高速化されました
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <DialogFooter className="mt-4">
-          <Button onClick={() => onOpenChange(false)}>
-            <Check className="h-4 w-4 mr-2" />
-            閉じる
+
+        <div className="flex justify-end space-x-2 pt-4 border-t border-gray-100">
+          <Button 
+            variant="outline" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="flex items-center space-x-1"
+          >
+            <span>確認しました</span>
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-export function ReleaseNotesButton() {
-  const [open, setOpen] = useState(false);
-  const { unreadCount } = useReleaseNotes();
+export function useReleaseNotification() {
+  const [showDialog, setShowDialog] = useState(false);
   
-  return (
-    <>
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="relative"
-        onClick={() => setOpen(true)}
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            {unreadCount}
-          </span>
-        )}
-      </Button>
+  useEffect(() => {
+    try {
+      const lastSeenVersion = localStorage.getItem('lastSeenVersion');
+      console.log('Last seen version:', lastSeenVersion, 'Current version:', APP_VERSION);
       
-      <ReleaseNotesDialog 
-        open={open} 
-        onOpenChange={setOpen} 
-      />
-    </>
-  );
+      // For testing - clear localStorage to always show dialog
+      localStorage.removeItem('lastSeenVersion');
+      
+      if (lastSeenVersion !== APP_VERSION) {
+        // Show notification after a short delay for better UX
+        const timer = setTimeout(() => {
+          console.log('Showing release dialog');
+          setShowDialog(true);
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.error('Error in useReleaseNotification:', error);
+    }
+  }, []);
+
+  const handleClose = () => {
+    try {
+      console.log('Closing release dialog');
+      setShowDialog(false);
+      localStorage.setItem('lastSeenVersion', APP_VERSION);
+      console.log('Saved version to localStorage:', APP_VERSION);
+    } catch (error) {
+      console.error('Error closing dialog:', error);
+    }
+  };
+
+  return {
+    showDialog,
+    handleClose
+  };
 }

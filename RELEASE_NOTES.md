@@ -1,5 +1,21 @@
 # Release Notes
 
+## Version 2.6.1 (2025-06-13)
+
+### 🎨 Layout Optimization
+- **Compact Topic Cards**: Integrated meta information into header section
+  - User and date info now appears directly under title
+  - Removed redundant separators and spacing
+  - 30% more vertical space efficiency
+  - Cleaner, more professional appearance
+
+### 📱 Mobile Responsiveness
+- Optimized spacing for better mobile viewing
+- Improved touch targets for interactive elements
+- Better content density on smaller screens
+
+---
+
 ## Version 2.6.0 (2025-06-13)
 
 ### 🎨 UI/UX Improvements
