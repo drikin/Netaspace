@@ -352,65 +352,7 @@ const Admin: React.FC = () => {
     exportDatabaseMutation.mutate(format);
   };
 
-  // Backup management functionality
-  const [isBackupDialogOpen, setIsBackupDialogOpen] = useState(false);
   
-  const { data: backups, isLoading: isBackupsLoading } = useQuery({
-    queryKey: ["/api/admin/backups"],
-    enabled: !!isAdmin && isBackupDialogOpen,
-  });
-
-  const downloadBackupMutation = useMutation({
-    mutationFn: async (filename: string) => {
-      const response = await fetch(`/api/admin/backups/${filename}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Backup download failed: ${response.statusText}`);
-      }
-      
-      return { response, filename };
-    },
-    onSuccess: async ({ response, filename }) => {
-      try {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        toast({
-          title: "バックアップダウンロード完了",
-          description: `${filename}をダウンロードしました。`,
-        });
-      } catch (error) {
-        console.error('Backup download failed:', error);
-        toast({
-          title: "ダウンロードエラー",
-          description: "バックアップファイルのダウンロードに失敗しました。",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error) => {
-      console.error('Backup download failed:', error);
-      toast({
-        title: "バックアップエラー",
-        description: "バックアップファイルのダウンロードに失敗しました。",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDownloadBackup = (filename: string) => {
-    downloadBackupMutation.mutate(filename);
-  };
 
   // Show loading state during authentication
   if (isAuthLoading) {
@@ -549,60 +491,7 @@ const Admin: React.FC = () => {
             </Button>
           </div>
 
-          {/* Backup Management */}
-          <Dialog open={isBackupDialogOpen} onOpenChange={setIsBackupDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-                バックアップ管理
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>データベースバックアップ</DialogTitle>
-                <DialogDescription>
-                  自動作成されたバックアップファイルをダウンロードできます
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {isBackupsLoading ? (
-                  <p className="text-center text-muted-foreground">読み込み中...</p>
-                ) : (backups as any) && (backups as any).length > 0 ? (
-                  (backups as any).map((backup: any) => (
-                    <div
-                      key={backup.filename}
-                      className="p-3 border rounded-lg hover:border-gray-300 transition-colors"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-sm">{backup.filename}</h3>
-                          <div className="flex gap-4 text-xs text-muted-foreground mt-1">
-                            <span>作成日: {new Date(backup.createdAt).toLocaleString('ja-JP')}</span>
-                            <span>サイズ: {(backup.size / 1024).toFixed(1)} KB</span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownloadBackup(backup.filename)}
-                          disabled={downloadBackupMutation.isPending}
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          ダウンロード
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground">バックアップファイルがありません</p>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          
 
           <Dialog open={isWeekListDialogOpen} onOpenChange={setIsWeekListDialogOpen}>
             <DialogTrigger asChild>
