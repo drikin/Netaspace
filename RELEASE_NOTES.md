@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 2.6.2 (2025-06-13)
+
+### 🌏 Character Encoding Support
+- **SHIFT-JIS Compatibility**: Fixed character corruption issues on Japanese sites like ITMedia
+- **Multi-Encoding Detection**: Automatic detection and conversion for SHIFT-JIS, EUC-JP, and ISO-2022-JP
+- **Smart Charset Detection**: Reads encoding from HTTP headers and HTML meta tags
+- **Robust Fallback**: Safe handling when encoding conversion fails
+
+### 🔧 Technical Improvements
+- **Modern API Usage**: Updated from deprecated buffer() to arrayBuffer() method
+- **Performance Optimization**: Streamlined encoding detection process
+
+---
+
 ## Version 2.6.1 (2025-06-13)
 
 ### 🎨 Layout Optimization

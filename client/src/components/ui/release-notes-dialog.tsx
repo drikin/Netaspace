@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Sparkles, Layout, Zap, X } from 'lucide-react';
+import { Bell, Sparkles, Layout, Zap, X, Globe, Settings } from 'lucide-react';
 import { APP_VERSION } from '@shared/version';
 
 interface ReleaseNotesDialogProps {
@@ -29,7 +29,7 @@ export function ReleaseNotesDialog({ isOpen, onClose }: ReleaseNotesDialogProps)
             </div>
           </div>
           <DialogDescription>
-            backspace.fmのネタ帳がさらに使いやすくなりました！
+            日本語サイトの文字化け問題を解決しました！
           </DialogDescription>
         </DialogHeader>
         
