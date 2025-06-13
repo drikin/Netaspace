@@ -164,27 +164,53 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
             {/* Vote button */}
             <div className="ml-4 flex-shrink-0">
               <Button
-                variant={topic.hasStarred ? "default" : "outline"}
+                variant="ghost"
                 size="sm"
                 onClick={handleStarClick}
                 disabled={starMutation.isPending}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 ${
-                  topic.hasStarred 
-                    ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
-                    : 'text-gray-700 hover:text-red-600 hover:border-red-600 border-gray-300'
-                }`}
+                className={`
+                  group relative overflow-hidden transition-all duration-300 ease-out
+                  flex items-center space-x-2 px-4 py-2.5 rounded-full font-medium text-sm
+                  transform hover:scale-105 active:scale-95
+                  ${topic.hasStarred 
+                    ? 'bg-gradient-to-r from-pink-500 via-red-500 to-orange-500 text-white shadow-lg hover:shadow-xl border-0 animate-pulse' 
+                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-pink-100 hover:via-red-100 hover:to-orange-100 hover:text-red-600 border border-gray-300 hover:border-red-300 hover:shadow-md'
+                  }
+                `}
               >
+                {/* Shimmer effect for voted state */}
+                {topic.hasStarred && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+                )}
+                
                 <Mic 
-                  className={`h-4 w-4 ${topic.hasStarred ? 'fill-current' : ''}`} 
+                  className={`h-4 w-4 transition-all duration-300 ${
+                    topic.hasStarred 
+                      ? 'fill-current drop-shadow-sm animate-bounce' 
+                      : 'group-hover:scale-110 group-hover:text-red-500'
+                  }`} 
                 />
-                <span className="text-sm font-medium">
-                  聞きたい{topic.hasStarred ? '！' : ''}
+                <span className="relative z-10 font-semibold">
+                  {topic.hasStarred ? '聞きたい！' : '聞きたい'}
                 </span>
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                  topic.hasStarred ? 'bg-white/20' : 'bg-gray-100'
-                }`}>
+                <div className={`
+                  relative z-10 flex items-center justify-center min-w-[22px] h-6 px-2 rounded-full font-bold text-xs
+                  transition-all duration-300 transform
+                  ${topic.hasStarred 
+                    ? 'bg-white/30 text-white backdrop-blur-sm shadow-inner' 
+                    : 'bg-white text-gray-700 shadow-sm group-hover:bg-red-50 group-hover:text-red-600 group-hover:scale-110'
+                  }
+                `}>
                   {topic.starsCount}
-                </span>
+                </div>
+                
+                {/* Floating particles effect for voted state */}
+                {topic.hasStarred && (
+                  <>
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full opacity-60 animate-ping" />
+                    <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-orange-300 rounded-full opacity-40 animate-bounce delay-300" />
+                  </>
+                )}
               </Button>
             </div>
           </div>
