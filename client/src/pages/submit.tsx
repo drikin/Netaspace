@@ -23,6 +23,7 @@ const Submit: React.FC = () => {
   // Fetch active week
   const { data: activeWeek, isLoading: isLoadingWeek } = useQuery({
     queryKey: ["/api/weeks/active"],
+    staleTime: 30 * 1000, // 30秒キャッシュ
   });
 
   // Extended schema with custom validation
@@ -165,9 +166,21 @@ const Submit: React.FC = () => {
       
       // 既存のクエリをキャンセル
       await queryClient.cancelQueries({ queryKey: ["/api/weeks/active"] });
+      await queryClient.cancelQueries({ queryKey: { predicate: (query) => 
+        Array.isArray(query.queryKey) && 
+        query.queryKey[0] === "/api/weeks/active" 
+      } });
       
       // 現在のweekデータをスナップショットとして保存
       const previousWeekData = queryClient.getQueryData(["/api/weeks/active"]);
+      
+      // 全ての関連するキャッシュを楽観的に更新
+      const queryCache = queryClient.getQueryCache();
+      const relatedQueries = queryCache.findAll({
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === "/api/weeks/active"
+      });
       
       // キャッシュを楽観的に更新（新しいトピックを追加）
       queryClient.setQueryData(["/api/weeks/active"], (oldData: any) => {
@@ -197,6 +210,19 @@ const Submit: React.FC = () => {
         };
       });
       
+      // fingerprint付きのクエリも更新
+      relatedQueries.forEach(query => {
+        if (query.queryKey.length > 1) {
+          queryClient.setQueryData(query.queryKey, (oldData: any) => {
+            if (!oldData) return oldData;
+            return {
+              ...oldData,
+              topics: [optimisticTopic, ...(oldData.topics || [])]
+            };
+          });
+        }
+      });
+      
       // ロールバック用に前の状態を返す
       return { previousWeekData };
     },
@@ -205,6 +231,13 @@ const Submit: React.FC = () => {
       if (context?.previousWeekData) {
         queryClient.setQueryData(["/api/weeks/active"], context.previousWeekData);
       }
+      
+      // 全ての関連するクエリを無効化してリフレッシュ
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === "/api/weeks/active" 
+      });
       
       console.error("Failed to submit topic:", err);
       
@@ -231,7 +264,11 @@ const Submit: React.FC = () => {
       });
       
       // 必要なクエリを無効化して再フェッチする
-      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === "/api/weeks/active" 
+      });
       
       // ホームページに移動
       navigate("/");

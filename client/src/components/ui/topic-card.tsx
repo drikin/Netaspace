@@ -26,16 +26,20 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
 
   const starMutation = useMutation({
     mutationFn: async (action: 'add' | 'remove') => {
-      const method = action === 'add' ? 'POST' : 'DELETE';
-      const response = await apiRequest(method, `/api/topics/${topic.id}/star`, {
+      // POSTエンドポイントのみ存在するため、actionに関わらずPOSTを使用
+      const response = await apiRequest('POST', `/api/topics/${topic.id}/star`, {
         fingerprint
       });
       return response.json();
     },
     // Optimistic update for better UX
     onMutate: async (action) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/weeks/active'] });
+      // Cancel outgoing refetches for all related queries
+      await queryClient.cancelQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === '/api/weeks/active'
+      });
       
       // Snapshot the previous value
       const previousData = queryClient.getQueryData(['/api/weeks/active', fingerprint]);
@@ -61,14 +65,25 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       return { previousData };
     },
     onSuccess: () => {
-      // Only invalidate specific queries to reduce network requests
-      queryClient.invalidateQueries({ queryKey: ['/api/weeks/active', fingerprint] });
+      // Invalidate all related queries to ensure consistency
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === '/api/weeks/active'
+      });
     },
     onError: (error, variables, context) => {
       // Rollback on error
       if (context?.previousData) {
         queryClient.setQueryData(['/api/weeks/active', fingerprint], context.previousData);
       }
+      
+      // Invalidate all related queries to refresh from server
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === '/api/weeks/active'
+      });
       
       console.error('Star mutation error:', error);
       toast({
