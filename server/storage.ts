@@ -1,4 +1,4 @@
-import { eq, desc, and, not } from 'drizzle-orm';
+import { eq, desc, and, not, sql, inArray } from 'drizzle-orm';
 import { db } from './db';
 
 import {
@@ -242,19 +242,36 @@ class PostgreSQLStorage implements IStorage {
   }
 
   private async enrichTopicsWithCommentsAndStars(topicsResult: Topic[]): Promise<TopicWithCommentsAndStars[]> {
-    const enrichedTopics: TopicWithCommentsAndStars[] = [];
+    if (topicsResult.length === 0) return [];
     
-    for (const topic of topicsResult) {
-      const starsCount = await this.getStarsCountByTopicId(topic.id);
-      
-      enrichedTopics.push({
-        ...topic,
-        starsCount,
-        hasStarred: false // Will be set by the caller if fingerprint is provided
-      });
-    }
+    // Use a single query with LEFT JOIN to get topics and their star counts efficiently
+    const topicIds = topicsResult.map(topic => topic.id);
     
-    return enrichedTopics;
+    // Build a raw SQL query for better performance with multiple topic IDs
+    const starCountsQuery = `
+      SELECT 
+        t.id as topic_id,
+        COALESCE(COUNT(s.id), 0)::int as stars_count
+      FROM topics t
+      LEFT JOIN stars s ON t.id = s.topic_id
+      WHERE t.id = ANY($1)
+      GROUP BY t.id
+    `;
+    
+    const starCountsResult = await db.execute(starCountsQuery);
+    
+    // Create lookup map for O(1) access
+    const starCountMap = new Map<number, number>();
+    starCountsResult.rows.forEach((row: any) => {
+      starCountMap.set(row.topic_id, row.stars_count);
+    });
+    
+    // Enrich topics with star counts
+    return topicsResult.map(topic => ({
+      ...topic,
+      starsCount: starCountMap.get(topic.id) || 0,
+      hasStarred: false // Will be set by the caller if fingerprint is provided
+    }));
   }
 
   async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
