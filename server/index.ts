@@ -56,17 +56,18 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Serve the app on port 5000
-  // Always bind to 0.0.0.0 inside container for nginx proxy access
-  // External access is controlled by Docker port mapping and firewall
-  const port = 5000;
-  const host = "0.0.0.0";
+  // Serve the app on configured port
+  const port = parseInt(process.env.PORT || '5000');
+  const host = process.env.NODE_ENV === 'development' ? 'localhost' : '0.0.0.0';
   
-  server.listen({
-    port,
-    host,
-    reusePort: true,
-  }, () => {
+  const listenOptions: any = { port, host };
+  
+  // Only use reusePort in production
+  if (process.env.NODE_ENV === 'production') {
+    listenOptions.reusePort = true;
+  }
+  
+  server.listen(listenOptions, () => {
     log(`serving on ${host}:${port}`);
   });
 })();

@@ -17,29 +17,34 @@ const Home: React.FC = () => {
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
 
-  // Fetch active week with topics with automatic refresh
+  // Fetch active week with topics - optimized refresh strategy
   const { data: week, isLoading, refetch, error } = useQuery<WeekWithTopics>({
     queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!fingerprint,
-    staleTime: 1000 * 30, // 30 seconds
-    refetchInterval: 1000 * 30, // Auto-refresh every 30 seconds for new topics
+    // Use global staleTime from queryClient (2 minutes)
+    refetchInterval: false, // Disable automatic polling for better performance
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchIntervalInBackground: false, // Only refresh when tab is active
+    refetchOnWindowFocus: false, // Manual refresh only
+    refetchIntervalInBackground: false,
   });
 
-  // Enhanced auto-refresh when returning to tab
+  // Smart refresh when returning to tab - only if data is stale
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && fingerprint) {
-        // Immediate refresh when user returns to tab
-        refetch();
+        // Only refetch if data is older than 2 minutes
+        const lastFetch = queryClient.getQueryState(["/api/weeks/active", fingerprint])?.dataUpdatedAt;
+        const isStale = !lastFetch || (Date.now() - lastFetch) > 1000 * 60 * 2;
+        
+        if (isStale) {
+          refetch();
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [refetch, fingerprint]);
+  }, [refetch, fingerprint, queryClient]);
 
   // Force cache clear for production issues
   const handleForceClear = () => {
@@ -48,9 +53,12 @@ const Home: React.FC = () => {
     window.location.reload();
   };
 
-  // Check if user is authenticated and is admin
+  // Check if user is authenticated and is admin - optimized caching
   const { data: auth } = useQuery<{ user: { id: number; username: string; isAdmin: boolean } }>({
     queryKey: ["/api/auth/me"],
+    staleTime: 1000 * 60 * 5, // 5 minutes for auth data
+    gcTime: 1000 * 60 * 15, // 15 minutes cache retention
+    refetchOnWindowFocus: false,
   });
 
   const isAdmin = auth?.user?.isAdmin;

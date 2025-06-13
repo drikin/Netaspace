@@ -59,20 +59,27 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      refetchOnMount: true, // Allow refetches to get latest data
-      staleTime: 1000 * 30, // 30 seconds (reduced for fresh data)
-      gcTime: 1000 * 60 * 5, // 5 minutes cache time (reduced)
+      refetchOnMount: true,
+      // Optimized cache settings for better performance
+      staleTime: 1000 * 60 * 2, // 2 minutes - reduced API calls
+      gcTime: 1000 * 60 * 10, // 10 minutes - longer cache retention
+      // Smart retry logic with optimized delays
       retry: (failureCount, error: any) => {
-        // Smart retry logic
+        // Don't retry client errors (except rate limiting)
         if (error?.response?.status >= 400 && error?.response?.status < 500 && error?.response?.status !== 429) {
           return false;
         }
+        // Limit retries to reduce server load
         return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      // Network mode optimization for better offline experience
+      networkMode: 'online',
     },
     mutations: {
       retry: false,
+      // Network mode for mutations
+      networkMode: 'online',
     },
   },
 });

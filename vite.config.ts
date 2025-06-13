@@ -16,6 +16,11 @@ export default defineConfig({
         ]
       : []),
   ],
+  server: {
+    host: 'localhost',
+    port: 3000,
+    strictPort: false,
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

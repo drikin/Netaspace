@@ -5,6 +5,11 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
+# Environment files
+.env
+.env.local
+.env.docker
+
 # Database files
 database/
 *.sqlite

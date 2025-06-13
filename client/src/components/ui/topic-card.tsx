@@ -32,12 +32,44 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
       });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weeks'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
-      refetchTopics();
+    // Optimistic update for better UX
+    onMutate: async (action) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/weeks/active'] });
+      
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['/api/weeks/active', fingerprint]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['/api/weeks/active', fingerprint], (old: any) => {
+        if (!old?.topics) return old;
+        
+        return {
+          ...old,
+          topics: old.topics.map((t: any) => 
+            t.id === topic.id 
+              ? {
+                  ...t,
+                  hasStarred: action === 'add',
+                  starsCount: action === 'add' ? t.starsCount + 1 : Math.max(0, t.starsCount - 1)
+                }
+              : t
+          )
+        };
+      });
+      
+      return { previousData };
     },
-    onError: (error) => {
+    onSuccess: () => {
+      // Only invalidate specific queries to reduce network requests
+      queryClient.invalidateQueries({ queryKey: ['/api/weeks/active', fingerprint] });
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['/api/weeks/active', fingerprint], context.previousData);
+      }
+      
       console.error('Star mutation error:', error);
       toast({
         title: "エラー",
