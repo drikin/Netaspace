@@ -1,35 +1,37 @@
 #!/bin/bash
 
-# Immediate fix for production deployment
+echo "=== Immediate Production Fix - 502 Error Resolution ==="
+
 cd ~/Netaspace
 
-echo "Applying critical production fix..."
+# Stop all PM2 processes
+pm2 kill
 
-# Stop current broken process
-pm2 stop neta-app 2>/dev/null || true
-pm2 delete neta-app 2>/dev/null || true
+# Load environment variables explicitly
+export DATABASE_URL='postgresql://neondb_owner:npg_GFeXV6cr7anp@ep-hidden-thunder-a65mlh9x.us-west-2.aws.neon.tech/neondb?sslmode=require'
+export NODE_ENV='production'
+export PORT='3000'
+export SESSION_SECRET='your-super-secret-session-key-change-this-in-production'
+export HOST='0.0.0.0'
 
-# Start with ecosystem config containing DATABASE_URL
-pm2 start ecosystem.config.js
-pm2 save
+# Build the application
+npm run build
 
-# Brief wait for startup
-sleep 8
+# Start with explicit environment variables
+DATABASE_URL='postgresql://neondb_owner:npg_GFeXV6cr7anp@ep-hidden-thunder-a65mlh9x.us-west-2.aws.neon.tech/neondb?sslmode=require' \
+NODE_ENV='production' \
+PORT='3000' \
+SESSION_SECRET='your-super-secret-session-key-change-this-in-production' \
+HOST='0.0.0.0' \
+pm2 start ecosystem.config.js --env production
 
-# Check results
-echo "Verifying fix:"
-if netstat -tlnp | grep :5000 > /dev/null 2>&1; then
-    echo "✓ Port 5000 listening"
-    if curl -s http://localhost:5000/health > /dev/null 2>&1; then
-        echo "✓ Health check passed"
-        echo "✓ Deployment successful - accessible at http://153.125.147.133"
-    else
-        echo "✗ Health check failed"
-        pm2 logs neta-app --lines 3
-    fi
-else
-    echo "✗ Port 5000 not listening"
-    pm2 logs neta-app --lines 5
-fi
-
+echo "Application restarted with explicit environment variables"
+echo ""
+echo "Checking status..."
 pm2 status
+pm2 logs --lines 10
+
+echo ""
+echo "Testing health endpoint..."
+sleep 5
+curl -I http://localhost:3000/health
