@@ -112,7 +112,7 @@ const Home: React.FC = () => {
       <WeekSelector week={week as any} isLoading={isLoading} />
 
       <div className="flex justify-between items-center mb-4">
-        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
+        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
         {error && (
           <Button
             variant="destructive"

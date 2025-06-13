@@ -5,27 +5,29 @@ interface TabNavigationProps {
   activeTab: string;
   isAdmin?: boolean;
   isAuthenticated?: boolean;
+  context?: 'home' | 'admin'; // Add context to distinguish between home and admin pages
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false, isAuthenticated = false }) => {
+const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false, isAuthenticated = false, context = 'home' }) => {
   // Don't show any tabs if user is not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
-  const authenticatedTabs = [
+  // Define tabs based on context
+  const homeTabs = [
     { id: "all", label: "すべて" },
     { id: "featured", label: "採用" },
   ];
   
   const adminTabs = [
+    { id: "all", label: "すべて" },
+    { id: "featured", label: "採用" },
     { id: "performance", label: "パフォーマンス" },
   ];
   
-  let tabs = authenticatedTabs;
-  if (isAdmin) {
-    tabs = [...tabs, ...adminTabs];
-  }
+  // Show different tabs based on context
+  let tabs = context === 'admin' && isAdmin ? adminTabs : homeTabs;
 
   return (
     <div className="px-4 sm:px-0 mb-4 border-b border-gray-200">
