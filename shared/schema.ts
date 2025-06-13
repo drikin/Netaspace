@@ -48,6 +48,8 @@ export const topics = pgTable("topics", {
   createdAtIdx: index("topics_created_at_idx").on(table.createdAt),
   weekStatusIdx: index("topics_week_status_idx").on(table.weekId, table.status),
   featuredAtIdx: index("topics_featured_at_idx").on(table.featuredAt),
+  urlIdx: index("topics_url_idx").on(table.url),
+  weekCreatedIdx: index("topics_week_created_idx").on(table.weekId, table.createdAt),
 }));
 
 export const stars = pgTable("stars", {
@@ -59,6 +61,7 @@ export const stars = pgTable("stars", {
   topicIdIdx: index("stars_topic_id_idx").on(table.topicId),
   fingerprintIdx: index("stars_fingerprint_idx").on(table.fingerprint),
   topicFingerprintIdx: index("stars_topic_fingerprint_idx").on(table.topicId, table.fingerprint),
+  createdAtIdx: index("stars_created_at_idx").on(table.createdAt),
 }));
 
 // Comments functionality removed
