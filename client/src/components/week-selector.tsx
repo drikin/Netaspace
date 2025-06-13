@@ -39,10 +39,16 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
       </div>
       <Link href="/submit">
         <Button
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary relative group"
+          title="ネタを投稿 (キーボードショートカット: N)"
         >
           <PlusIcon className="h-4 w-4 mr-1" />
           ネタを投稿
+          {/* Tooltip for keyboard shortcut */}
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+            <kbd className="px-1 py-0.5 text-xs font-semibold bg-gray-700 rounded">N</kbd> を押してネタを投稿
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+          </div>
         </Button>
       </Link>
     </div>

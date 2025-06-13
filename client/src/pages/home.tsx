@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import WeekSelector from "@/components/week-selector";
 import TabNavigation from "@/components/tab-navigation";
 import TopicCard from "@/components/ui/topic-card";
@@ -16,6 +17,7 @@ const Home: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>("stars");
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   // Fetch active week with topics - optimized refresh strategy
   const { data: week, isLoading, refetch, error } = useQuery<WeekWithTopics>({
@@ -45,6 +47,29 @@ const Home: React.FC = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [refetch, fingerprint, queryClient]);
+
+  // Keyboard shortcut for topic submission (N key)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only trigger if no input elements are focused and no modifiers are pressed
+      if (
+        event.key.toLowerCase() === 'n' && 
+        !event.ctrlKey && 
+        !event.metaKey && 
+        !event.altKey &&
+        !event.shiftKey &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        document.activeElement?.role !== 'textbox'
+      ) {
+        event.preventDefault();
+        navigate('/submit');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   // Force cache clear for production issues
   const handleForceClear = () => {
@@ -117,6 +142,7 @@ const Home: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <WeekSelector week={week as any} isLoading={isLoading} />
+
 
       <div className="flex justify-between items-center mb-4">
         <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
