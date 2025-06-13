@@ -94,10 +94,10 @@ async function fetchArticleInfo(url: string) {
     // 通常のURLの場合
     let targetUrl = url;
     
-    // 大幅軽量化: 最小限のHTTPリクエストのみでCompute Unit節約
+    // Fetch with proper encoding handling
     const response = await fetch(targetUrl, { 
       redirect: 'follow',
-      signal: AbortSignal.timeout(3000), // 3秒タイムアウト（短縮）
+      signal: AbortSignal.timeout(3000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; TopicBot/1.0)'
       }
@@ -105,8 +105,45 @@ async function fetchArticleInfo(url: string) {
     
     const finalUrl = response.url;
     
-    // 軽量化: 複雑なエンコード処理を削除、テキストのみ取得
-    const html = await response.text();
+    // Get raw buffer to detect encoding
+    const buffer = await response.buffer();
+    
+    // Try to detect charset from Content-Type header first
+    let charset = 'utf-8';
+    const contentType = response.headers.get('content-type');
+    if (contentType) {
+      const charsetMatch = contentType.match(/charset=([^;]+)/i);
+      if (charsetMatch) {
+        charset = charsetMatch[1].toLowerCase();
+      }
+    }
+    
+    // If no charset in header, try to detect from HTML meta tags
+    if (charset === 'utf-8') {
+      const htmlSnippet = buffer.toString('utf-8', 0, Math.min(1024, buffer.length));
+      const metaCharsetMatch = htmlSnippet.match(/<meta[^>]+charset=["']?([^"'>\s]+)/i);
+      if (metaCharsetMatch) {
+        charset = metaCharsetMatch[1].toLowerCase();
+      }
+    }
+    
+    // Convert common Japanese encodings
+    let html: string;
+    try {
+      if (charset === 'shift_jis' || charset === 'shift-jis' || charset === 'sjis') {
+        html = iconv.decode(buffer, 'shift_jis');
+      } else if (charset === 'euc-jp') {
+        html = iconv.decode(buffer, 'euc-jp');
+      } else if (charset === 'iso-2022-jp') {
+        html = iconv.decode(buffer, 'iso-2022-jp');
+      } else {
+        // Default to UTF-8 for other encodings
+        html = buffer.toString('utf-8');
+      }
+    } catch (error) {
+      console.log('Encoding conversion failed, falling back to UTF-8:', error);
+      html = buffer.toString('utf-8');
+    }
     
     const dom = new JSDOM(html);
     const document = dom.window.document;
