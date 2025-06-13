@@ -137,10 +137,10 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
     <>
       <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
         <CardContent className="p-4">
-          {/* Compact header - always visible */}
+          {/* Optimized header with integrated meta information */}
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center">
+              <div className="flex items-center mb-1">
                 <a
                   href={topic.url}
                   target="_blank"
@@ -154,8 +154,21 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 <ExternalLink className={`h-4 w-4 flex-shrink-0 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-400'}`} />
                 {getStatusBadge()}
               </div>
+              
+              {/* Meta information integrated in header */}
+              <div className={`flex items-center space-x-3 text-xs mb-2 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`}>
+                <div className="flex items-center">
+                  <User className="h-3 w-3 mr-1" />
+                  <span>{topic.submitter}</span>
+                </div>
+                <div className="flex items-center">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  <span>{formatDate(topic.createdAt)}</span>
+                </div>
+              </div>
+              
               {topic.description && (
-                <p className={`text-sm mt-1 line-clamp-3 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-600'}`}>
+                <p className={`text-sm line-clamp-3 ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-600'}`}>
                   {topic.description}
                 </p>
               )}
@@ -212,20 +225,6 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   </>
                 )}
               </Button>
-            </div>
-          </div>
-
-          {/* Meta information */}
-          <div className={`flex items-center justify-between mt-3 pt-3 border-t ${cardBg.textClass === 'text-white' ? 'border-gray-300' : 'border-gray-100'}`}>
-            <div className={`flex items-center space-x-4 text-xs ${cardBg.textClass === 'text-white' ? 'text-gray-200' : 'text-gray-500'}`}>
-              <div className="flex items-center">
-                <User className="h-3 w-3 mr-1" />
-                <span>{topic.submitter}</span>
-              </div>
-              <div className="flex items-center">
-                <Calendar className="h-3 w-3 mr-1" />
-                <span>{formatDate(topic.createdAt)}</span>
-              </div>
             </div>
           </div>
 
