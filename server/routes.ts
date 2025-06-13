@@ -106,7 +106,8 @@ async function fetchArticleInfo(url: string) {
     const finalUrl = response.url;
     
     // Get raw buffer to detect encoding
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     
     // Try to detect charset from Content-Type header first
     let charset = 'utf-8';
