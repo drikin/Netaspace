@@ -148,7 +148,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 size="sm"
                 onClick={handleStarClick}
                 disabled={starMutation.isPending}
-                className={`flex items-center space-x-2 px-3 py-2 ${
+                className={`flex items-center space-x-1.5 px-2.5 py-1.5 ${
                   topic.hasStarred 
                     ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
                     : 'text-gray-700 hover:text-red-600 hover:border-red-600 border-gray-300'
@@ -158,9 +158,11 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   className={`h-4 w-4 ${topic.hasStarred ? 'fill-current' : ''}`} 
                 />
                 <span className="text-sm font-medium">
-                  {topic.hasStarred ? '聞きたい!' : '聞きたい'}
+                  聞きたい{topic.hasStarred ? '！' : ''}
                 </span>
-                <span className="text-sm font-bold bg-white/20 px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                  topic.hasStarred ? 'bg-white/20' : 'bg-gray-100'
+                }`}>
                   {topic.starsCount}
                 </span>
               </Button>
