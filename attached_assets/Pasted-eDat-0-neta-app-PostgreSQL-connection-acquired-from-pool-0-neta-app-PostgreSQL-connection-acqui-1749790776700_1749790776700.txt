@@ -1,0 +1,38 @@
+eDat…
+0|neta-app | PostgreSQL connection acquired from pool
+0|neta-app | PostgreSQL connection acquired from pool
+0|neta-app | PostgreSQL connection acquired from pool
+0|neta-app | PostgreSQL connection acquired from pool
+0|neta-app | 1:59:06 PM [express] GET /api/weeks/active 200 in 1986ms :: {"id":2,"startDate":"2025-06-10","endDat…
+
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | 1:59:11 PM [express] GET /api/version 200 in 238ms :: {"app":"2.5.0","extension":"2.1.1","releaseDat…
+0|neta-app  | 1:59:11 PM [express] GET /api/auth/me 401 in 241ms :: {"message":"Not authenticated"}
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | Slow query detected: getTopicsByWeekId took 292ms
+0|neta-app  | Slow query detected: getWeekWithTopics took 437ms
+0|neta-app  | Slow query detected: getActiveWeekWithTopics took 582ms
+0|neta-app  | 1:59:12 PM [express] GET /api/weeks/active 200 in 878ms :: {"id":2,"startDate":"2025-06-10","endDate…
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | 1:59:14 PM [express] GET /api/version 200 in 238ms :: {"app":"2.5.0","extension":"2.1.1","releaseDat…
+0|neta-app  | 1:59:14 PM [express] GET /api/auth/me 401 in 241ms :: {"message":"Not authenticated"}
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | Slow query detected: getTopicsByWeekId took 291ms
+0|neta-app  | Slow query detected: getWeekWithTopics took 437ms
+0|neta-app  | Slow query detected: getActiveWeekWithTopics took 582ms
+0|neta-app  | 1:59:14 PM [express] GET /api/weeks/active 200 in 877ms :: {"id":2,"startDate":"2025-06-10","endDate…
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | 1:59:17 PM [express] GET /api/version 200 in 239ms :: {"app":"2.5.0","extension":"2.1.1","releaseDat…
+0|neta-app  | 1:59:18 PM [express] GET /api/auth/me 401 in 261ms :: {"message":"Not authenticated"}
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | PostgreSQL connection acquired from pool
+0|neta-app  | Slow query detected: getTopicsByWeekId took 291ms
+0|neta-app  | Slow query detected: getWeekWithTopics took 438ms
+0|neta-app  | Slow query detected: getActiveWeekWithTopics took 584ms
+0|neta-app  | 1:59:18 PM [express] GET /api/weeks/active 200 in 879ms :: {"id":2,"startDate":"2025-06-10","endDate…
+
