@@ -36,16 +36,30 @@ export function ReleaseNotesDialog({ isOpen, onClose }: ReleaseNotesDialogProps)
         <div className="space-y-4 py-4">
           {/* New Features */}
           <div className="space-y-3">
-            <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg border border-pink-200">
-              <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-1 rounded-full mt-0.5">
-                <Sparkles className="h-3 w-3 text-white" />
+            <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+              <div className="bg-gradient-to-r from-blue-500 to-green-500 p-1 rounded-full mt-0.5">
+                <Globe className="h-3 w-3 text-white" />
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-sm text-gray-900">
-                  ✨ 投票ボタンの大幅リニューアル
+                  🌏 SHIFT-JIS文字化け解決
                 </h4>
                 <p className="text-xs text-gray-600 mt-1">
-                  グラデーション、アニメーション、パーティクル効果でより楽しく投票できます
+                  ITMediaなどの日本語サイトの文字化けを完全解決。SHIFT-JIS、EUC-JP対応
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="bg-purple-500 p-1 rounded-full mt-0.5">
+                <Settings className="h-3 w-3 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm text-gray-900">
+                  🔧 エンコーディング自動検出
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  HTTPヘッダーとHTMLメタタグから文字セットを自動識別・変換
                 </p>
               </div>
             </div>
@@ -56,24 +70,10 @@ export function ReleaseNotesDialog({ isOpen, onClose }: ReleaseNotesDialogProps)
               </div>
               <div className="flex-1">
                 <h4 className="font-medium text-sm text-gray-900">
-                  🚀 人気度ビジュアル表示
+                  ✅ 技術基盤強化
                 </h4>
                 <p className="text-xs text-gray-600 mt-1">
-                  投票数に応じて背景色が緑色に変化。人気のネタが一目でわかります
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="bg-blue-500 p-1 rounded-full mt-0.5">
-                <Layout className="h-3 w-3 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-sm text-gray-900">
-                  📱 レイアウト最適化
-                </h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  よりコンパクトで見やすいカードデザインに改善しました
+                  モダンAPI対応とパフォーマンス最適化を実施
                 </p>
               </div>
             </div>
