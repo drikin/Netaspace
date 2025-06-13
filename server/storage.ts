@@ -1,4 +1,5 @@
 import { eq, desc, and, not, sql, inArray } from 'drizzle-orm';
+import { count } from 'drizzle-orm';
 import { db } from './db';
 
 import {
@@ -245,19 +246,31 @@ class PostgreSQLStorage implements IStorage {
   }
 
   private async enrichTopicsWithCommentsAndStars(topicsResult: Topic[]): Promise<TopicWithCommentsAndStars[]> {
-    const enrichedTopics: TopicWithCommentsAndStars[] = [];
+    if (topicsResult.length === 0) return [];
     
-    for (const topic of topicsResult) {
-      const starsCount = await this.getStarsCountByTopicId(topic.id);
-      
-      enrichedTopics.push({
-        ...topic,
-        starsCount,
-        hasStarred: false // Will be set by the caller if fingerprint is provided
-      });
-    }
+    // Get all star counts in a single query instead of N+1 queries
+    const topicIds = topicsResult.map(topic => topic.id);
+    const starCounts = await db
+      .select({
+        topicId: stars.topicId,
+        count: count(stars.id).as('count')
+      })
+      .from(stars)
+      .where(inArray(stars.topicId, topicIds))
+      .groupBy(stars.topicId);
     
-    return enrichedTopics;
+    // Create a map for quick lookup
+    const starCountMap = new Map<number, number>();
+    starCounts.forEach(row => {
+      starCountMap.set(row.topicId, Number(row.count));
+    });
+    
+    // Enrich topics with star counts
+    return topicsResult.map(topic => ({
+      ...topic,
+      starsCount: starCountMap.get(topic.id) || 0,
+      hasStarred: false // Will be set by the caller if fingerprint is provided
+    }));
   }
 
   async getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined> {
