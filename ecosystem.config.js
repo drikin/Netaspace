@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   apps: [{
     name: 'neta-app',
     script: 'dist/index.js',
