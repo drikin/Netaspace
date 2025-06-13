@@ -84,7 +84,7 @@ fi
 
 # Install/update Node.js dependencies
 log "Installing Node.js dependencies..."
-npm ci --production
+npm ci
 
 # Build application
 log "Building application..."
