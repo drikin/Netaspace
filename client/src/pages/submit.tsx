@@ -34,9 +34,7 @@ const Submit: React.FC = () => {
     url: z.string().url({
       message: "有効なURLを入力してください",
     }),
-    description: z.string().min(10, {
-      message: "説明は10文字以上である必要があります",
-    }),
+    description: z.string().optional().or(z.literal('')),
     submitter: z.string().min(1, {
       message: "お名前を入力してください",
     }),
@@ -194,6 +192,23 @@ const Submit: React.FC = () => {
       // 現在のweekデータをスナップショットとして保存
       const previousWeekData = queryClient.getQueryData(["/api/weeks/active"]);
       
+      // 楽観的に作成される新しいトピック（仮のID等を設定）
+      const optimisticTopic: TopicWithCommentsAndStars = {
+        id: Math.floor(Math.random() * -1000000), // 一時的な負のID
+        title: newTopic.title,
+        url: newTopic.url,
+        description: newTopic.description,
+        submitter: newTopic.submitter,
+        weekId: activeWeek.id,
+        status: "pending",
+        createdAt: new Date(),
+        stars: 0,
+        featuredAt: null,
+        fingerprint: 'temp-fingerprint',
+        starsCount: 0,
+        hasStarred: false
+      };
+      
       // 全ての関連するキャッシュを楽観的に更新
       const queryCache = queryClient.getQueryCache();
       const relatedQueries = queryCache.findAll({
@@ -205,23 +220,6 @@ const Submit: React.FC = () => {
       // キャッシュを楽観的に更新（新しいトピックを追加）
       queryClient.setQueryData(["/api/weeks/active"], (oldData: any) => {
         if (!oldData) return oldData;
-        
-        // 楽観的に作成される新しいトピック（仮のID等を設定）
-        const optimisticTopic: TopicWithCommentsAndStars = {
-          id: Math.floor(Math.random() * -1000000), // 一時的な負のID
-          title: newTopic.title,
-          url: newTopic.url,
-          description: newTopic.description,
-          submitter: newTopic.submitter,
-          weekId: activeWeek.id,
-          status: "pending",
-          createdAt: new Date(),
-          stars: 0,
-          featuredAt: null,
-          comments: [],
-          starsCount: 0,
-          hasStarred: false
-        };
         
         // 新しいトピックを追加したweekデータを返す
         return {
