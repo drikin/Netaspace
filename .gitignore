@@ -14,4 +14,4 @@ vite.config.ts.*
 database/
 *.sqlite
 *.sqlite-wal
-*.sqlite-shm
+*.sqlite-shm*.sql
