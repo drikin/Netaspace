@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$HOME/Netaspace"
 SERVICE_NAME="neta-app"
 DOMAIN="neta.backspace.fm"
-SERVER_IP="153.125.147.133"
+SERVER_IP="153.127.198.207"
 
 # Colors for output
 RED='\033[0;31m'

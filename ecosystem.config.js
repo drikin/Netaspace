@@ -13,8 +13,8 @@ module.exports = {
       DOMAIN: 'neta.backspace.fm',
       PROTOCOL: 'https',
       HOST: '0.0.0.0',
-      SERVER_IP: '153.125.147.133',
-      TRUSTED_PROXIES: '127.0.0.1,153.125.147.133',
+      SERVER_IP: '153.127.198.207',
+      TRUSTED_PROXIES: '127.0.0.1,153.127.198.207',
       LOG_LEVEL: 'info',
       RATE_LIMIT_WINDOW_MS: 900000,
       RATE_LIMIT_MAX_REQUESTS: 100
