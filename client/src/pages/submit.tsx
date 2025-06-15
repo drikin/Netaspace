@@ -484,10 +484,10 @@ const Submit: React.FC = () => {
                 <div className="flex space-x-4">
                   <Button
                     type="submit"
-                    disabled={form.formState.isSubmitting}
+                    disabled={form.formState.isSubmitting || createTopicMutation.isPending}
                     className="bg-primary hover:bg-primary-700"
                   >
-                    {form.formState.isSubmitting ? "送信中..." : "投稿する"}
+                    {(form.formState.isSubmitting || createTopicMutation.isPending) ? "送信中..." : "投稿する"}
                   </Button>
                   <Link href="/">
                     <Button variant="outline" type="button">

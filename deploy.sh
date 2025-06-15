@@ -67,8 +67,8 @@ if [[ "$INITIAL_SETUP" == true ]]; then
     # Update system
     sudo apt update && sudo apt upgrade -y
     
-    # Install required packages
-    sudo apt install -y nginx curl git ufw fail2ban jq certbot python3-certbot-nginx
+    # Install required packages including PostgreSQL
+    sudo apt install -y nginx curl git ufw fail2ban jq certbot python3-certbot-nginx postgresql postgresql-contrib
     
     # Install Node.js 20.x if not present
     if ! command -v node &> /dev/null || [[ "$(node --version | cut -d'.' -f1 | cut -d'v' -f2)" -lt "20" ]]; then
@@ -82,6 +82,17 @@ if [[ "$INITIAL_SETUP" == true ]]; then
         log "Installing PM2..."
         sudo npm install -g pm2
     fi
+    
+    # Setup PostgreSQL
+    log "Setting up PostgreSQL..."
+    sudo systemctl start postgresql
+    sudo systemctl enable postgresql
+    
+    # Set postgres user password
+    sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'netapass123';"
+    
+    # Create database if it doesn't exist
+    sudo -u postgres psql -c "CREATE DATABASE neta_local;" 2>/dev/null || log "Database neta_local already exists"
     
     # Configure firewall
     log "Configuring firewall..."
@@ -100,16 +111,50 @@ npm ci
 log "Building application..."
 npm run build
 
-# Setup environment file
-log "Setting up environment variables..."
-if [[ ! -f .env ]]; then
-    if [[ -f .env.production ]]; then
-        cp .env.production .env
-        log "Copied .env.production to .env"
-    else
-        error "No environment file found. Please create .env with DATABASE_URL and other required variables."
-    fi
-fi
+# Setup environment file for local PostgreSQL
+log "Setting up environment variables for local PostgreSQL..."
+cat > .env << EOF
+# Database - Local PostgreSQL
+DATABASE_URL=postgresql://postgres:netapass123@localhost:5432/neta_local
+
+# Application
+NODE_ENV=production
+PORT=5000
+
+# Session Secret
+SESSION_SECRET=neta-backspace-fm-super-secret-session-key-2025
+
+# Domain and Server
+DOMAIN=neta.backspace.fm
+PROTOCOL=https
+HOST=0.0.0.0
+SERVER_IP=153.127.201.139
+
+# Security
+TRUSTED_PROXIES=127.0.0.1,153.127.201.139
+
+# Logging
+LOG_LEVEL=info
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Admin Password (set via environment variable)
+# ADMIN_PASSWORD will be set from environment or use default
+EOF
+
+log "Environment file configured for local PostgreSQL"
+
+# Ensure PostgreSQL is running and configured
+log "Checking PostgreSQL setup..."
+sudo systemctl start postgresql || log "PostgreSQL already running"
+
+# Ensure postgres user has correct password
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'netapass123';" 2>/dev/null || log "Password already set"
+
+# Create database if it doesn't exist
+sudo -u postgres psql -c "CREATE DATABASE neta_local;" 2>/dev/null || log "Database neta_local already exists"
 
 # Database setup/migration
 log "Setting up database..."
@@ -126,19 +171,27 @@ log "Managing PM2 processes..."
 pm2 stop $SERVICE_NAME 2>/dev/null || true
 pm2 delete $SERVICE_NAME 2>/dev/null || true
 
-# Ensure we have the correct ecosystem config
+# Ensure we have the correct ecosystem config with local PostgreSQL
 log "Checking ecosystem configuration..."
 if [[ -f ecosystem.config.js && ! -f ecosystem.config.cjs ]]; then
     log "Converting ecosystem.config.js to CommonJS format..."
-    # Convert to CommonJS format and update IP settings
+    # Convert to CommonJS format and update settings
     sed -i 's/export default {/module.exports = {/' ecosystem.config.js
     sed -i 's/153\.127\.198\.207/153.127.201.139/g' ecosystem.config.js
     mv ecosystem.config.js ecosystem.config.cjs
-    log "Converted to ecosystem.config.cjs with correct IP"
-elif [[ -f ecosystem.config.cjs ]]; then
-    # Update IP in existing .cjs file
+    log "Converted to ecosystem.config.cjs with correct settings"
+fi
+
+# Always ensure ecosystem.config.cjs has correct local PostgreSQL settings
+if [[ -f ecosystem.config.cjs ]]; then
+    log "Updating ecosystem.config.cjs with local PostgreSQL settings..."
+    # Update IP addresses
     sed -i 's/153\.127\.198\.207/153.127.201.139/g' ecosystem.config.cjs
-    log "Updated IP address in ecosystem.config.cjs"
+    # Ensure local PostgreSQL DATABASE_URL
+    sed -i "s|DATABASE_URL: '[^']*'|DATABASE_URL: 'postgresql://postgres:netapass123@localhost:5432/neta_local'|g" ecosystem.config.cjs
+    # Ensure ADMIN_PASSWORD uses environment variable
+    sed -i "s|ADMIN_PASSWORD: '[^']*'|ADMIN_PASSWORD: process.env.ADMIN_PASSWORD \|\| 'default_admin_pass'|g" ecosystem.config.cjs
+    log "Updated ecosystem.config.cjs with local PostgreSQL and admin settings"
 fi
 
 # Start application with PM2

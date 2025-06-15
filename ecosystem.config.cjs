@@ -18,7 +18,7 @@ module.exports = {
       LOG_LEVEL: 'info',
       RATE_LIMIT_WINDOW_MS: 60000,
       RATE_LIMIT_MAX_REQUESTS: 1000,
-      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'fmbackspace55'
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'default_admin_pass'
     }
   }]
 }

@@ -26,3 +26,11 @@ zero-deploy.sh
 deploy-full-production.sh
 production-server-complete.mjs
 production-server-auth.mjs
+
+# Local development files with credentials
+README.local.md
+.claude/
+
+# Log files
+*.log
+dev.log

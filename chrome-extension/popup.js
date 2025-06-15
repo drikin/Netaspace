@@ -90,6 +90,11 @@ class TopicSubmitter {
   async handleSubmit(e) {
     e.preventDefault();
     
+    // Prevent double submission
+    if (this.submitBtn.disabled) {
+      return;
+    }
+    
     const title = this.titleInput.value.trim();
     const url = this.urlPreview.textContent.trim();
     const description = this.descriptionInput.value.trim();
