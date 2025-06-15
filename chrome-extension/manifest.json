@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Backspace.fm ネタ投稿",
+  "version": "2.1.1",
+  "description": "現在のページをbackspace.fmのネタとして簡単に投稿できます",
+  "update_url": "https://netaspace.replit.app/api/extension/updates.xml",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.replit.dev/*",
+    "https://*.replit.app/*",
+    "http://localhost:*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Backspace.fm ネタ投稿"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

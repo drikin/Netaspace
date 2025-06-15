@@ -1,0 +1,28 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Environment files
+.env
+.env.local
+.env.docker
+
+# Database files
+database/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sql
+
+# Sensitive data exports
+neon-export.json
+*-export.json
+
+# Legacy deployment scripts with hardcoded credentials
+zero-deploy.sh
+deploy-full-production.sh
+production-server-complete.mjs
+production-server-auth.mjs
