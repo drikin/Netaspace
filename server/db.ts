@@ -11,16 +11,11 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  // High-performance optimization for 10Core-32GB server
-  max: 20, // Increased for high concurrency
-  min: 5,  // Keep more connections ready
-  idleTimeoutMillis: 300000, // 5 minutes - keep connections longer
-  connectionTimeoutMillis: 10000, // 10 seconds - more time for connection
-  // Optimized for high-performance server and remote Neon database
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 1000, // Faster keepalive
-  query_timeout: 30000, // 30 second query timeout
-  statement_timeout: 30000, // 30 second statement timeout
+  // Simple configuration for local development
+  max: 10,
+  min: 2,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 5000,
 });
 
 // Handle pool errors gracefully

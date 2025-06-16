@@ -372,11 +372,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate using the submitTopicSchema
       const submissionData = submitTopicSchema.parse(req.body);
       
-      // Check for duplicate URL
-      const existingTopic = await storage.getTopicByUrl(submissionData.url);
+      // Get the active week first
+      const activeWeek = await storage.getActiveWeek();
+      if (!activeWeek) {
+        return res.status(400).json({ message: 'アクティブな週が見つかりません。' });
+      }
+      
+      // Check for duplicate URL in the active week only
+      const existingTopic = await storage.getTopicByUrlInWeek(submissionData.url, activeWeek.id);
       if (existingTopic) {
         return res.status(409).json({ 
-          message: 'このURLは既に投稿されています。', 
+          message: 'この週にこのURLは既に投稿されています。', 
           code: 'DUPLICATE_URL',
           existingTopic: {
             id: existingTopic.id,
@@ -384,12 +390,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             submitter: existingTopic.submitter
           }
         });
-      }
-      
-      // Get the active week
-      const activeWeek = await storage.getActiveWeek();
-      if (!activeWeek) {
-        return res.status(400).json({ message: 'No active week available' });
       }
       
       // Generate fingerprint for the submission

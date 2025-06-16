@@ -2,34 +2,7 @@ import { eq, desc, and, not, sql, inArray } from 'drizzle-orm';
 import { count } from 'drizzle-orm';
 import { db } from './db';
 
-// In-memory cache for frequently accessed data
-const queryCache = new Map<string, { data: any; expiry: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes - increased for better performance
-
-function getCachedResult<T>(key: string): T | null {
-  const cached = queryCache.get(key);
-  if (cached && Date.now() < cached.expiry) {
-    return cached.data as T;
-  }
-  queryCache.delete(key);
-  return null;
-}
-
-function setCachedResult<T>(key: string, data: T): void {
-  queryCache.set(key, {
-    data,
-    expiry: Date.now() + CACHE_TTL
-  });
-}
-
-function clearActiveWeekCache(): void {
-  // Clear all active week related cache entries
-  for (const key of queryCache.keys()) {
-    if (key.startsWith('active_week_topics:')) {
-      queryCache.delete(key);
-    }
-  }
-}
+// Removed caching system for simplicity and real-time data consistency
 
 import {
   users,
@@ -124,6 +97,7 @@ export interface IStorage {
   getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]>;
   getTopic(id: number, fingerprint?: string): Promise<TopicWithCommentsAndStars | undefined>;
   getTopicByUrl(url: string): Promise<Topic | undefined>;
+  getTopicByUrlInWeek(url: string, weekId: number): Promise<Topic | undefined>;
   createTopic(topic: InsertTopic): Promise<Topic>;
   updateTopicStatus(id: number, status: string): Promise<Topic | undefined>;
   deleteTopic(id: number): Promise<boolean>;
@@ -360,6 +334,18 @@ class PostgreSQLStorage implements IStorage {
     }, 'getTopicByUrl');
   }
 
+  async getTopicByUrlInWeek(url: string, weekId: number): Promise<Topic | undefined> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .select()
+        .from(topics)
+        .where(and(eq(topics.url, url), eq(topics.weekId, weekId)))
+        .limit(1);
+      
+      return result[0];
+    }, 'getTopicByUrlInWeek');
+  }
+
   async createTopic(topic: InsertTopic): Promise<Topic> {
     return this.executeWithMonitoring(async () => {
       const result = await db
@@ -367,17 +353,6 @@ class PostgreSQLStorage implements IStorage {
         .values(topic)
         .returning();
       
-      // Refresh materialized view after topic creation to ensure UI consistency
-      try {
-        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
-        console.log('Materialized view refreshed after topic creation');
-      } catch (error) {
-        console.warn('Failed to refresh materialized view:', error);
-        // Don't fail the topic creation if view refresh fails
-      }
-      
-      // Clear cache to ensure immediate UI updates
-      clearActiveWeekCache();
       
       return result[0];
     }, 'createTopic');
@@ -391,16 +366,6 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(topics.id, id))
         .returning();
       
-      // Refresh materialized view after status update to ensure UI consistency
-      try {
-        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
-        console.log('Materialized view refreshed after topic status update');
-      } catch (error) {
-        console.warn('Failed to refresh materialized view:', error);
-      }
-      
-      // Clear cache to ensure immediate UI updates
-      clearActiveWeekCache();
       
       return result[0];
     }, 'updateTopicStatus');
@@ -418,16 +383,6 @@ class PostgreSQLStorage implements IStorage {
         .delete(topics)
         .where(eq(topics.id, id));
       
-      // Refresh materialized view after topic deletion to ensure UI consistency
-      try {
-        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
-        console.log('Materialized view refreshed after topic deletion');
-      } catch (error) {
-        console.warn('Failed to refresh materialized view:', error);
-      }
-      
-      // Clear cache to ensure immediate UI updates
-      clearActiveWeekCache();
       
       return true;
     }, 'deleteTopic');
@@ -440,16 +395,6 @@ class PostgreSQLStorage implements IStorage {
           .insert(stars)
           .values(star);
         
-        // Refresh materialized view after star addition to update star counts
-        try {
-          await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
-          console.log('Materialized view refreshed after star addition');
-        } catch (error) {
-          console.warn('Failed to refresh materialized view:', error);
-        }
-        
-        // Clear cache to ensure immediate UI updates
-        clearActiveWeekCache();
         
         return true;
       } catch (error) {
@@ -465,16 +410,6 @@ class PostgreSQLStorage implements IStorage {
         .delete(stars)
         .where(and(eq(stars.topicId, topicId), eq(stars.fingerprint, fingerprint)));
       
-      // Refresh materialized view after star removal to update star counts
-      try {
-        await db.execute(sql`REFRESH MATERIALIZED VIEW active_week_topics`);
-        console.log('Materialized view refreshed after star removal');
-      } catch (error) {
-        console.warn('Failed to refresh materialized view:', error);
-      }
-      
-      // Clear cache to ensure immediate UI updates
-      clearActiveWeekCache();
       
       return true;
     }, 'removeStar');
@@ -535,111 +470,31 @@ class PostgreSQLStorage implements IStorage {
     return this.executeWithMonitoring(async () => {
       console.log('PostgreSQL connection acquired from pool');
       
-      // Check cache first - use base cache for week data, fingerprint-specific for starred status
-      const baseCacheKey = 'active_week_topics:base';
-      const cached = getCachedResult<WeekWithTopics>(baseCacheKey);
-      if (cached && !fingerprint) {
-        return cached;
-      }
+      const activeWeek = await this.getActiveWeek();
+      if (!activeWeek) return undefined;
       
-      // For fingerprinted requests, check if we can reuse base data and just update starred status
-      if (cached && fingerprint) {
-        const enrichedTopics = await Promise.all(
-          cached.topics.map(async (topic) => ({
-            ...topic,
-            hasStarred: await this.hasStarred(topic.id, fingerprint)
-          }))
-        );
-        return { ...cached, topics: enrichedTopics };
-      }
+      const topicsData = await this.getTopicsByWeekId(activeWeek.id);
       
-      try {
-        // Try to use materialized view for ultra-fast performance
-        const results = await db.execute(sql`
-          SELECT 
-            week_id, week_title, start_date, end_date, is_active,
-            topic_id, title, url, description, submitter, fingerprint as topic_fingerprint,
-            status, created_at, stars, featured_at, stars_count,
-            ${fingerprint ? sql`EXISTS(
-              SELECT 1 FROM stars s 
-              WHERE s.topic_id = topic_id 
-              AND s.fingerprint = ${fingerprint}
-            )` : sql`false`} as has_starred
-          FROM active_week_topics
-          WHERE topic_id IS NOT NULL
-          ORDER BY created_at DESC
-        `);
+      let enrichedTopics = topicsData;
+      if (fingerprint && topicsData.length > 0) {
+        const topicIds = topicsData.map(t => t.id);
+        const starredResults = await db
+          .select({ topicId: stars.topicId })
+          .from(stars)
+          .where(and(
+            sql`${stars.topicId} IN (${sql.join(topicIds, sql`, `)})`,
+            eq(stars.fingerprint, fingerprint)
+          ));
         
-        if (results.rows.length === 0) {
-          // Fallback to regular query if materialized view is empty
-          return this.getActiveWeekWithTopicsFallback(fingerprint);
-        }
-        
-        const firstRow = results.rows[0] as any;
-        const week = {
-          id: firstRow.week_id,
-          title: firstRow.week_title,
-          startDate: firstRow.start_date,
-          endDate: firstRow.end_date,
-          isActive: firstRow.is_active,
-          createdAt: firstRow.start_date // weeks don't have created_at
-        };
-        
-        const topics = results.rows.map((row: any) => ({
-          id: row.topic_id,
-          title: row.title,
-          url: row.url,
-          description: row.description,
-          submitter: row.submitter,
-          fingerprint: row.topic_fingerprint,
-          weekId: row.week_id,
-          status: row.status,
-          createdAt: row.created_at,
-          stars: row.stars,
-          featuredAt: row.featured_at,
-          starsCount: Number(row.stars_count),
-          hasStarred: Boolean(row.has_starred)
+        const starredTopicIds = new Set(starredResults.map(r => r.topicId));
+        enrichedTopics = topicsData.map(topic => ({
+          ...topic,
+          hasStarred: starredTopicIds.has(topic.id)
         }));
-        
-        const result = { ...week, topics };
-        
-        // Cache the result using base cache key
-        setCachedResult(baseCacheKey, result);
-        
-        return result;
-      } catch (error) {
-        // If materialized view doesn't exist or query fails, fall back to regular query
-        console.log('Materialized view query failed, using fallback method:', error.message);
-        return this.getActiveWeekWithTopicsFallback(fingerprint);
       }
-    }, 'getActiveWeekWithTopics');
-  }
-  
-  private async getActiveWeekWithTopicsFallback(fingerprint?: string): Promise<WeekWithTopics | undefined> {
-    const activeWeek = await this.getActiveWeek();
-    if (!activeWeek) return undefined;
-    
-    const topicsData = await this.getTopicsByWeekId(activeWeek.id);
-    
-    let enrichedTopics = topicsData;
-    if (fingerprint && topicsData.length > 0) {
-      const topicIds = topicsData.map(t => t.id);
-      const starredResults = await db
-        .select({ topicId: stars.topicId })
-        .from(stars)
-        .where(and(
-          sql`${stars.topicId} IN (${sql.join(topicIds, sql`, `)})`,
-          eq(stars.fingerprint, fingerprint)
-        ));
       
-      const starredTopicIds = new Set(starredResults.map(r => r.topicId));
-      enrichedTopics = topicsData.map(topic => ({
-        ...topic,
-        hasStarred: starredTopicIds.has(topic.id)
-      }));
-    }
-    
-    return { ...activeWeek, topics: enrichedTopics };
+      return { ...activeWeek, topics: enrichedTopics };
+    }, 'getActiveWeekWithTopics');
   }
 }
 

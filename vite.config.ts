@@ -20,6 +20,12 @@ export default defineConfig({
     host: 'localhost',
     port: 3000,
     strictPort: false,
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '501f69cc-2328-4443-a1ab-fedf538f9e9b-00-2dnq4o7yktcm.kirk.replit.dev',
+      '.replit.dev', // Allow all replit.dev subdomains
+    ],
   },
   resolve: {
     alias: {
