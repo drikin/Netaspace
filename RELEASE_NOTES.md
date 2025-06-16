@@ -1,5 +1,33 @@
 # Release Notes
 
+## Version 1.1.0 (2025-06-16)
+
+### 🎯 Code Simplification & Performance
+- **Simplified Architecture**: Major codebase simplification with removal of complex caching systems
+  - Removed materialized views in favor of direct database queries
+  - Eliminated complex caching layer for better real-time data consistency
+  - Reduced codebase by ~200 lines while maintaining functionality
+  - Improved reliability and maintainability
+
+- **Real-time Data Consistency**: Enhanced real-time responsiveness
+  - All data now reflects immediately without cache delays
+  - Better user experience with instant feedback
+  - Simplified database connection pool configuration
+
+### 🔧 Bug Fixes & Improvements
+- **Fixed Week Switching**: Active week switching now works correctly
+- **Improved URL Validation**: Changed duplicate URL check from global to per-week
+  - Same URL can now be submitted for different weeks
+  - Better content organization per episode
+- **Replit Support**: Added Vite configuration support for Replit environment
+
+### 🏗️ Technical Infrastructure
+- **Database Optimization**: Streamlined PostgreSQL integration
+- **Production Deployment**: Enhanced deployment reliability
+- **Local Development**: Improved local PostgreSQL setup
+
+---
+
 ## Version 2.6.2 (2025-06-13)
 
 ### 🌏 Character Encoding Support
