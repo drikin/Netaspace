@@ -109,11 +109,23 @@ npm ci
 
 # Build application
 log "Building application..."
-npm run build
+if [[ "$NODE_ENV" == "production" || "$INITIAL_SETUP" == true ]]; then
+    # For production, only build server without frontend assets
+    npm run build:server
+    log "Built server-only for production"
+else
+    # For development/local with frontend
+    npm run build
+    log "Built with frontend assets"
+fi
 
 # Setup environment file for local PostgreSQL
 log "Setting up environment variables for local PostgreSQL..."
-cat > .env << EOF
+if [[ -f .env.production ]]; then
+    cp .env.production .env
+    log "Copied .env.production to .env"
+else
+    cat > .env << EOF
 # Database - Local PostgreSQL
 DATABASE_URL=postgresql://postgres:netapass123@localhost:5432/neta_local
 
@@ -143,8 +155,8 @@ RATE_LIMIT_MAX_REQUESTS=100
 # Admin Password (set via environment variable)
 # ADMIN_PASSWORD will be set from environment or use default
 EOF
-
-log "Environment file configured for local PostgreSQL"
+    log "Created new .env file for local PostgreSQL"
+fi
 
 # Ensure PostgreSQL is running and configured
 log "Checking PostgreSQL setup..."
@@ -341,7 +353,7 @@ max_attempts=10
 attempt=0
 
 while [[ $attempt -lt $max_attempts ]]; do
-    if curl -f -s http://localhost:5000/health > /dev/null; then
+    if curl -f -s http://localhost:5000/ > /dev/null; then
         log "Application is running successfully!"
         break
     else
