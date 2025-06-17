@@ -105,19 +105,13 @@ fi
 
 # Install/update Node.js dependencies
 log "Installing Node.js dependencies..."
-npm ci
+npm ci --production=false
 
 # Build application
 log "Building application..."
-if [[ "$NODE_ENV" == "production" || "$INITIAL_SETUP" == true ]]; then
-    # For production, only build server without frontend assets
-    npm run build:server
-    log "Built server-only for production"
-else
-    # For development/local with frontend
-    npm run build
-    log "Built with frontend assets"
-fi
+# Always build full application including frontend assets for production deployment
+npm run build
+log "Built application with frontend and backend"
 
 # Setup environment file for local PostgreSQL
 log "Setting up environment variables for local PostgreSQL..."
