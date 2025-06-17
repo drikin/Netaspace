@@ -11,6 +11,7 @@ import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
+import { useFingerprint } from "@/hooks/use-fingerprint";
 
 const Submit: React.FC = () => {
   const { toast } = useToast();
@@ -19,10 +20,11 @@ const Submit: React.FC = () => {
   const [isGoogleNewsLink, setIsGoogleNewsLink] = React.useState(false);
   const [originalNewsUrl, setOriginalNewsUrl] = React.useState('');
   const queryClient = useQueryClient();
+  const fingerprint = useFingerprint();
   
   // Fetch active week
   const { data: activeWeek, isLoading: isLoadingWeek } = useQuery({
-    queryKey: ["/api/weeks/active"],
+    queryKey: ["/api/weeks/active", fingerprint],
     staleTime: 30 * 1000, // 30秒キャッシュ
   });
 
@@ -184,10 +186,11 @@ const Submit: React.FC = () => {
       
       // 既存のクエリをキャンセル
       await queryClient.cancelQueries({ queryKey: ["/api/weeks/active"] });
-      await queryClient.cancelQueries({ queryKey: { predicate: (query) => 
-        Array.isArray(query.queryKey) && 
-        query.queryKey[0] === "/api/weeks/active" 
-      } });
+      await queryClient.cancelQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === "/api/weeks/active" 
+      });
       
       // 現在のweekデータをスナップショットとして保存
       const previousWeekData = queryClient.getQueryData(["/api/weeks/active"]);
@@ -197,9 +200,9 @@ const Submit: React.FC = () => {
         id: Math.floor(Math.random() * -1000000), // 一時的な負のID
         title: newTopic.title,
         url: newTopic.url,
-        description: newTopic.description,
+        description: newTopic.description || null,
         submitter: newTopic.submitter,
-        weekId: activeWeek.id,
+        weekId: activeWeek?.id || 0,
         status: "pending",
         createdAt: new Date(),
         stars: 0,

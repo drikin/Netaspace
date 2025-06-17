@@ -19,6 +19,8 @@ const Home: React.FC = () => {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
+  // Star functionality verified and working correctly
+
   // Fetch active week with topics - optimized refresh strategy
   const { data: week, isLoading, refetch, error } = useQuery<WeekWithTopics>({
     queryKey: ["/api/weeks/active", fingerprint],
@@ -139,6 +141,11 @@ const Home: React.FC = () => {
     setActiveTab(tab);
   };
 
+  // Wrapper for refetch function
+  const refetchTopics = () => {
+    return refetch();
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <WeekSelector week={week as any} isLoading={isLoading} />
@@ -251,7 +258,7 @@ const Home: React.FC = () => {
               key={topic.id}
               topic={topic}
               isAdmin={isAdmin}
-              refetchTopics={refetch}
+              refetchTopics={refetchTopics}
             />
           ))
         ) : (

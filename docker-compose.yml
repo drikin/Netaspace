@@ -1,6 +1,26 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: netaspace-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://netaspace_user:netaspace_password@postgres:5432/netaspace_local
+      - SESSION_SECRET=local-dev-session-secret-backspace-fm
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=fmbackspace55
+      - PORT=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+
   postgres:
     image: postgres:15
     container_name: netaspace-postgres

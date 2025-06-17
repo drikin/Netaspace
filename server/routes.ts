@@ -2,6 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { createHash } from "crypto";
 import { storage, getDatabaseMetrics, resetDatabaseMetrics } from "./storage";
+import { db } from "./db";
+import { stars } from "@shared/schema";
 import { 
   insertTopicSchema, 
   insertStarSchema,
@@ -295,7 +297,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/weeks/active', async (req, res) => {
     try {
       const fingerprint = req.query.fingerprint as string;
-      const week = await storage.getActiveWeekWithTopics(fingerprint);
+      // Use the same fingerprint processing as star operations
+      const hashedFingerprint = fingerprint ? createHash('sha256').update(fingerprint).digest('hex') : undefined;
+      const week = await storage.getActiveWeekWithTopics(hashedFingerprint);
       
       if (!week) {
         return res.status(404).json({ message: 'No active week found' });
@@ -320,7 +324,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid week ID' });
       }
       
-      const week = await storage.getWeekWithTopics(weekId, fingerprint);
+      // Use the same fingerprint processing as star operations
+      const hashedFingerprint = fingerprint ? createHash('sha256').update(fingerprint).digest('hex') : undefined;
+      const week = await storage.getWeekWithTopics(weekId, hashedFingerprint);
       
       if (!week) {
         return res.status(404).json({ message: 'Week not found' });
@@ -451,7 +457,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid topic ID' });
       }
       
-      const topic = await storage.getTopic(topicId, fingerprint);
+      // Use the same fingerprint processing as star operations
+      const hashedFingerprint = fingerprint ? createHash('sha256').update(fingerprint).digest('hex') : undefined;
+      const topic = await storage.getTopic(topicId, hashedFingerprint);
       
       if (!topic) {
         return res.status(404).json({ message: 'Topic not found' });
@@ -906,6 +914,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Comment functionality removed
 
+  // Debug route to clear stars for testing
+  app.post('/api/debug/clear-stars', async (req, res) => {
+    try {
+      // Clear all stars for testing purposes
+      await db.delete(stars);
+      res.json({ success: true, message: 'All stars cleared' });
+    } catch (error) {
+      console.error('Clear stars error:', error);
+      res.status(500).json({ message: 'Failed to clear stars' });
+    }
+  });
+
   // Star routes
   app.post('/api/topics/:id/star', async (req, res) => {
     try {
@@ -920,26 +940,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Fingerprint is required' });
       }
       
+      // Hash the fingerprint to match the data queries
+      const hashedFingerprint = createHash('sha256').update(fingerprint).digest('hex');
+      
       // Check if the topic exists
-      const topic = await storage.getTopic(topicId);
+      const topic = await storage.getTopic(topicId, hashedFingerprint);
       if (!topic) {
         return res.status(404).json({ message: 'Topic not found' });
       }
       
       // Check current star status
-      const hasStarred = await storage.hasStarred(topicId, fingerprint);
+      const hasStarred = await storage.hasStarred(topicId, hashedFingerprint);
+      
       let success = false;
       let action = '';
       
       if (hasStarred) {
         // User wants to unstar
-        success = await storage.removeStar(topicId, fingerprint);
+        success = await storage.removeStar(topicId, hashedFingerprint);
         action = 'unstarred';
       } else {
         // User wants to star
         success = await storage.addStar({
           topicId,
-          fingerprint
+          fingerprint: hashedFingerprint
         });
         action = 'starred';
       }
@@ -950,14 +974,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get the updated star count and status
       const starsCount = await storage.getStarsCountByTopicId(topicId);
-      const newHasStarred = await storage.hasStarred(topicId, fingerprint);
+      const newHasStarred = await storage.hasStarred(topicId, hashedFingerprint);
       
-      res.json({ 
+      const response = { 
         success: true, 
         starsCount, 
         hasStarred: newHasStarred, 
         action 
-      });
+      };
+      
+      res.json(response);
     } catch (error) {
       console.error('Star operation error:', error);
       res.status(500).json({ message: 'Failed to process star operation' });

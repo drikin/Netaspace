@@ -22,7 +22,12 @@ export function useProductionCache() {
   };
 
   const invalidateTopicsCache = () => {
-    queryClient.invalidateQueries({ queryKey: ['/api/weeks/active'] });
+    // Invalidate all queries that start with '/api/weeks/active'
+    queryClient.invalidateQueries({ 
+      predicate: (query) => 
+        Array.isArray(query.queryKey) && 
+        query.queryKey[0] === '/api/weeks/active'
+    });
     queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
   };
 

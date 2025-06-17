@@ -24,88 +24,41 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   const { toast } = useToast();
   const fingerprint = useFingerprint();
 
+
   const starMutation = useMutation({
     mutationFn: async () => {
-      // POSTエンドポイントは現在のスター状態を見て自動的に切り替える
       const response = await apiRequest('POST', `/api/topics/${topic.id}/star`, {
         fingerprint
       });
-      return await response.json();
+      const result = await response.json();
+      return result;
     },
-    // Optimistic update for better UX
-    onMutate: async () => {
-      // Cancel outgoing refetches for all related queries
-      await queryClient.cancelQueries({ 
-        predicate: (query) => 
-          Array.isArray(query.queryKey) && 
-          query.queryKey[0] === '/api/weeks/active'
-      });
-      
-      // Snapshot the previous value
-      const previousData = queryClient.getQueryData(['/api/weeks/active', fingerprint]);
-      
-      // Determine the action based on current state
-      const action = topic.hasStarred ? 'remove' : 'add';
-      
-      // Optimistically update
-      queryClient.setQueryData(['/api/weeks/active', fingerprint], (old: any) => {
-        if (!old?.topics) return old;
-        
-        return {
-          ...old,
-          topics: old.topics.map((t: any) => 
-            t.id === topic.id 
-              ? {
-                  ...t,
-                  hasStarred: action === 'add',
-                  starsCount: action === 'add' ? t.starsCount + 1 : Math.max(0, t.starsCount - 1)
-                }
-              : t
-          )
-        };
-      });
-      
-      return { previousData };
+    onSuccess: (data) => {
+      // Invalidate the active weeks cache to force a fresh fetch
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+      // Also call the refetch function as backup
+      refetchTopics();
     },
-    onSuccess: () => {
-      // Invalidate all related queries to ensure consistency
-      queryClient.invalidateQueries({ 
-        predicate: (query) => 
-          Array.isArray(query.queryKey) && 
-          query.queryKey[0] === '/api/weeks/active'
-      });
-    },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousData) {
-        queryClient.setQueryData(['/api/weeks/active', fingerprint], context.previousData);
-      }
-      
-      // Invalidate all related queries to refresh from server
-      queryClient.invalidateQueries({ 
-        predicate: (query) => 
-          Array.isArray(query.queryKey) && 
-          query.queryKey[0] === '/api/weeks/active'
-      });
-      
-      console.error('Star mutation error:', error);
+    onError: (err) => {
+      console.error('❌ Star mutation error:', err);
       toast({
         title: "エラー",
-        description: "スターの更新に失敗しました",
+        description: "「聞きたい」の更新に失敗しました。もう一度お試しください。",
         variant: "destructive",
       });
     }
   });
 
-  // Memoize event handlers to prevent child re-renders
+  // Handle star button click
   const handleStarClick = useCallback(() => {
     if (!topic.hasStarred) {
       // Show dialog for X sharing when starring
       setShowShareDialog(true);
     }
+    
     // Toggle star state - API will handle the current state automatically
     starMutation.mutate();
-  }, [topic.hasStarred, starMutation]);
+  }, [topic.hasStarred, starMutation, topic.id, topic.starsCount]);
 
   const handleShareToX = useCallback(() => {
     setShowShareDialog(false);
@@ -234,7 +187,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   flex items-center space-x-2 px-4 py-2.5 rounded-full font-medium text-sm
                   transform hover:scale-105 active:scale-95
                   ${topic.hasStarred 
-                    ? 'bg-gradient-to-r from-pink-500 via-red-500 to-orange-500 text-white shadow-lg hover:shadow-xl border-0 animate-pulse' 
+                    ? `bg-gradient-to-r from-pink-500 via-red-500 to-orange-500 text-white shadow-lg hover:shadow-xl border-0 ${starMutation.isPending ? 'animate-pulse' : ''}` 
                     : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-pink-100 hover:via-red-100 hover:to-orange-100 hover:text-red-600 border border-gray-300 hover:border-red-300 hover:shadow-md'
                   }
                 `}
@@ -247,7 +200,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 <Mic 
                   className={`h-4 w-4 transition-all duration-300 ${
                     topic.hasStarred 
-                      ? 'fill-current drop-shadow-sm animate-bounce' 
+                      ? `fill-current drop-shadow-sm ${starMutation.isPending ? 'animate-bounce' : ''}` 
                       : 'group-hover:scale-110 group-hover:text-red-500'
                   }`} 
                 />
@@ -265,8 +218,8 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   {topic.starsCount}
                 </div>
                 
-                {/* Floating particles effect for voted state */}
-                {topic.hasStarred && (
+                {/* Floating particles effect for voted state - only during mutation */}
+                {starMutation.isPending && (
                   <>
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full opacity-60 animate-ping" />
                     <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-orange-300 rounded-full opacity-40 animate-bounce delay-300" />
@@ -311,14 +264,4 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
   );
 };
 
-// Memoize the entire component to prevent unnecessary re-renders
-export default React.memo(TopicCard, (prevProps, nextProps) => {
-  // Custom comparison for optimal re-rendering
-  return (
-    prevProps.topic.id === nextProps.topic.id &&
-    prevProps.topic.starsCount === nextProps.topic.starsCount &&
-    prevProps.topic.hasStarred === nextProps.topic.hasStarred &&
-    prevProps.topic.status === nextProps.topic.status &&
-    prevProps.isAdmin === nextProps.isAdmin
-  );
-});
+export default TopicCard;

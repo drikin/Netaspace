@@ -41,7 +41,18 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    let url = queryKey[0] as string;
+    
+    // Handle query parameters for specific endpoints that need fingerprint
+    if (queryKey.length > 1 && (url.includes('/api/weeks/active') || url.includes('/api/weeks/'))) {
+      const fingerprint = queryKey[1] as string;
+      if (fingerprint) {
+        const separator = url.includes('?') ? '&' : '?';
+        url = `${url}${separator}fingerprint=${encodeURIComponent(fingerprint)}`;
+      }
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 

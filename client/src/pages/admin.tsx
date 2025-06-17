@@ -15,6 +15,7 @@ import TabNavigation from "@/components/tab-navigation";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { insertWeekSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useFingerprint } from "@/hooks/use-fingerprint";
 
 // Login form schema
 const loginSchema = z.object({
@@ -25,6 +26,7 @@ const loginSchema = z.object({
 const Admin: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fingerprint = useFingerprint();
   const [activeTab, setActiveTab] = useState("all");
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
   const [isWeekListDialogOpen, setIsWeekListDialogOpen] = useState(false);
@@ -54,7 +56,7 @@ const Admin: React.FC = () => {
 
   // Fetch active week with topics
   const { data: activeWeek, isLoading: isWeekLoading, refetch: refetchActiveWeek } = useQuery({
-    queryKey: ["/api/weeks/active"],
+    queryKey: ["/api/weeks/active", fingerprint],
     enabled: !!isAdmin,
   });
 

@@ -473,24 +473,21 @@ class PostgreSQLStorage implements IStorage {
       const activeWeek = await this.getActiveWeek();
       if (!activeWeek) return undefined;
       
-      const topicsData = await this.getTopicsByWeekId(activeWeek.id);
+      // Get basic topics first
+      const topicsResult = await db
+        .select()
+        .from(topics)
+        .where(eq(topics.weekId, activeWeek.id))
+        .orderBy(desc(topics.createdAt));
       
-      let enrichedTopics = topicsData;
-      if (fingerprint && topicsData.length > 0) {
-        const topicIds = topicsData.map(t => t.id);
-        const starredResults = await db
-          .select({ topicId: stars.topicId })
-          .from(stars)
-          .where(and(
-            sql`${stars.topicId} IN (${sql.join(topicIds, sql`, `)})`,
-            eq(stars.fingerprint, fingerprint)
-          ));
-        
-        const starredTopicIds = new Set(starredResults.map(r => r.topicId));
-        enrichedTopics = topicsData.map(topic => ({
-          ...topic,
-          hasStarred: starredTopicIds.has(topic.id)
-        }));
+      // Now enrich with star data using the same approach as enrichTopicsWithCommentsAndStars
+      const enrichedTopics = await this.enrichTopicsWithCommentsAndStars(topicsResult);
+      
+      // Set hasStarred for each topic if fingerprint is provided
+      if (fingerprint) {
+        for (const topic of enrichedTopics) {
+          topic.hasStarred = await this.hasStarred(topic.id, fingerprint);
+        }
       }
       
       return { ...activeWeek, topics: enrichedTopics };
