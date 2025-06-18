@@ -58,7 +58,7 @@ app.use((req, res, next) => {
 
   // Serve the app on configured port
   const port = parseInt(process.env.PORT || '5000');
-  const host = process.env.NODE_ENV === 'development' ? 'localhost' : '0.0.0.0';
+  const host = process.env.HOST || (process.env.NODE_ENV === 'development' ? 'localhost' : '0.0.0.0');
   
   const listenOptions: any = { port, host };
   

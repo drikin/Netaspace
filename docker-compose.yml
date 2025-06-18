@@ -16,6 +16,7 @@ services:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=fmbackspace55
       - PORT=3000
+      - HOST=0.0.0.0
     depends_on:
       postgres:
         condition: service_healthy

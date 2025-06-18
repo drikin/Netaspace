@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mic, ExternalLink, Link, Calendar, User } from "lucide-react";
+import { ExternalLink, Link, Calendar, User, Ear } from "lucide-react";
 import AdminControls from "@/components/admin-controls";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -176,7 +176,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
             </div>
 
             {/* Vote button */}
-            <div className="ml-4 flex-shrink-0">
+            <div className="ml-2 sm:ml-4 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -184,7 +184,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                 disabled={starMutation.isPending}
                 className={`
                   group relative overflow-hidden transition-all duration-300 ease-out
-                  flex items-center space-x-2 px-4 py-2.5 rounded-full font-medium text-sm
+                  flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm
                   transform hover:scale-105 active:scale-95
                   ${topic.hasStarred 
                     ? `bg-gradient-to-r from-pink-500 via-red-500 to-orange-500 text-white shadow-lg hover:shadow-xl border-0 ${starMutation.isPending ? 'animate-pulse' : ''}` 
@@ -197,18 +197,12 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                 )}
                 
-                <Mic 
-                  className={`h-4 w-4 transition-all duration-300 ${
-                    topic.hasStarred 
-                      ? `fill-current drop-shadow-sm ${starMutation.isPending ? 'animate-bounce' : ''}` 
-                      : 'group-hover:scale-110 group-hover:text-red-500'
-                  }`} 
-                />
-                <span className="relative z-10 font-semibold">
+                <span className="relative z-10 font-semibold hidden sm:inline">
                   {topic.hasStarred ? '聞きたい！' : '聞きたい'}
                 </span>
+                <Ear className="relative z-10 h-4 w-4 sm:hidden" />
                 <div className={`
-                  relative z-10 flex items-center justify-center min-w-[22px] h-6 px-2 rounded-full font-bold text-xs
+                  relative z-10 flex items-center justify-center min-w-[18px] sm:min-w-[22px] h-5 sm:h-6 px-1 sm:px-2 rounded-full font-bold text-xs
                   transition-all duration-300 transform
                   ${topic.hasStarred 
                     ? 'bg-white/30 text-white backdrop-blur-sm shadow-inner' 

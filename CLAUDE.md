@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Claude Code Working Guidelines
+
+**IMPORTANT: Always use Thinking mode when analyzing code, planning solutions, or making decisions.** Use <thinking> tags to show your reasoning process before taking actions.
+
+**CRITICAL: Prevent regressions and unauthorized changes:**
+- NEVER make changes that are not explicitly requested by the user
+- ALWAYS test existing functionality before making any changes
+- DO NOT modify working code unless specifically asked to do so
+- ONLY fix the exact issue described by the user
+- AVOID "improving" or "optimizing" code that is not broken
+- PRESERVE all existing functionality when making changes
+
 ## Project Overview
 
 Netaspace is a podcast topic management platform for backspace.fm that enables community-driven content discovery through an interactive web interface and Chrome extension. It's built with React/TypeScript frontend, Express.js backend, and PostgreSQL database.
@@ -31,10 +43,24 @@ Core entities: `users`, `weeks`, `topics`, `stars`, `sessions`
 
 ## Development Commands
 
+### Local Development Setup (IMPORTANT)
+**ALWAYS use Docker for local development on macOS and Linux:**
+
+```bash
+# Required for all local development
+docker-compose up -d     # Start PostgreSQL and app containers
+npm run db:docker        # Setup database schema
+npm run setup:local      # Initialize development data
+
+# Application will be available at http://localhost:3000
+```
+
+**DO NOT use `npm run dev` directly** - always use Docker environment for consistency.
+
 ### Essential Commands
 ```bash
 npm install          # Install dependencies
-npm run dev          # Start development server
+docker-compose up -d # Start development server (Docker)
 npm run build        # Build both frontend and backend
 npm run start        # Start production server
 npm run check        # TypeScript type checking
@@ -43,6 +69,7 @@ npm run db:push      # Push database schema changes
 
 ### Database Commands
 ```bash
+npm run db:docker    # Apply schema changes to Docker database
 npm run db:push      # Apply schema changes to database
 ```
 
@@ -95,3 +122,4 @@ pm2 status           # Check PM2 process status
 - Nginx proxy with SSL termination
 - PM2 process management with cluster mode
 - PostgreSQL database on Neon platform
+- **IMPORTANT: Production does NOT use Vite** - serves pre-built static files from `dist/` directory
