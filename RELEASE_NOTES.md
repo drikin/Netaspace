@@ -1,5 +1,40 @@
 # Release Notes
 
+## Version 2.7.0 (2025-06-18)
+
+### 📱 Mobile UI Improvements
+- **Responsive Vote Button**: Enhanced mobile layout for "聞きたい" button
+  - Compact design with ear icon for mobile screens
+  - Reduced padding and margins for better space utilization
+  - Desktop retains full text, mobile shows intuitive ear icon
+  - Fixed layout overflow issues on narrow screens
+
+- **Clean Button Design**: Removed podcast microphone icon for cleaner appearance
+  - Simplified visual design focusing on text and functionality
+  - Better readability and reduced visual clutter
+  - Consistent with mobile-first approach
+
+### 🛠️ Development Environment
+- **Docker-First Development**: Standardized local development workflow
+  - All local development now requires Docker environment
+  - Consistent setup across macOS and Linux platforms
+  - Proper host binding (0.0.0.0) for external Docker access
+  - Updated development guidelines in CLAUDE.md
+
+### 📚 Documentation Updates
+- **Enhanced Development Guidelines**: Comprehensive CLAUDE.md updates
+  - Added Claude Code working guidelines with thinking mode requirement
+  - Regression prevention and change control policies
+  - Docker development setup requirements
+  - Production environment clarifications (no Vite in production)
+
+### 🔧 Technical Improvements
+- **Docker Configuration**: Fixed container networking for local development
+- **Host Binding**: Proper server configuration for Docker environments
+- **Environment Variables**: Enhanced HOST configuration support
+
+---
+
 ## Version 1.1.0 (2025-06-16)
 
 ### 🎯 Code Simplification & Performance

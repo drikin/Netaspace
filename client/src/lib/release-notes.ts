@@ -13,6 +13,22 @@ export interface ReleaseNote {
 // リリース履歴データ（新しい順）
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "2025-06-18-v2.7.0",
+    version: "2.7.0", 
+    date: "2025年6月18日",
+    title: "モバイル対応強化と開発環境の標準化",
+    description: "モバイルデバイスでの使いやすさを大幅に向上させ、開発環境をDocker化して安定性を高めました。「聞きたい」ボタンのデザインもよりクリーンで洗練されたものになりました。",
+    features: [
+      "📱 モバイル対応「聞きたい」ボタン（耳アイコンでコンパクト表示）",
+      "🎨 ポッドキャストアイコンを削除してクリーンなデザインに改善",
+      "🐳 Docker環境での開発が標準化（macOS/Linux対応）",
+      "📚 開発ガイドライン強化（デグレ防止・思考プロセス明示）",
+      "🔧 本番環境でのVite設定とホストバインディング最適化",
+      "⚡ レスポンシブレイアウトでモバイル表示のオーバーフロー問題を解決"
+    ],
+    isNew: true
+  },
+  {
     id: "2025-06-12-v2.5.0",
     version: "2.5.0",
     date: "2025年6月12日",
@@ -27,7 +43,7 @@ export const releaseNotes: ReleaseNote[] = [
       "総ネタ数の表示機能追加",
       "ユーザビリティ向上のための全体的なUI改善"
     ],
-    isNew: true
+    isNew: false
   },
   {
     id: "2025-06-07-v2.4.0",
@@ -59,7 +75,7 @@ export const releaseNotes: ReleaseNote[] = [
       "人気トピックの視覚的識別性向上",
       "スタイリッシュで直感的なユーザー体験"
     ],
-    isNew: true
+    isNew: false
   },
   {
     id: "2025-06-06-v2.2.0",
