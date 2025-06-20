@@ -357,6 +357,7 @@ const Submit: React.FC = () => {
                             placeholder="https://example.com/article"
                             {...field}
                             className="pr-8"
+                            autoFocus
                           />
                         </FormControl>
                         {isLoading && (
