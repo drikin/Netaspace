@@ -175,6 +175,9 @@ const Home: React.FC = () => {
       <WeekSelector week={week as any} isLoading={isLoading} />
 
 
+      {/* YouTube Live Embed - above tabs */}
+      <YouTubeLiveEmbed className="mb-6" />
+
       <div className="flex justify-between items-center mb-4">
         <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
         {error && (
@@ -262,9 +265,6 @@ const Home: React.FC = () => {
       )}
 
       <div className="space-y-6 px-4 sm:px-0">
-        {/* YouTube Live Embed */}
-        <YouTubeLiveEmbed className="mb-6" />
-        
         {isLoading ? (
           // Loading state
           Array.from({ length: 3 }).map((_, i) => (

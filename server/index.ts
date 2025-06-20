@@ -49,21 +49,8 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // For Replit compatibility, serve static files instead of using Vite dev middleware
-  // This bypasses the host restrictions that prevent access from Replit domains
-  const distPath = path.resolve(process.cwd(), "dist", "public");
-  
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    
-    // Catch-all handler for SPA routing
-    app.get("*", (_req, res) => {
-      res.sendFile(path.resolve(distPath, "index.html"));
-    });
-  } else {
-    console.warn("Build directory not found, falling back to development mode");
-    await setupVite(app, server);
-  }
+  // Use Vite development mode for immediate changes
+  await setupVite(app, server);
 
   // Serve the app on configured port
   const port = parseInt(process.env.PORT || '5000');
