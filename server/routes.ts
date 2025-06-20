@@ -781,6 +781,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // YouTube API integration for backspace.fm channel
+  app.get('/api/youtube/live-videos', async (req, res) => {
+    try {
+      // backspace.fm YouTube channel ID
+      const CHANNEL_ID = 'UCbvBZHaZ1wLMC1XCaQ5_4yg'; // Replace with actual backspace.fm channel ID
+      const API_KEY = process.env.YOUTUBE_API_KEY;
+      
+      if (!API_KEY) {
+        return res.status(500).json({ 
+          message: 'YouTube API key not configured',
+          error: 'YOUTUBE_API_KEY environment variable is missing'
+        });
+      }
+
+      // Fetch live and upcoming videos from the channel
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=live&type=video&key=${API_KEY}&maxResults=5&order=date`;
+      const upcomingUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=upcoming&type=video&key=${API_KEY}&maxResults=5&order=date`;
+      
+      const [liveResponse, upcomingResponse] = await Promise.all([
+        fetch(searchUrl).then(r => r.json()).catch(() => ({ items: [] })),
+        fetch(upcomingUrl).then(r => r.json()).catch(() => ({ items: [] }))
+      ]);
+
+      const allVideos = [
+        ...(liveResponse.items || []),
+        ...(upcomingResponse.items || [])
+      ];
+
+      if (allVideos.length === 0) {
+        return res.json([]);
+      }
+
+      // Get detailed video information including live broadcast details
+      const videoIds = allVideos.map(video => video.id.videoId).join(',');
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails,statistics&id=${videoIds}&key=${API_KEY}`;
+      
+      const detailsResponse = await fetch(detailsUrl);
+      const detailsData = await detailsResponse.json();
+
+      if (!detailsData.items) {
+        return res.json([]);
+      }
+
+      // Format response data
+      const formattedVideos = detailsData.items.map(video => ({
+        id: video.id,
+        title: video.snippet.title,
+        scheduledStartTime: video.liveStreamingDetails?.scheduledStartTime,
+        actualStartTime: video.liveStreamingDetails?.actualStartTime,
+        liveBroadcastContent: video.snippet.liveBroadcastContent,
+        viewerCount: video.liveStreamingDetails?.concurrentViewers ? 
+          parseInt(video.liveStreamingDetails.concurrentViewers) : null,
+        thumbnailUrl: video.snippet.thumbnails.maxres?.url || 
+          video.snippet.thumbnails.high?.url || 
+          video.snippet.thumbnails.medium?.url,
+        channelTitle: video.snippet.channelTitle
+      }));
+
+      // Sort by scheduled start time (upcoming first, then live)
+      formattedVideos.sort((a, b) => {
+        if (a.liveBroadcastContent === 'live' && b.liveBroadcastContent !== 'live') return -1;
+        if (b.liveBroadcastContent === 'live' && a.liveBroadcastContent !== 'live') return 1;
+        
+        const timeA = a.scheduledStartTime || a.actualStartTime;
+        const timeB = b.scheduledStartTime || b.actualStartTime;
+        
+        if (!timeA && !timeB) return 0;
+        if (!timeA) return 1;
+        if (!timeB) return -1;
+        
+        return new Date(timeA).getTime() - new Date(timeB).getTime();
+      });
+
+      res.json(formattedVideos);
+    } catch (error) {
+      console.error('YouTube API error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch YouTube live videos',
+        error: error.message 
+      });
+    }
+  });
+
   // Database export endpoints (admin only)
   app.get('/api/admin/export/json', isAdmin, async (req, res) => {
     try {

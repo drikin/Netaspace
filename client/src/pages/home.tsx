@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import WeekSelector from "@/components/week-selector";
 import TabNavigation from "@/components/tab-navigation";
 import TopicCard from "@/components/ui/topic-card";
+import { YouTubeLiveEmbed } from "@/components/youtube-live-embed";
 
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
@@ -261,6 +262,9 @@ const Home: React.FC = () => {
       )}
 
       <div className="space-y-6 px-4 sm:px-0">
+        {/* YouTube Live Embed */}
+        <YouTubeLiveEmbed className="mb-6" />
+        
         {isLoading ? (
           // Loading state
           Array.from({ length: 3 }).map((_, i) => (
