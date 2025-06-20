@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+import fs from "fs";
 
 const app = express();
 app.use(express.json());
@@ -49,9 +51,6 @@ app.use((req, res, next) => {
 
   // For Replit compatibility, serve static files instead of using Vite dev middleware
   // This bypasses the host restrictions that prevent access from Replit domains
-  import path from "path";
-  import fs from "fs";
-  
   const distPath = path.resolve(process.cwd(), "dist", "public");
   
   if (fs.existsSync(distPath)) {
