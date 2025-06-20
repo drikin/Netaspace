@@ -64,6 +64,9 @@ const Footer = () => {
                   v{versionInfo.app} (Extension: v{versionInfo.extension})
                 </span>
               )}
+              <span className="block mt-2 text-xs text-gray-300">
+                <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded">?</kbd> キーでヘルプ
+              </span>
             </p>
           </div>
         </div>

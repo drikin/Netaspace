@@ -13,6 +13,7 @@ import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
 
 import { WelcomeNotification } from "@/components/welcome-notification";
+import KeyboardShortcutsDialog from "@/components/keyboard-shortcuts-dialog";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
 
 function App() {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
   useEffect(() => {
     // Create a simple fingerprint using a random ID that persists in localStorage
@@ -42,6 +44,28 @@ function App() {
     }
   }, []);
 
+  // Keyboard shortcut for showing help (? key)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only trigger if ? key is pressed (Shift + / on most keyboards) and no input is focused
+      if (
+        event.key === '?' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        document.activeElement?.role !== 'textbox'
+      ) {
+        event.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -53,6 +77,11 @@ function App() {
           <Footer />
           {/* 新機能のお知らせコンポーネント */}
           <WelcomeNotification />
+          {/* キーボードショートカットヘルプダイアログ */}
+          <KeyboardShortcutsDialog 
+            open={showKeyboardShortcuts} 
+            onOpenChange={setShowKeyboardShortcuts} 
+          />
         </div>
         <Toaster />
       </TooltipProvider>
