@@ -47,13 +47,23 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
+  // For Replit compatibility, serve static files instead of using Vite dev middleware
+  // This bypasses the host restrictions that prevent access from Replit domains
+  import path from "path";
+  import fs from "fs";
+  
+  const distPath = path.resolve(process.cwd(), "dist", "public");
+  
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    
+    // Catch-all handler for SPA routing
+    app.get("*", (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   } else {
-    serveStatic(app);
+    console.warn("Build directory not found, falling back to development mode");
+    await setupVite(app, server);
   }
 
   // Serve the app on configured port
