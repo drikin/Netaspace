@@ -16,6 +16,7 @@ import { PerformanceMonitor } from "@/components/performance-monitor";
 import { insertWeekSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useFingerprint } from "@/hooks/use-fingerprint";
+import { Pencil, Check, X } from "lucide-react";
 
 // Login form schema
 const loginSchema = z.object({
@@ -31,6 +32,8 @@ const Admin: React.FC = () => {
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
   const [isWeekListDialogOpen, setIsWeekListDialogOpen] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(false);
+  const [editingWeekId, setEditingWeekId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   // Use the auth hook
   const { user, isLoading: isAuthLoading, isAuthenticated, isAdmin, refetch: refetchAuth } = useAuth();
@@ -258,6 +261,59 @@ const Admin: React.FC = () => {
 
   const handleSetActiveWeek = (weekId: number) => {
     setActiveWeekMutation.mutate(weekId);
+  };
+
+  // Update week title mutation
+  const updateWeekTitleMutation = useMutation({
+    mutationFn: async ({ weekId, title }: { weekId: number; title: string }) => {
+      const response = await apiRequest("PATCH", `/api/weeks/${weekId}`, { title });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update week title: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: async (data) => {
+      console.log("Update successful, response:", data);
+      toast({
+        title: "タイトルを更新しました",
+        description: "週のタイトルが正常に更新されました。",
+      });
+      // Invalidate all week-related queries
+      await queryClient.invalidateQueries({ queryKey: ["/api/weeks"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+      // Also refetch to ensure fresh data
+      await queryClient.refetchQueries({ queryKey: ["/api/weeks"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/weeks/active"] });
+      setEditingWeekId(null);
+      setEditingTitle("");
+    },
+    onError: (error) => {
+      console.error("Update failed:", error);
+      toast({
+        title: "エラー",
+        description: "タイトルの更新に失敗しました。",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartEdit = (weekId: number, currentTitle: string) => {
+    setEditingWeekId(weekId);
+    setEditingTitle(currentTitle);
+  };
+
+  const handleSaveTitle = (weekId: number) => {
+    if (editingTitle.trim()) {
+      updateWeekTitleMutation.mutate({ weekId, title: editingTitle.trim() });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingWeekId(null);
+    setEditingTitle("");
   };
 
   // Generate markdown list for featured topics
@@ -518,25 +574,81 @@ const Admin: React.FC = () => {
                   (weeksData as any).map((week: any) => (
                     <div
                       key={week.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-3 border rounded-lg transition-colors ${
                         week.isActive 
                           ? 'border-blue-500 bg-blue-50' 
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => !week.isActive && handleSetActiveWeek(week.id)}
                     >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="font-medium">{week.title}</h3>
+                      <div className="flex justify-between items-start gap-2">
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => !week.isActive && handleSetActiveWeek(week.id)}
+                        >
+                          {editingWeekId === week.id ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editingTitle}
+                                onChange={(e) => setEditingTitle(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleSaveTitle(week.id);
+                                  } else if (e.key === 'Escape') {
+                                    handleCancelEdit();
+                                  }
+                                }}
+                                className="h-7 text-sm"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveTitle(week.id);
+                                }}
+                                disabled={updateWeekTitleMutation.isPending}
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelEdit();
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <h3 className="font-medium">{week.title}</h3>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {new Date(week.startDate).toLocaleDateString('ja-JP')} 〜 {new Date(week.endDate).toLocaleDateString('ja-JP')}
                           </p>
                         </div>
-                        {week.isActive && (
-                          <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                            アクティブ
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {!editingWeekId && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEdit(week.id, week.title);
+                              }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {week.isActive && (
+                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded whitespace-nowrap">
+                              アクティブ
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))

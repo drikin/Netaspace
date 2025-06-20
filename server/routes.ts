@@ -513,6 +513,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/weeks/:id', isAdmin, async (req, res) => {
+    try {
+      const weekId = parseInt(req.params.id);
+      const { title } = req.body;
+      
+      if (isNaN(weekId)) {
+        return res.status(400).json({ message: 'Invalid week ID' });
+      }
+      
+      if (!title || typeof title !== 'string' || title.trim().length === 0) {
+        return res.status(400).json({ message: 'Valid title is required' });
+      }
+      
+      const updatedWeek = await storage.updateWeekTitle(weekId, title.trim());
+      res.setHeader('Content-Type', 'application/json');
+      res.json(updatedWeek);
+    } catch (error) {
+      console.error('Error updating week title:', error);
+      if (error instanceof Error && error.message === 'Week not found') {
+        return res.status(404).json({ message: 'Week not found' });
+      }
+      res.status(500).json({ 
+        message: 'Failed to update week title',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Topic routes
   // POST route must come before GET route to avoid routing conflicts
   app.post('/api/topics', async (req, res) => {

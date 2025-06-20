@@ -26,6 +26,12 @@ export default defineConfig({
       '501f69cc-2328-4443-a1ab-fedf538f9e9b-00-2dnq4o7yktcm.kirk.replit.dev',
       '.replit.dev', // Allow all replit.dev subdomains
     ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

@@ -26,7 +26,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
   return (
     <div className="px-4 sm:px-0 mb-6 flex justify-between items-center">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">今週のネタ候補</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{week?.title || "今週のネタ候補"}</h1>
         {week ? (
           <p className="mt-1 text-sm text-gray-600">
             {formatDateRange(new Date(week.startDate), new Date(week.endDate))}

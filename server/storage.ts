@@ -91,6 +91,7 @@ export interface IStorage {
   getActiveWeek(): Promise<Week | undefined>;
   createWeek(week: InsertWeek): Promise<Week>;
   setActiveWeek(weekId: number): Promise<void>;
+  updateWeekTitle(weekId: number, title: string): Promise<Week>;
   
   // Topic operations
   getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]>;
@@ -215,6 +216,22 @@ class PostgreSQLStorage implements IStorage {
         .set({ isActive: true })
         .where(eq(weeks.id, weekId));
     }, 'setActiveWeek');
+  }
+
+  async updateWeekTitle(weekId: number, title: string): Promise<Week> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .update(weeks)
+        .set({ title })
+        .where(eq(weeks.id, weekId))
+        .returning();
+      
+      if (!result || result.length === 0) {
+        throw new Error('Week not found');
+      }
+      
+      return result[0];
+    }, 'updateWeekTitle');
   }
 
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
