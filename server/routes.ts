@@ -108,6 +108,37 @@ async function fetchWithRetry(url: string, options: any, maxRetries: number = 3)
   throw lastError || new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
 }
 
+// Fallback service using Microlink API
+async function fetchWithFallbackService(url: string) {
+  try {
+    const response = await fetchWithRetry(`https://api.microlink.io/?url=${encodeURIComponent(url)}`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+      }
+    }, 2);
+    
+    const data = await response.json();
+    
+    if (data.status === 'success' && data.data) {
+      return {
+        title: data.data.title || '',
+        description: data.data.description || '',
+        finalUrl: data.data.url || url,
+        originalUrl: url,
+        ogImage: data.data.image?.url || ''
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Fallback service error:', error);
+    return null;
+  }
+}
+
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
   // Check cache first
@@ -143,12 +174,19 @@ async function fetchArticleInfo(url: string) {
       redirect: 'follow',
       signal: AbortSignal.timeout(10000), // Increased timeout to 10 seconds
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Cache-Control': 'max-age=0',
+        'Referer': 'https://www.google.com/',
+        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'cross-site',
+        'sec-fetch-user': '?1',
         'Upgrade-Insecure-Requests': '1'
       }
     }, 3); // Retry up to 3 times
@@ -219,6 +257,24 @@ async function fetchArticleInfo(url: string) {
       ogImage
     };
 
+    // Check if we got meaningful content (not just fallback content)
+    const isValidTitle = title && title.trim() !== '' && title !== '- YouTube' && !title.includes('YouTube でお気に入りの動画');
+    
+    if (!isValidTitle) {
+      console.log('Primary fetch returned poor quality data, trying fallback service...');
+      try {
+        const fallbackResult = await fetchWithFallbackService(url);
+        if (fallbackResult && fallbackResult.title && fallbackResult.title.trim() !== '') {
+          console.log('Fallback service provided better data:', fallbackResult.title);
+          // Cache the fallback result
+          urlCache.set(url, { title: fallbackResult.title, description: fallbackResult.description, cached: Date.now() });
+          return fallbackResult;
+        }
+      } catch (fallbackError) {
+        console.log('Fallback service also failed:', fallbackError);
+      }
+    }
+
     // Cache the result
     urlCache.set(url, { title, description, cached: Date.now() });
 
@@ -238,6 +294,20 @@ async function fetchArticleInfo(url: string) {
       } else {
         console.error('Unknown error type:', error.constructor.name);
       }
+    }
+    
+    // Try fallback service as last resort
+    console.log('Primary fetch failed completely, trying fallback service...');
+    try {
+      const fallbackResult = await fetchWithFallbackService(url);
+      if (fallbackResult && fallbackResult.title && fallbackResult.title.trim() !== '') {
+        console.log('Fallback service rescued the request:', fallbackResult.title);
+        // Cache the fallback result
+        urlCache.set(url, { title: fallbackResult.title, description: fallbackResult.description, cached: Date.now() });
+        return fallbackResult;
+      }
+    } catch (fallbackError) {
+      console.log('Fallback service also failed completely:', fallbackError);
     }
     
     // Return fallback metadata with the original URL

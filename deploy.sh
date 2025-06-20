@@ -202,12 +202,19 @@ fi
 
 # Start application with PM2
 log "Starting application with PM2..."
+# Export required environment variables for PM2
+export DATABASE_URL="postgresql://postgres:netapass123@localhost:5432/neta_local"
+export NODE_ENV="production"
+export PORT="5000"
+export SESSION_SECRET="neta-backspace-fm-super-secret-session-key-2025"
+export ADMIN_PASSWORD="${ADMIN_PASSWORD:-default_admin_pass}"
+
 if [[ -f ecosystem.config.cjs ]]; then
     pm2 start ecosystem.config.cjs
 elif [[ -f ecosystem.config.js ]]; then
     pm2 start ecosystem.config.js
 else
-    PORT=5000 pm2 start dist/index.js --name "$SERVICE_NAME" -i 1 --max-memory-restart 300M
+    DATABASE_URL="$DATABASE_URL" PORT=5000 pm2 start dist/index.js --name "$SERVICE_NAME" -i 1 --max-memory-restart 300M
 fi
 
 pm2 save
