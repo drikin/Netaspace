@@ -73,6 +73,29 @@ const Home: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
+  // Keyboard shortcut for toggling sort order (Tab key)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only trigger if Tab key is pressed without modifiers and no input is focused
+      if (
+        event.key === 'Tab' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        document.activeElement?.role !== 'textbox'
+      ) {
+        event.preventDefault();
+        setSortOrder(prev => prev === 'stars' ? 'newest' : 'stars');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Force cache clear for production issues
   const handleForceClear = () => {
     queryClient.clear();
