@@ -4,6 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Trash2, AlertTriangle, Star } from "lucide-react";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -93,42 +98,46 @@ const AdminControls: React.FC<AdminControlsProps> = ({
     }
   };
 
-  const getButtonClassName = (status: string) => {
-    const baseClass = "px-3 py-2 text-sm font-medium rounded-md flex items-center";
-    
-    if (currentStatus === status) {
-      if (status === "featured") {
-        return `${baseClass} bg-blue-100 text-blue-800`;
-      }
-    }
-    
-    return `${baseClass} bg-gray-100 text-gray-800 hover:bg-gray-200`;
-  };
-
   return (
     <>
-      <div className="mt-4 flex justify-between items-center">
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            className={getButtonClassName("featured")}
-            disabled={isUpdating}
-            onClick={() => handleStatusChange("featured")}
-          >
-            <Star className="h-4 w-4 mr-2" />
-            採用
-          </Button>
-        </div>
+      <div className="flex gap-1 justify-end">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-6 w-6 p-0 rounded-full transition-colors ${
+                currentStatus === "featured"
+                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+              disabled={isUpdating}
+              onClick={() => handleStatusChange("featured")}
+            >
+              <Star className="h-3 w-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{currentStatus === "featured" ? "採用を取り消す" : "採用する"}</p>
+          </TooltipContent>
+        </Tooltip>
         
-        <Button
-          variant="ghost"
-          className="px-3 py-2 text-sm font-medium rounded-md flex items-center bg-red-50 text-red-700 hover:bg-red-100"
-          disabled={isDeleting}
-          onClick={() => setShowDeleteDialog(true)}
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          削除
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+              disabled={isDeleting}
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>削除</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
       
       {/* 削除確認ダイアログ */}

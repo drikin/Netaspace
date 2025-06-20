@@ -220,19 +220,19 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                   </>
                 )}
               </Button>
+              {/* Admin controls under vote button */}
+              {isAdmin && (
+                <div className="mt-2">
+                  <AdminControls
+                    topicId={topic.id}
+                    currentStatus={topic.status}
+                    onStatusChange={refetchTopics}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Admin controls */}
-          {isAdmin && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <AdminControls
-                topicId={topic.id}
-                currentStatus={topic.status}
-                onStatusChange={refetchTopics}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
       {/* X Share Confirmation Dialog */}
