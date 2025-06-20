@@ -106,15 +106,19 @@ const AdminControls: React.FC<AdminControlsProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`h-6 w-6 p-0 rounded-full transition-colors ${
+              className={`h-7 w-7 p-0 rounded-full transition-all ${
                 currentStatus === "featured"
-                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  ? "bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
               disabled={isUpdating}
               onClick={() => handleStatusChange("featured")}
             >
-              <Star className="h-3 w-3" />
+              <Star className={`h-4 w-4 transition-all ${
+                currentStatus === "featured" 
+                  ? "fill-white drop-shadow-sm"
+                  : ""
+              }`} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -127,11 +131,11 @@ const AdminControls: React.FC<AdminControlsProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+              className="h-7 w-7 p-0 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
               disabled={isDeleting}
               onClick={() => setShowDeleteDialog(true)}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
