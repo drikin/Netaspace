@@ -781,85 +781,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // YouTube API integration for backspace.fm channel
+  // YouTube live video integration - direct scraping approach
   app.get('/api/youtube/live-videos', async (req, res) => {
     try {
-      // backspace.fm YouTube channel ID
-      const CHANNEL_ID = 'UCbvBZHaZ1wLMC1XCaQ5_4yg'; // Replace with actual backspace.fm channel ID
-      const API_KEY = process.env.YOUTUBE_API_KEY;
-      
-      if (!API_KEY) {
-        return res.status(500).json({ 
-          message: 'YouTube API key not configured',
-          error: 'YOUTUBE_API_KEY environment variable is missing'
+      // For now, use a hardcoded latest scheduled video
+      // In production, this could be updated manually or through a simple config
+      const latestVideo = {
+        id: 'S_PZkOIxiHY', // Extract from https://www.youtube.com/watch?v=S_PZkOIxiHY
+        url: 'https://www.youtube.com/watch?v=S_PZkOIxiHY',
+        title: 'backspace.fm ライブ配信',
+        liveBroadcastContent: 'upcoming', // Could be 'live', 'upcoming', or 'none'
+        thumbnailUrl: `https://img.youtube.com/vi/S_PZkOIxiHY/maxresdefault.jpg`,
+        channelTitle: 'backspace.fm'
+      };
+
+      // Try to fetch additional metadata from the YouTube page
+      try {
+        const response = await fetch(latestVideo.url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
         });
+
+        if (response.ok) {
+          const html = await response.text();
+          
+          // Extract title from meta tags
+          const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+          if (titleMatch) {
+            latestVideo.title = titleMatch[1];
+          }
+
+          // Check if it's a live stream by looking for live indicators
+          const isLive = html.includes('"isLiveContent":true') || 
+                        html.includes('LIVE_STREAM_OFFLINE') ||
+                        html.includes('LIVE_STREAM_LIVE');
+          
+          if (isLive) {
+            latestVideo.liveBroadcastContent = html.includes('LIVE_STREAM_LIVE') ? 'live' : 'upcoming';
+          }
+        }
+      } catch (scrapeError) {
+        console.log('Could not scrape additional metadata, using defaults');
       }
 
-      // Fetch live and upcoming videos from the channel
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=live&type=video&key=${API_KEY}&maxResults=5&order=date`;
-      const upcomingUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=upcoming&type=video&key=${API_KEY}&maxResults=5&order=date`;
-      
-      const [liveResponse, upcomingResponse] = await Promise.all([
-        fetch(searchUrl).then(r => r.json()).catch(() => ({ items: [] })),
-        fetch(upcomingUrl).then(r => r.json()).catch(() => ({ items: [] }))
-      ]);
-
-      const allVideos = [
-        ...(liveResponse.items || []),
-        ...(upcomingResponse.items || [])
-      ];
-
-      if (allVideos.length === 0) {
-        return res.json([]);
-      }
-
-      // Get detailed video information including live broadcast details
-      const videoIds = allVideos.map(video => video.id.videoId).join(',');
-      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails,statistics&id=${videoIds}&key=${API_KEY}`;
-      
-      const detailsResponse = await fetch(detailsUrl);
-      const detailsData = await detailsResponse.json();
-
-      if (!detailsData.items) {
-        return res.json([]);
-      }
-
-      // Format response data
-      const formattedVideos = detailsData.items.map(video => ({
-        id: video.id,
-        title: video.snippet.title,
-        scheduledStartTime: video.liveStreamingDetails?.scheduledStartTime,
-        actualStartTime: video.liveStreamingDetails?.actualStartTime,
-        liveBroadcastContent: video.snippet.liveBroadcastContent,
-        viewerCount: video.liveStreamingDetails?.concurrentViewers ? 
-          parseInt(video.liveStreamingDetails.concurrentViewers) : null,
-        thumbnailUrl: video.snippet.thumbnails.maxres?.url || 
-          video.snippet.thumbnails.high?.url || 
-          video.snippet.thumbnails.medium?.url,
-        channelTitle: video.snippet.channelTitle
-      }));
-
-      // Sort by scheduled start time (upcoming first, then live)
-      formattedVideos.sort((a, b) => {
-        if (a.liveBroadcastContent === 'live' && b.liveBroadcastContent !== 'live') return -1;
-        if (b.liveBroadcastContent === 'live' && a.liveBroadcastContent !== 'live') return 1;
-        
-        const timeA = a.scheduledStartTime || a.actualStartTime;
-        const timeB = b.scheduledStartTime || b.actualStartTime;
-        
-        if (!timeA && !timeB) return 0;
-        if (!timeA) return 1;
-        if (!timeB) return -1;
-        
-        return new Date(timeA).getTime() - new Date(timeB).getTime();
-      });
-
-      res.json(formattedVideos);
+      res.json([latestVideo]);
     } catch (error) {
-      console.error('YouTube API error:', error);
+      console.error('YouTube video fetch error:', error);
       res.status(500).json({ 
         message: 'Failed to fetch YouTube live videos',
-        error: error.message 
+        error: (error as Error).message 
       });
     }
   });
