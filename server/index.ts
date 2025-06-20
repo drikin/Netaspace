@@ -49,8 +49,18 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Use Vite development mode for immediate changes
-  await setupVite(app, server);
+  // Use development mode to see changes immediately
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    const distPath = path.resolve(process.cwd(), "dist", "public");
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get("*", (_req, res) => {
+        res.sendFile(path.resolve(distPath, "index.html"));
+      });
+    }
+  }
 
   // Serve the app on configured port
   const port = parseInt(process.env.PORT || '5000');
