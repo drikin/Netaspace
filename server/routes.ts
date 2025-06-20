@@ -152,11 +152,12 @@ async function fetchArticleInfo(url: string) {
     const document = dom.window.document;
     
     // タイトルを取得
-    const title = document.querySelector('title')?.textContent?.trim() || '';
+    const title = document.querySelector('meta[property="og:title"]')?.getAttribute('content')?.trim() ||
+                  document.querySelector('title')?.textContent?.trim() || '';
     
     // 説明（メタディスクリプション）を取得
-    const description = document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ||
-                        document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.trim() || '';
+    const description = document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.trim() ||
+                        document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || '';
     
     // OGイメージの取得を試みる
     const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute('content')?.trim() || '';
