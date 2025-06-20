@@ -66,6 +66,48 @@ function isGoogleNewsURL(url: string): boolean {
   return url.includes('news.google.com');
 }
 
+// Retry logic for fetch requests
+async function fetchWithRetry(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Fetching URL (attempt ${attempt}/${maxRetries}): ${url}`);
+      const response = await fetch(url, options);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      console.log(`Successfully fetched URL: ${url} (${response.status})`);
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`Fetch attempt ${attempt} failed for ${url}:`, error);
+      
+      // Don't retry on certain error types
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.log('Network error, will retry if attempts remaining');
+      } else if (error instanceof Error && error.message.includes('abort')) {
+        console.log('Request timed out, will retry if attempts remaining');
+      } else {
+        console.log('Other error, will retry if attempts remaining');
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Max 5 second delay
+        console.log(`Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  // All attempts failed
+  console.error(`All ${maxRetries} attempts failed for URL: ${url}`);
+  throw lastError || new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
+}
+
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
   // Check cache first
@@ -96,14 +138,20 @@ async function fetchArticleInfo(url: string) {
     // 通常のURLの場合
     let targetUrl = url;
     
-    // Fetch with proper encoding handling
-    const response = await fetch(targetUrl, { 
+    // Fetch with proper encoding handling and retry logic
+    const response = await fetchWithRetry(targetUrl, {
       redirect: 'follow',
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(10000), // Increased timeout to 10 seconds
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TopicBot/1.0)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
       }
-    });
+    }, 3); // Retry up to 3 times
     
     const finalUrl = response.url;
     
@@ -176,8 +224,31 @@ async function fetchArticleInfo(url: string) {
 
     return result;
   } catch (error) {
-    console.error('Error fetching article info:', error);
-    return { title: '', description: '', finalUrl: url, originalUrl: url, ogImage: '' };
+    console.error('Error fetching article info for URL:', url);
+    console.error('Error details:', error);
+    
+    // Provide more specific error information for debugging
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('abort')) {
+        console.error('Timeout error - URL may be slow to respond or blocked');
+      } else if (error.message.includes('fetch')) {
+        console.error('Network error - check connectivity and firewall settings');
+      } else if (error.message.includes('HTTP')) {
+        console.error('HTTP error - server returned an error status');
+      } else {
+        console.error('Unknown error type:', error.constructor.name);
+      }
+    }
+    
+    // Return fallback metadata with the original URL
+    return { 
+      title: 'ページタイトル取得失敗', 
+      description: 'ページの詳細情報を取得できませんでした。', 
+      finalUrl: url, 
+      originalUrl: url, 
+      ogImage: '',
+      error: true // Flag to indicate an error occurred
+    };
   }
 }
 
