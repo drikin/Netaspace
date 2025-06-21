@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
+  SidebarProvider,
   Sidebar, 
   SidebarContent, 
   SidebarHeader,
@@ -79,8 +80,9 @@ const TrendingSidebar: React.FC<TrendingSidebarProps> = ({ className, onAddTopic
   };
 
   return (
-    <Sidebar className={cn('w-80 border-r', className)}>
-      <SidebarHeader className="border-b p-4">
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar className={cn('w-80 border-r', className)}>
+        <SidebarHeader className="border-b p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
@@ -183,6 +185,7 @@ const TrendingSidebar: React.FC<TrendingSidebarProps> = ({ className, onAddTopic
         )}
       </SidebarContent>
     </Sidebar>
+    </SidebarProvider>
   );
 };
 
