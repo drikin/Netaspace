@@ -132,9 +132,9 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
       <CardContent>
         <div className="space-y-4">
           {/* Video and Chat Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col lg:flex-row gap-4">
             {/* YouTube Embed */}
-            <div className="lg:col-span-2">
+            <div className="flex-grow lg:w-2/3">
               <div className="relative w-full aspect-video rounded-lg overflow-hidden">
                 <iframe
                   src={`https://www.youtube.com/embed/${latestVideo.id}?autoplay=0&rel=0&modestbranding=1`}
@@ -149,7 +149,7 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
             
             {/* YouTube Chat - Show for live and upcoming streams */}
             {(latestVideo.liveBroadcastContent === 'live' || latestVideo.liveBroadcastContent === 'upcoming') && (
-              <div className="lg:col-span-1">
+              <div className="lg:w-1/3">
                 <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-white">
                   <iframe
                     src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}&theme=light`}
