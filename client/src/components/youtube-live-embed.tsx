@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Users } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface YouTubeVideo {
   id: string;
@@ -19,11 +20,38 @@ interface YouTubeLiveEmbedProps {
 }
 
 export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
+  const videoRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+
   const { data: videos, isLoading, error } = useQuery<YouTubeVideo[]>({
     queryKey: ['/api/youtube/live-videos'],
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
     staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
   });
+
+  // Sync heights between video and chat
+  useEffect(() => {
+    const syncHeights = () => {
+      if (videoRef.current && chatRef.current) {
+        const videoHeight = videoRef.current.offsetHeight;
+        chatRef.current.style.height = `${videoHeight}px`;
+      }
+    };
+
+    syncHeights();
+    window.addEventListener('resize', syncHeights);
+    
+    // Use ResizeObserver for more precise detection
+    const resizeObserver = new ResizeObserver(syncHeights);
+    if (videoRef.current) {
+      resizeObserver.observe(videoRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', syncHeights);
+      resizeObserver.disconnect();
+    };
+  }, [videos]);
 
   if (isLoading) {
     return (
@@ -135,7 +163,7 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* YouTube Embed */}
             <div className="flex-grow lg:w-2/3">
-              <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+              <div ref={videoRef} className="relative w-full aspect-video rounded-lg overflow-hidden">
                 <iframe
                   src={`https://www.youtube.com/embed/${latestVideo.id}?autoplay=0&rel=0&modestbranding=1`}
                   title={latestVideo.title}
@@ -150,7 +178,7 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
             {/* YouTube Chat - Show for live and upcoming streams */}
             {(latestVideo.liveBroadcastContent === 'live' || latestVideo.liveBroadcastContent === 'upcoming') && (
               <div className="lg:w-1/3">
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-white">
+                <div ref={chatRef} className="relative w-full rounded-lg overflow-hidden border bg-white">
                   <iframe
                     src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}&theme=light`}
                     title="ライブチャット"
