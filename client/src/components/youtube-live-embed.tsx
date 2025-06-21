@@ -19,9 +19,10 @@ interface YouTubeVideo {
 interface YouTubeLiveEmbedProps {
   className?: string;
   onHide?: () => void;
+  onNoContent?: () => void;
 }
 
-export function YouTubeLiveEmbed({ className, onHide }: YouTubeLiveEmbedProps) {
+export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLiveEmbedProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +56,13 @@ export function YouTubeLiveEmbed({ className, onHide }: YouTubeLiveEmbedProps) {
     };
   }, [videos]);
 
+  // Notify parent when no content is available
+  useEffect(() => {
+    if ((error || !videos || videos.length === 0) && !isLoading) {
+      onNoContent?.();
+    }
+  }, [error, videos, isLoading, onNoContent]);
+
   if (isLoading) {
     return (
       <Card className={className}>
@@ -75,40 +83,8 @@ export function YouTubeLiveEmbed({ className, onHide }: YouTubeLiveEmbedProps) {
     );
   }
 
-  if (error) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-            backspace.fm ライブ配信
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            現在、ライブ配信情報を取得できません。
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!videos || videos.length === 0) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
-            backspace.fm ライブ配信
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            現在、予定されているライブ配信はありません。
-          </p>
-        </CardContent>
-      </Card>
-    );
+  if (error || !videos || videos.length === 0) {
+    return null;
   }
 
   const latestVideo = videos[0];

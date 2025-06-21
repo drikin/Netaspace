@@ -99,3 +99,27 @@
 .star-button.starred {
   @apply text-yellow-500;
 }
+
+/* Animated gradient background */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
+
+/* Animation delay utility */
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.delay-100 {
+  animation-delay: 0.1s;
+}
