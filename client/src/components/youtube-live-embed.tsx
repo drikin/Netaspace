@@ -171,8 +171,6 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
               </h3>
               {getStatusBadge(latestVideo)}
             </div>
-
-
           </div>
         </div>
       </CardContent>
