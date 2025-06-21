@@ -144,16 +144,31 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
               </div>
             </div>
             
-            {/* YouTube Chat - Only show for live streams */}
-            {latestVideo.liveBroadcastContent === 'live' && (
+            {/* YouTube Chat - Show for live and upcoming streams */}
+            {(latestVideo.liveBroadcastContent === 'live' || latestVideo.liveBroadcastContent === 'upcoming') && (
               <div className="lg:col-span-1">
-                <div className="relative w-full h-full min-h-[300px] lg:aspect-[9/16] rounded-lg overflow-hidden border">
-                  <iframe
-                    src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${window.location.hostname}`}
-                    title="ライブチャット"
-                    frameBorder="0"
-                    className="absolute inset-0 w-full h-full"
-                  />
+                <div className="relative w-full h-full min-h-[300px] lg:aspect-[9/16] rounded-lg overflow-hidden border bg-gray-50 dark:bg-gray-900">
+                  {latestVideo.liveBroadcastContent === 'live' ? (
+                    <iframe
+                      src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}`}
+                      title="ライブチャット"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      className="absolute inset-0 w-full h-full"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                      <div className="text-center">
+                        <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mb-2">チャットは配信開始時に利用可能になります</p>
+                        {latestVideo.scheduledStartTime && (
+                          <p className="text-xs text-muted-foreground">
+                            開始予定: {formatDate(latestVideo.scheduledStartTime)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

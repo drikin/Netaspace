@@ -786,13 +786,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // For now, use a hardcoded latest scheduled video
       // In production, this could be updated manually or through a simple config
-      const latestVideo = {
+      const latestVideo: any = {
         id: 'S_PZkOIxiHY', // Extract from https://www.youtube.com/watch?v=S_PZkOIxiHY
         url: 'https://www.youtube.com/watch?v=S_PZkOIxiHY',
         title: 'backspace.fm ライブ配信',
         liveBroadcastContent: 'upcoming', // Could be 'live', 'upcoming', or 'none'
+        scheduledStartTime: '2025-06-21T12:00:00Z', // Add scheduled start time for upcoming streams
         thumbnailUrl: `https://img.youtube.com/vi/S_PZkOIxiHY/maxresdefault.jpg`,
-        channelTitle: 'backspace.fm'
+        channelTitle: 'backspace.fm',
+        viewerCount: undefined // Will be populated if available
       };
 
       // Try to fetch additional metadata from the YouTube page
@@ -819,6 +821,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (isLive) {
             latestVideo.liveBroadcastContent = html.includes('LIVE_STREAM_LIVE') ? 'live' : 'upcoming';
+          }
+
+          // Extract scheduled start time for upcoming streams
+          const scheduledTimeMatch = html.match(/"scheduledStartTime":"([^"]+)"/);
+          if (scheduledTimeMatch) {
+            latestVideo.scheduledStartTime = scheduledTimeMatch[1];
+          }
+
+          // Extract viewer count for live streams
+          const viewerCountMatch = html.match(/"viewCount":{"simpleText":"([^"]+)/);
+          if (viewerCountMatch) {
+            const viewerText = viewerCountMatch[1].replace(/[^\d]/g, '');
+            if (viewerText) {
+              latestVideo.viewerCount = parseInt(viewerText, 10);
+            }
           }
         }
       } catch (scrapeError) {
