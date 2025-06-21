@@ -7,7 +7,7 @@ export abstract class ArticleSourceBase implements ArticleSource {
   
   protected _isEnabled: boolean = true;
   protected cache: Map<string, { articles: Article[], timestamp: number }> = new Map();
-  protected cacheTimeout: number = 15 * 60 * 1000; // 15 minutes default
+  protected cacheTimeout: number = 30 * 60 * 1000; // 30 minutes default
   
   get isEnabled(): boolean {
     return this._isEnabled;

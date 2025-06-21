@@ -46,11 +46,8 @@ export class XApiSource extends ArticleSourceBase {
   
   private bearerToken: string;
   private searchQueries: string[] = [
-    'テクノロジー lang:ja -is:retweet',
-    'AI OR 人工知能 lang:ja -is:retweet',
-    'プログラミング lang:ja -is:retweet',
-    'Apple OR iPhone lang:ja -is:retweet',
-    'ゲーム lang:ja -is:retweet'
+    '(テクノロジー OR AI OR プログラミング) lang:ja -is:retweet',
+    '(Apple OR ゲーム OR エンタメ) lang:ja -is:retweet'
   ];
   
   constructor() {
@@ -75,9 +72,16 @@ export class XApiSource extends ArticleSourceBase {
     
     const allArticles: Article[] = [];
     
-    // Fetch tweets for each search query
+    // Fetch tweets for each search query with delay between requests
     let successfulQueries = 0;
-    for (const query of this.searchQueries) {
+    for (let i = 0; i < this.searchQueries.length; i++) {
+      const query = this.searchQueries[i];
+      
+      // Add delay between requests to avoid rate limiting (except for first request)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      }
+      
       try {
         console.log(`Searching X API with query: ${query}`);
         const tweets = await this.searchTweets(query);

@@ -1,6 +1,5 @@
 import { Article, ArticleSource } from '@shared/types/article-source';
 import { XApiSource } from './implementations/XApiSource';
-import { MockSource } from './implementations/MockSource';
 
 export class SourceManager {
   private sources: Map<string, ArticleSource> = new Map();
@@ -10,12 +9,11 @@ export class SourceManager {
     // Initialize sources
     const xApiSource = new XApiSource();
     
-    // Only register X API source if token is available
-    if (process.env.TWITTER_BEARER_TOKEN && process.env.USE_MOCK_DATA !== 'true') {
+    // Register X API source
+    if (process.env.TWITTER_BEARER_TOKEN) {
       this.registerSource(xApiSource);
     } else {
-      console.log('Using mock data source (X API may be rate limited or disabled)');
-      this.registerSource(new MockSource());
+      console.error('X API Bearer token not configured');
     }
     
     // Future sources can be added here:
