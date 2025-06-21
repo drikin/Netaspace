@@ -49,8 +49,37 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Force development mode to see immediate changes
-  await setupVite(app, server);
+  // For Replit, build and serve static files to avoid host restrictions
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  if (isDev) {
+    // Build the frontend first
+    console.log('Building frontend for development...');
+    const { execSync } = await import('child_process');
+    try {
+      execSync('npm run build', { stdio: 'inherit' });
+      console.log('Frontend build completed');
+    } catch (error) {
+      console.error('Build failed, falling back to Vite middleware');
+      await setupVite(app, server);
+      return;
+    }
+  }
+  
+  // Serve built files
+  const distPath = path.resolve(process.cwd(), "dist", "public");
+  
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    
+    // Catch-all handler for SPA routing
+    app.get("*", (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
+  } else {
+    console.warn("Build directory not found, attempting Vite setup");
+    await setupVite(app, server);
+  }
 
   // Serve the app on configured port
   const port = parseInt(process.env.PORT || '5000');
