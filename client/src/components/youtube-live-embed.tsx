@@ -150,9 +150,9 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
             {/* YouTube Chat - Show for live and upcoming streams */}
             {(latestVideo.liveBroadcastContent === 'live' || latestVideo.liveBroadcastContent === 'upcoming') && (
               <div className="lg:col-span-1">
-                <div className="relative w-full h-[400px] lg:h-[450px] rounded-lg overflow-hidden border bg-gray-50 dark:bg-gray-900">
+                <div className="relative w-full h-[400px] lg:h-[450px] rounded-lg overflow-hidden border bg-white">
                   <iframe
-                    src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}`}
+                    src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}&dark_theme=0`}
                     title="ライブチャット"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
