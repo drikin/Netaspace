@@ -180,8 +180,8 @@ const Home: React.FC = () => {
       {isLiveVisible && <YouTubeLiveEmbed className="mb-6" onHide={() => setIsLiveVisible(false)} />}
 
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-          <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
+        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
+        <div className="flex items-center gap-2">
           {!isLiveVisible && (
             <Button
               variant="outline"
@@ -193,17 +193,17 @@ const Home: React.FC = () => {
               ライブ配信を表示
             </Button>
           )}
+          {error && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleForceClear}
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              完全リセット
+            </Button>
+          )}
         </div>
-        {error && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleForceClear}
-          >
-            <AlertCircle className="h-4 w-4 mr-2" />
-            完全リセット
-          </Button>
-        )}
       </div>
 
       {/* Sort Controls and Total Count */}
