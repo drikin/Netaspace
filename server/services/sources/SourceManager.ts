@@ -11,10 +11,10 @@ export class SourceManager {
     const xApiSource = new XApiSource();
     
     // Only register X API source if token is available
-    if (process.env.TWITTER_BEARER_TOKEN) {
+    if (process.env.TWITTER_BEARER_TOKEN && process.env.USE_MOCK_DATA !== 'true') {
       this.registerSource(xApiSource);
     } else {
-      console.log('X API Bearer token not configured, using mock data source');
+      console.log('Using mock data source (X API may be rate limited or disabled)');
       this.registerSource(new MockSource());
     }
     
