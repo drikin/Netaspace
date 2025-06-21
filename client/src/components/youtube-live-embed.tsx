@@ -151,56 +151,26 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
             {(latestVideo.liveBroadcastContent === 'live' || latestVideo.liveBroadcastContent === 'upcoming') && (
               <div className="lg:col-span-1">
                 <div className="relative w-full h-full min-h-[300px] lg:aspect-[9/16] rounded-lg overflow-hidden border bg-gray-50 dark:bg-gray-900">
-                  {latestVideo.liveBroadcastContent === 'live' ? (
-                    <iframe
-                      src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}`}
-                      title="ライブチャット"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      className="absolute inset-0 w-full h-full"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                      <div className="text-center">
-                        <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground mb-2">チャットは配信開始時に利用可能になります</p>
-                        {latestVideo.scheduledStartTime && formatDate(latestVideo.scheduledStartTime) && (
-                          <p className="text-xs text-muted-foreground">
-                            開始予定: {formatDate(latestVideo.scheduledStartTime)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <iframe
+                    src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}`}
+                    title="ライブチャット"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    className="absolute inset-0 w-full h-full"
+                  />
                 </div>
               </div>
             )}
           </div>
 
           {/* Video Info */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-medium text-sm line-clamp-2">
                 {latestVideo.title}
               </h3>
               {getStatusBadge(latestVideo)}
             </div>
-            
-            {/* Scheduled Time for Upcoming Videos - Only show if valid date */}
-            {latestVideo.liveBroadcastContent === 'upcoming' && latestVideo.scheduledStartTime && formatDate(latestVideo.scheduledStartTime) && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>配信開始予定: {formatDate(latestVideo.scheduledStartTime)}</span>
-              </div>
-            )}
-            
-            {/* Viewer Count for Live Videos */}
-            {latestVideo.liveBroadcastContent === 'live' && latestVideo.viewerCount && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="w-4 h-4" />
-                <span>{latestVideo.viewerCount.toLocaleString()}人が視聴中</span>
-              </div>
-            )}
 
 
           </div>
