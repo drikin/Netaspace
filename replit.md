@@ -92,6 +92,7 @@ Core entities with optimized indexing:
 - June 20, 2025. Migration from Replit Agent to standard Replit environment completed
 - June 20, 2025. YouTube live video integration added - displays backspace.fm latest live/scheduled videos above tab navigation
 - June 20, 2025. Host configuration optimized for Replit deployment compatibility
+- June 21, 2025. YouTube live video display/hide toggle functionality implemented with localStorage persistence
 
 ## User Preferences
 
