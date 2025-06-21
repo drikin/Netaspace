@@ -46,11 +46,11 @@ export class XApiSource extends ArticleSourceBase {
   
   private bearerToken: string;
   private searchQueries: string[] = [
-    '(技術 OR テクノロジー OR プログラミング OR AI OR 人工知能) lang:ja -is:retweet min_faves:10',
-    '(Apple OR Google OR Microsoft OR Meta) lang:ja -is:retweet min_faves:20',
-    '(ゲーム OR Nintendo OR PlayStation OR Xbox) lang:ja -is:retweet min_faves:15',
-    '(芸能 OR エンタメ OR 映画 OR ドラマ) lang:ja -is:retweet min_faves:30',
-    '(スポーツ OR 野球 OR サッカー) lang:ja -is:retweet min_faves:25'
+    'テクノロジー lang:ja -is:retweet',
+    'AI OR 人工知能 lang:ja -is:retweet',
+    'プログラミング lang:ja -is:retweet',
+    'Apple OR iPhone lang:ja -is:retweet',
+    'ゲーム lang:ja -is:retweet'
   ];
   
   constructor() {
@@ -76,14 +76,23 @@ export class XApiSource extends ArticleSourceBase {
     const allArticles: Article[] = [];
     
     // Fetch tweets for each search query
+    let successfulQueries = 0;
     for (const query of this.searchQueries) {
       try {
+        console.log(`Searching X API with query: ${query}`);
         const tweets = await this.searchTweets(query);
+        console.log(`Found ${tweets.length} tweets for query: ${query}`);
         const articles = this.tweetsToArticles(tweets);
         allArticles.push(...articles);
+        successfulQueries++;
       } catch (error) {
         console.error(`Error fetching tweets for query "${query}":`, error);
       }
+    }
+    
+    // If all queries failed, throw error
+    if (successfulQueries === 0 && allArticles.length === 0) {
+      throw new Error('Failed to fetch any articles from X API');
     }
     
     // Remove duplicates and sort by trending score
@@ -100,30 +109,35 @@ export class XApiSource extends ArticleSourceBase {
     const endpoint = 'https://api.twitter.com/2/tweets/search/recent';
     const params = new URLSearchParams({
       query,
-      max_results: '50',
-      'tweet.fields': 'created_at,author_id,entities,public_metrics',
-      'expansions': 'author_id',
-      'user.fields': 'name,username'
+      max_results: '10',
+      'tweet.fields': 'created_at,author_id,entities,public_metrics'
     });
     
-    const response = await fetch(`${endpoint}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${this.bearerToken}`,
-        'Content-Type': 'application/json'
+    try {
+      const response = await fetch(`${endpoint}?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`X API error response: ${errorText}`);
+        throw new Error(`X API error: ${response.status} ${response.statusText}`);
       }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`X API error: ${response.status} ${response.statusText}`);
+      
+      const data: TwitterV2Response = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error(`Error searching tweets with query "${query}":`, error);
+      throw error;
     }
-    
-    const data: TwitterV2Response = await response.json();
-    return data.data || [];
   }
   
   private tweetsToArticles(tweets: Tweet[]): Article[] {
     return tweets
-      .filter(tweet => this.hasValidUrl(tweet))
+      .filter(tweet => tweet.text && tweet.text.trim().length > 0)
       .map(tweet => this.tweetToArticle(tweet));
   }
   
@@ -135,6 +149,9 @@ export class XApiSource extends ArticleSourceBase {
     const url = tweet.entities?.urls?.[0];
     const metrics = tweet.public_metrics;
     
+    // Use tweet URL if no link is embedded
+    const articleUrl = url?.expanded_url || `https://twitter.com/i/web/status/${tweet.id}`;
+    
     // Extract article info from tweet
     const title = url?.title || this.extractTitle(tweet.text);
     const description = url?.description || tweet.text;
@@ -145,13 +162,13 @@ export class XApiSource extends ArticleSourceBase {
     const techScore = this.calculateTechScore(tweet.text, category);
     
     return {
-      id: this.generateArticleId({ url: url?.expanded_url || '', publishedAt: new Date(tweet.created_at) }),
+      id: this.generateArticleId({ url: articleUrl, publishedAt: new Date(tweet.created_at || new Date()) }),
       title,
-      url: url?.expanded_url || '',
+      url: articleUrl,
       description,
       source: this.id,
       sourceName: this.name,
-      publishedAt: new Date(tweet.created_at),
+      publishedAt: new Date(tweet.created_at || new Date()),
       author: `@${tweet.author_id}`, // Will be replaced with actual username if expansion works
       tags: this.extractHashtags(tweet.text),
       category,
