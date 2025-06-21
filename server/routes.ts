@@ -22,6 +22,9 @@ import path from 'path';
 import fs from 'fs';
 import archiver from 'archiver';
 import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
+import { SourceManager } from './services/sources/SourceManager';
+import { CurationEngine } from './services/curation/CurationEngine';
+import { CurationSettings } from '@shared/types/article-source';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -67,7 +70,7 @@ function isGoogleNewsURL(url: string): boolean {
 }
 
 // Retry logic for fetch requests
-async function fetchWithRetry(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+async function fetchWithRetry(url: string, options: any, maxRetries: number = 3): Promise<any> {
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -1164,6 +1167,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Clear stars error:', error);
       res.status(500).json({ message: 'Failed to clear stars' });
+    }
+  });
+
+  // Article curation routes
+  app.get('/api/trending-articles', async (req, res) => {
+    try {
+      const source = req.query.source as string;
+      const sourceManager = SourceManager.getInstance();
+      const curationEngine = new CurationEngine();
+      
+      let articles;
+      
+      if (source && source !== 'all') {
+        // Fetch from specific source
+        articles = await sourceManager.fetchArticlesFromSource(source);
+      } else {
+        // Fetch from all sources
+        articles = await sourceManager.fetchAllArticles();
+      }
+      
+      // Apply curation
+      const curatedArticles = curationEngine.curateArticles(articles);
+      
+      // Get distribution stats
+      const stats = curationEngine.getDistributionStats(curatedArticles);
+      
+      res.json({
+        articles: curatedArticles,
+        stats,
+        sources: sourceManager.getEnabledSources().map(s => ({
+          id: s.id,
+          name: s.name,
+          icon: s.icon
+        })),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error fetching trending articles:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch trending articles',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  app.post('/api/trending-articles/refresh', async (req, res) => {
+    try {
+      const sourceManager = SourceManager.getInstance();
+      
+      // Clear cache for all sources
+      sourceManager.getAllSources().forEach(source => {
+        if ('clearCache' in source) {
+          (source as any).clearCache();
+        }
+      });
+      
+      res.json({ success: true, message: 'Cache cleared, new articles will be fetched on next request' });
+    } catch (error) {
+      console.error('Error refreshing articles:', error);
+      res.status(500).json({ 
+        message: 'Failed to refresh articles',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  app.get('/api/trending-articles/sources', async (req, res) => {
+    try {
+      const sourceManager = SourceManager.getInstance();
+      const sources = sourceManager.getAllSources();
+      
+      const sourceInfo = await Promise.all(sources.map(async source => {
+        const isAvailable = await source.isAvailable();
+        const rateLimitInfo = await source.getRateLimitInfo?.();
+        
+        return {
+          id: source.id,
+          name: source.name,
+          icon: source.icon,
+          isEnabled: source.isEnabled,
+          isAvailable,
+          rateLimitInfo
+        };
+      }));
+      
+      res.json({ sources: sourceInfo });
+    } catch (error) {
+      console.error('Error fetching source info:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch source information',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  app.put('/api/trending-articles/settings', async (req, res) => {
+    try {
+      const settings: Partial<CurationSettings> = req.body;
+      
+      // Validate settings
+      if (settings.techBias !== undefined && (settings.techBias < 0 || settings.techBias > 100)) {
+        return res.status(400).json({ message: 'techBias must be between 0 and 100' });
+      }
+      
+      if (settings.diversityLevel !== undefined && (settings.diversityLevel < 0 || settings.diversityLevel > 100)) {
+        return res.status(400).json({ message: 'diversityLevel must be between 0 and 100' });
+      }
+      
+      if (settings.trendingWeight !== undefined && (settings.trendingWeight < 0 || settings.trendingWeight > 100)) {
+        return res.status(400).json({ message: 'trendingWeight must be between 0 and 100' });
+      }
+      
+      if (settings.maxArticles !== undefined && (settings.maxArticles < 1 || settings.maxArticles > 100)) {
+        return res.status(400).json({ message: 'maxArticles must be between 1 and 100' });
+      }
+      
+      // Settings would typically be stored in database or config
+      // For now, we'll just return success
+      res.json({ success: true, settings });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({ 
+        message: 'Failed to update settings',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
