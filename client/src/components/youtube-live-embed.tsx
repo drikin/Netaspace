@@ -163,14 +163,9 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
             )}
           </div>
 
-          {/* Video Info */}
-          <div className="space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-sm line-clamp-2">
-                {latestVideo.title}
-              </h3>
-              {getStatusBadge(latestVideo)}
-            </div>
+          {/* Video Status */}
+          <div className="flex justify-center">
+            {getStatusBadge(latestVideo)}
           </div>
         </div>
       </CardContent>
