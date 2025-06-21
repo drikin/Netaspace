@@ -128,42 +128,63 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* YouTube Embed */}
-          <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-            <iframe
-              src={`https://www.youtube.com/embed/${latestVideo.id}?autoplay=0&rel=0&modestbranding=1`}
-              title={latestVideo.title}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            />
+          {/* Video and Chat Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* YouTube Embed */}
+            <div className="lg:col-span-2">
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                <iframe
+                  src={`https://www.youtube.com/embed/${latestVideo.id}?autoplay=0&rel=0&modestbranding=1`}
+                  title={latestVideo.title}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            </div>
+            
+            {/* YouTube Chat - Only show for live streams */}
+            {latestVideo.liveBroadcastContent === 'live' && (
+              <div className="lg:col-span-1">
+                <div className="relative w-full h-full min-h-[300px] lg:aspect-[9/16] rounded-lg overflow-hidden border">
+                  <iframe
+                    src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${window.location.hostname}`}
+                    title="ライブチャット"
+                    frameBorder="0"
+                    className="absolute inset-0 w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Video Info */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-medium text-sm line-clamp-2">
                 {latestVideo.title}
               </h3>
               {getStatusBadge(latestVideo)}
             </div>
+            
+            {/* Scheduled Time for Upcoming Videos */}
+            {latestVideo.liveBroadcastContent === 'upcoming' && latestVideo.scheduledStartTime && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>配信開始予定: {formatDate(latestVideo.scheduledStartTime)}</span>
+              </div>
+            )}
+            
+            {/* Viewer Count for Live Videos */}
+            {latestVideo.liveBroadcastContent === 'live' && latestVideo.viewerCount && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="w-4 h-4" />
+                <span>{latestVideo.viewerCount.toLocaleString()}人が視聴中</span>
+              </div>
+            )}
 
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              {latestVideo.scheduledStartTime && (
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatDate(latestVideo.scheduledStartTime)}
-                </div>
-              )}
-              
-              {latestVideo.viewerCount && (
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {latestVideo.viewerCount.toLocaleString()} 視聴者
-                </div>
-              )}
-            </div>
+
           </div>
         </div>
       </CardContent>
