@@ -16,7 +16,11 @@ type SortOrder = "stars" | "newest";
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("stars");
-  const [isLiveVisible, setIsLiveVisible] = useState(true);
+  const [isLiveVisible, setIsLiveVisible] = useState(() => {
+    // Load state from localStorage, default to true if not found
+    const saved = localStorage.getItem('liveVisible');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -166,6 +170,11 @@ const Home: React.FC = () => {
     setActiveTab(tab);
   };
 
+  const handleLiveVisibilityChange = (visible: boolean) => {
+    setIsLiveVisible(visible);
+    localStorage.setItem('liveVisible', JSON.stringify(visible));
+  };
+
   // Wrapper for refetch function
   const refetchTopics = () => {
     return refetch();
@@ -177,7 +186,7 @@ const Home: React.FC = () => {
 
 
       {/* YouTube Live Embed - above tabs */}
-      {isLiveVisible && <YouTubeLiveEmbed className="mb-6" onHide={() => setIsLiveVisible(false)} />}
+      {isLiveVisible && <YouTubeLiveEmbed className="mb-6" onHide={() => handleLiveVisibilityChange(false)} />}
 
       <div className="flex justify-between items-center mb-4">
         <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
@@ -186,7 +195,7 @@ const Home: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsLiveVisible(true)}
+              onClick={() => handleLiveVisibilityChange(true)}
               className="flex items-center gap-2"
             >
               <Eye className="h-4 w-4" />
