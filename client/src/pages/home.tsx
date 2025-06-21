@@ -9,13 +9,14 @@ import { YouTubeLiveEmbed } from "@/components/youtube-live-embed";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Heart, Clock } from "lucide-react";
+import { RefreshCw, AlertCircle, Heart, Clock, Eye, EyeOff } from "lucide-react";
 
 type SortOrder = "stars" | "newest";
 
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("stars");
+  const [isLiveVisible, setIsLiveVisible] = useState(true);
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -176,10 +177,23 @@ const Home: React.FC = () => {
 
 
       {/* YouTube Live Embed - above tabs */}
-      <YouTubeLiveEmbed className="mb-6" />
+      {isLiveVisible && <YouTubeLiveEmbed className="mb-6" onHide={() => setIsLiveVisible(false)} />}
 
       <div className="flex justify-between items-center mb-4">
-        <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
+        <div className="flex items-center gap-4">
+          <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
+          {!isLiveVisible && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsLiveVisible(true)}
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              ライブ配信を表示
+            </Button>
+          )}
+        </div>
         {error && (
           <Button
             variant="destructive"

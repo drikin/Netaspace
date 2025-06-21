@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users } from 'lucide-react';
+import { Calendar, Clock, Users, EyeOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface YouTubeVideo {
   id: string;
@@ -17,9 +18,10 @@ interface YouTubeVideo {
 
 interface YouTubeLiveEmbedProps {
   className?: string;
+  onHide?: () => void;
 }
 
-export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
+export function YouTubeLiveEmbed({ className, onHide }: YouTubeLiveEmbedProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -148,13 +150,25 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className={`w-4 h-4 rounded-full ${
-            latestVideo.liveBroadcastContent === 'live' 
-              ? 'bg-red-500 animate-pulse' 
-              : 'bg-blue-500'
-          }`}></div>
-          backspace.fm ライブ配信
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full ${
+              latestVideo.liveBroadcastContent === 'live' 
+                ? 'bg-red-500 animate-pulse' 
+                : 'bg-blue-500'
+            }`}></div>
+            backspace.fm ライブ配信
+          </div>
+          {onHide && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onHide}
+              className="h-8 w-8 p-0"
+            >
+              <EyeOff className="h-4 w-4" />
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
