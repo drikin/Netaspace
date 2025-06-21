@@ -85,6 +85,9 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return null; // Return null for invalid dates
+    }
     return date.toLocaleDateString('ja-JP', {
       month: 'short',
       day: 'numeric',
@@ -161,7 +164,7 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
                       <div className="text-center">
                         <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground mb-2">チャットは配信開始時に利用可能になります</p>
-                        {latestVideo.scheduledStartTime && (
+                        {latestVideo.scheduledStartTime && formatDate(latestVideo.scheduledStartTime) && (
                           <p className="text-xs text-muted-foreground">
                             開始予定: {formatDate(latestVideo.scheduledStartTime)}
                           </p>
@@ -183,8 +186,8 @@ export function YouTubeLiveEmbed({ className }: YouTubeLiveEmbedProps) {
               {getStatusBadge(latestVideo)}
             </div>
             
-            {/* Scheduled Time for Upcoming Videos */}
-            {latestVideo.liveBroadcastContent === 'upcoming' && latestVideo.scheduledStartTime && (
+            {/* Scheduled Time for Upcoming Videos - Only show if valid date */}
+            {latestVideo.liveBroadcastContent === 'upcoming' && latestVideo.scheduledStartTime && formatDate(latestVideo.scheduledStartTime) && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="w-4 h-4" />
                 <span>配信開始予定: {formatDate(latestVideo.scheduledStartTime)}</span>
