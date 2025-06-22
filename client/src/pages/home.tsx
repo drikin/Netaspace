@@ -6,6 +6,7 @@ import TabNavigation from "@/components/tab-navigation";
 import TopicCard from "@/components/ui/topic-card";
 import { YouTubeLiveEmbed } from "@/components/youtube-live-embed";
 import TopicTop10Board from "@/components/topic-top10-board";
+import { PodcastPlayer } from "@/components/podcast-player";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -411,13 +412,16 @@ const Home: React.FC = () => {
               style={{ height: `${rankingBoardOffset}px` }} 
               aria-hidden="true"
             />
-            <div className="sticky top-6">
+            <div className="sticky top-6 space-y-4">
               <TopicTop10Board
                 topics={week.topics}
                 selectedSubmitters={selectedSubmitters}
                 onSubmitterToggle={handleSubmitterToggle}
                 onClearFilters={handleClearFilters}
               />
+              
+              {/* Podcast Player */}
+              <PodcastPlayer />
             </div>
           </div>
         )}

@@ -107,8 +107,7 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
   const hasActiveFilters = selectedSubmitters.length > 0;
 
   return (
-    <div className="animate-in slide-in-from-right duration-500">
-      <div className="relative">
+    <div className="relative">
         
         {/* Main board container */}
         <div className="relative rounded-lg border bg-card shadow-sm overflow-hidden w-64 xl:w-72 2xl:w-80">
@@ -217,8 +216,6 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
             </p>
           </div>
         </div>
-
-      </div>
     </div>
   );
 };

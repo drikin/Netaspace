@@ -21,11 +21,18 @@ import iconv from 'iconv-lite';
 import path from 'path';
 import fs from 'fs';
 import archiver from 'archiver';
+import { XMLParser } from 'fast-xml-parser';
 import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+// Cache for podcast episodes
+const podcastCache = {
+  episodes: null as any[] | null,
+  lastFetched: 0
+};
 
 // Rate limiting
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
@@ -884,6 +891,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Podcast episodes endpoint
+  app.get('/api/podcast/episodes', async (req, res) => {
+    try {
+      const now = Date.now();
+      
+      // Check cache first
+      if (podcastCache.episodes && (now - podcastCache.lastFetched) < CACHE_TTL) {
+        return res.json(podcastCache.episodes);
+      }
+      
+      // Fetch RSS feed
+      const response = await fetchWithRetry('https://rss.art19.com/backspace', {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Netaspace/1.0)',
+          'Accept': 'application/rss+xml, application/xml, text/xml'
+        }
+      });
+      
+      const xmlData = await response.text();
+      
+      // Parse XML
+      const parser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '@_'
+      });
+      
+      const result = parser.parse(xmlData);
+      const items = result?.rss?.channel?.item || [];
+      
+      // Extract episodes
+      const episodes = items.slice(0, 20).map((item: any, index: number) => {
+        const enclosure = item.enclosure || {};
+        const audioUrl = enclosure['@_url'] || '';
+        const length = parseInt(enclosure['@_length'] || '0', 10);
+        
+        return {
+          id: `ep-${Date.now()}-${index}`,
+          title: item.title || '',
+          description: item.description || '',
+          pubDate: item.pubDate || '',
+          audioUrl: audioUrl,
+          duration: Math.floor(length / 1000000), // Convert bytes to approximate minutes
+          episodeNumber: extractEpisodeNumber(item.title || '')
+        };
+      });
+      
+      // Update cache
+      podcastCache.episodes = episodes;
+      podcastCache.lastFetched = now;
+      
+      res.json(episodes);
+    } catch (error) {
+      console.error('Podcast feed fetch error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch podcast episodes',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Helper function to extract episode number
+  function extractEpisodeNumber(title: string): string {
+    const match = title.match(/ep(\d+)/i);
+    return match ? match[1] : '';
+  }
 
   // Database export endpoints (admin only)
   app.get('/api/admin/export/json', isAdmin, async (req, res) => {
