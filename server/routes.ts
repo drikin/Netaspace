@@ -15,7 +15,7 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import connectPg from 'connect-pg-simple';
-import fetch from 'node-fetch';
+import fetch, { Response as FetchResponse } from 'node-fetch';
 import { JSDOM } from 'jsdom';
 import iconv from 'iconv-lite';
 import path from 'path';
@@ -82,7 +82,7 @@ function isGoogleNewsURL(url: string): boolean {
 }
 
 // Retry logic for fetch requests
-async function fetchWithRetry(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+async function fetchWithRetry(url: string, options: any, maxRetries: number = 3): Promise<FetchResponse> {
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -135,9 +135,9 @@ async function fetchWithFallbackService(url: string) {
       }
     }, 2);
     
-    const data = await response.json();
+    const data = await response.json() as any;
     
-    if (data.status === 'success' && data.data) {
+    if (data?.status === 'success' && data?.data) {
       return {
         title: data.data.title || '',
         description: data.data.description || '',

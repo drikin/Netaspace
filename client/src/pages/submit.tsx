@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { submitTopicSchema, TopicWithCommentsAndStars } from "@shared/schema";
+import { submitTopicSchema, TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +23,7 @@ const Submit: React.FC = () => {
   const fingerprint = useFingerprint();
   
   // Fetch active week
-  const { data: activeWeek, isLoading: isLoadingWeek } = useQuery({
+  const { data: activeWeek, isLoading: isLoadingWeek } = useQuery<WeekWithTopics>({
     queryKey: ["/api/weeks/active", fingerprint],
     staleTime: 30 * 1000, // 30秒キャッシュ
   });

@@ -50,8 +50,7 @@ function formatTopic(topic: TopicWithCommentsAndStars, index: number): string {
   topicMd += `\n\n`;
   topicMd += `- URL: ${topic.url}\n`;
   topicMd += `- 投稿者: ${topic.submitter}\n`;
-  topicMd += `- スター: ${topic.starsCount}件\n`;
-  topicMd += `- コメント: ${topic.comments?.length || 0}件\n\n`;
+  topicMd += `- スター: ${topic.starsCount}件\n\n`;
   topicMd += `> ${topic.description}\n\n`;
   
   return topicMd;

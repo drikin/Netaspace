@@ -1,7 +1,7 @@
 /**
  * Format a date range to display in Japanese format
  */
-export function formatDateRange(startDate: Date, endDate: Date): string {
+export function formatDateRange(startDate: Date | string, endDate: Date | string): string {
   const start = new Date(startDate);
   const end = new Date(endDate);
   
