@@ -29,8 +29,9 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Rate limiting
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 30; // 30 requests per minute
+// Support both naming conventions for backward compatibility
+const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW || process.env.RATE_LIMIT_WINDOW_MS || '60000'); // Default: 1 minute (60000ms)
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || process.env.RATE_LIMIT_MAX_REQUESTS || '100'); // Default: 100 requests per minute (increased from 30)
 
 // Performance monitoring
 const performanceMetrics = {
@@ -42,21 +43,35 @@ const performanceMetrics = {
   urlCacheMisses: 0
 };
 
-function checkRateLimit(ip: string): boolean {
+function checkRateLimit(ip: string): { allowed: boolean; limit: number; remaining: number; reset: number } {
   const now = Date.now();
   const record = requestCounts.get(ip);
   
   if (!record || now > record.resetTime) {
-    requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return true;
+    const resetTime = now + RATE_LIMIT_WINDOW;
+    requestCounts.set(ip, { count: 1, resetTime });
+    return { 
+      allowed: true, 
+      limit: RATE_LIMIT_MAX, 
+      remaining: RATE_LIMIT_MAX - 1, 
+      reset: Math.ceil(resetTime / 1000) 
+    };
   }
   
-  if (record.count >= RATE_LIMIT_MAX) {
-    return false;
+  const remaining = Math.max(0, RATE_LIMIT_MAX - record.count);
+  const result = {
+    allowed: record.count < RATE_LIMIT_MAX,
+    limit: RATE_LIMIT_MAX,
+    remaining: remaining,
+    reset: Math.ceil(record.resetTime / 1000)
+  };
+  
+  if (result.allowed) {
+    record.count++;
+    result.remaining = Math.max(0, RATE_LIMIT_MAX - record.count);
   }
   
-  record.count++;
-  return true;
+  return result;
 }
 
 // トランザクションベース実装でリアルタイム更新を削除
@@ -342,12 +357,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Rate limiting middleware
   app.use('/api/', (req, res, next) => {
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    // Skip rate limiting for authenticated admins
+    if (req.isAuthenticated && req.isAuthenticated() && (req.user as any)?.isAdmin) {
+      // Set headers for admins to show they have no limits
+      res.setHeader('X-RateLimit-Limit', 'unlimited');
+      res.setHeader('X-RateLimit-Remaining', 'unlimited');
+      return next();
+    }
     
-    if (!checkRateLimit(clientIP)) {
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const rateLimitInfo = checkRateLimit(clientIP);
+    
+    // Always set rate limit headers
+    res.setHeader('X-RateLimit-Limit', rateLimitInfo.limit.toString());
+    res.setHeader('X-RateLimit-Remaining', rateLimitInfo.remaining.toString());
+    res.setHeader('X-RateLimit-Reset', rateLimitInfo.reset.toString());
+    
+    if (!rateLimitInfo.allowed) {
+      res.setHeader('Retry-After', Math.ceil(RATE_LIMIT_WINDOW / 1000).toString());
       return res.status(429).json({ 
         message: 'Too many requests. Please try again later.',
-        retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+        retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000),
+        limit: rateLimitInfo.limit,
+        remaining: rateLimitInfo.remaining,
+        reset: rateLimitInfo.reset
       });
     }
     

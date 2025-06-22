@@ -143,8 +143,12 @@ TRUSTED_PROXIES=127.0.0.1,153.127.201.139
 LOG_LEVEL=info
 
 # Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
+# Window: 1 minute (60000ms), Max: 100 requests per window
+RATE_LIMIT_WINDOW_MS=60000
 RATE_LIMIT_MAX_REQUESTS=100
+# Alternative naming (both are supported)
+RATE_LIMIT_WINDOW=60000
+RATE_LIMIT_MAX=100
 
 # Admin Password (set via environment variable)
 # ADMIN_PASSWORD will be set from environment or use default
