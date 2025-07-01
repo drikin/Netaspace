@@ -49,36 +49,29 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // For Replit, build and serve static files to avoid host restrictions
+  // Check if we're in development mode
   const isDev = process.env.NODE_ENV === 'development';
+  const isReplit = process.env.REPL_ID !== undefined;
   
-  if (isDev) {
-    // Build the frontend first
-    console.log('Building frontend for development...');
-    const { execSync } = await import('child_process');
-    try {
-      execSync('npm run build', { stdio: 'inherit' });
-      console.log('Frontend build completed');
-    } catch (error) {
-      console.error('Build failed, falling back to Vite middleware');
-      await setupVite(app, server);
-      return;
-    }
-  }
-  
-  // Serve built files
-  const distPath = path.resolve(process.cwd(), "dist", "public");
-  
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    
-    // Catch-all handler for SPA routing
-    app.get("*", (_req, res) => {
-      res.sendFile(path.resolve(distPath, "index.html"));
-    });
-  } else {
-    console.warn("Build directory not found, attempting Vite setup");
+  if (isDev && !isReplit) {
+    // Use Vite dev server for local development (including Docker)
+    console.log('Starting Vite development server...');
     await setupVite(app, server);
+  } else {
+    // For production or Replit, serve static files
+    const distPath = path.resolve(process.cwd(), "dist", "public");
+    
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      
+      // Catch-all handler for SPA routing
+      app.get("*", (_req, res) => {
+        res.sendFile(path.resolve(distPath, "index.html"));
+      });
+    } else {
+      console.error("Build directory not found. Please run 'npm run build' first.");
+      process.exit(1);
+    }
   }
 
   // Serve the app on configured port

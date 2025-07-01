@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
@@ -18,7 +18,9 @@ const Header = () => {
   // Check if user is authenticated
   const { data: auth } = useQuery({
     queryKey: ["/api/auth/me"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: false,
   });
 
   const isAdmin = (auth as any)?.user?.username === 'admin';

@@ -17,6 +17,9 @@ services:
       - ADMIN_PASSWORD=fmbackspace55
       - PORT=3000
       - HOST=0.0.0.0
+      - VITE_HMR_HOST=localhost
+      - VITE_HMR_PORT=3000
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       postgres:
         condition: service_healthy

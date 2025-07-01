@@ -16,10 +16,19 @@ export default defineConfig({
         ]
       : []),
   ],
+  logLevel: 'info',
   server: {
-    host: 'localhost',
+    host: '0.0.0.0', // Listen on all interfaces for Docker
     port: 3000,
     strictPort: false,
+    hmr: {
+      port: 3000,
+      host: 'localhost' // HMR should connect to localhost from the browser
+    },
+    watch: {
+      usePolling: true, // Enable polling for Docker volumes
+      interval: 100
+    },
     allowedHosts: [
       'localhost',
       '127.0.0.1',
