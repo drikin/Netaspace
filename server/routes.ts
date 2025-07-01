@@ -1337,6 +1337,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Share route
+  app.post('/api/topics/:id/share', async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.id);
+      const { fingerprint, platform = 'x' } = req.body;
+      
+      if (isNaN(topicId)) {
+        return res.status(400).json({ message: 'Invalid topic ID' });
+      }
+      
+      if (!fingerprint) {
+        return res.status(400).json({ message: 'Fingerprint is required' });
+      }
+      
+      // Hash the fingerprint to match the data queries
+      const hashedFingerprint = createHash('sha256').update(fingerprint).digest('hex');
+      
+      // Check if the topic exists
+      const topic = await storage.getTopic(topicId, hashedFingerprint);
+      if (!topic) {
+        return res.status(404).json({ message: 'Topic not found' });
+      }
+      
+      // Check if user has already shared this topic
+      const hasShared = await storage.hasShared(topicId, hashedFingerprint);
+      
+      if (hasShared) {
+        // User has already shared this topic
+        return res.json({ 
+          success: true, 
+          hasShared: true,
+          message: 'Already shared'
+        });
+      }
+      
+      // Record the share
+      const success = await storage.addShare({
+        topicId,
+        fingerprint: hashedFingerprint,
+        platform
+      });
+      
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to record share' });
+      }
+      
+      res.json({ 
+        success: true, 
+        hasShared: true,
+        message: 'Share recorded'
+      });
+    } catch (error) {
+      console.error('Share operation error:', error);
+      res.status(500).json({ message: 'Failed to process share operation' });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // WebSocketサーバーをセットアップ

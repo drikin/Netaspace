@@ -64,6 +64,19 @@ export const stars = pgTable("stars", {
   createdAtIdx: index("stars_created_at_idx").on(table.createdAt),
 }));
 
+export const shares = pgTable("shares", {
+  id: serial("id").primaryKey(),
+  topicId: integer("topic_id").references(() => topics.id).notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  platform: text("platform").default("x").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  topicIdIdx: index("shares_topic_id_idx").on(table.topicId),
+  fingerprintIdx: index("shares_fingerprint_idx").on(table.fingerprint),
+  topicFingerprintIdx: index("shares_topic_fingerprint_idx").on(table.topicId, table.fingerprint),
+  createdAtIdx: index("shares_created_at_idx").on(table.createdAt),
+}));
+
 // Comments functionality removed
 
 // Insert schemas
@@ -96,6 +109,12 @@ export const insertStarSchema = createInsertSchema(stars).pick({
   fingerprint: true,
 });
 
+export const insertShareSchema = createInsertSchema(shares).pick({
+  topicId: true,
+  fingerprint: true,
+  platform: true,
+});
+
 // Comment schema removed
 
 // Types
@@ -110,6 +129,9 @@ export type InsertTopic = z.infer<typeof insertTopicSchema>;
 
 export type Star = typeof stars.$inferSelect;
 export type InsertStar = z.infer<typeof insertStarSchema>;
+
+export type Share = typeof shares.$inferSelect;
+export type InsertShare = z.infer<typeof insertShareSchema>;
 
 // Comment types removed
 
@@ -131,7 +153,9 @@ export type CreateTopicData = z.infer<typeof createTopicSchema>;
 // Extended types for API responses
 export type TopicWithCommentsAndStars = Topic & {
   starsCount: number;
+  sharesCount?: number;
   hasStarred?: boolean;
+  hasShared?: boolean;
 };
 
 export type WeekWithTopics = Week & {

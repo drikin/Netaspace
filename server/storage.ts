@@ -9,14 +9,17 @@ import {
   weeks,
   topics,
   stars,
+  shares,
   type User,
   type Week,
   type Topic,
   type Star,
+  type Share,
   type InsertUser,
   type InsertWeek,
   type InsertTopic,
   type InsertStar,
+  type InsertShare,
   type TopicWithCommentsAndStars,
   type WeekWithTopics
 } from '@shared/schema';
@@ -108,6 +111,10 @@ export interface IStorage {
   removeStar(topicId: number, fingerprint: string): Promise<boolean>;
   hasStarred(topicId: number, fingerprint: string): Promise<boolean>;
   getStarsCountByTopicId(topicId: number): Promise<number>;
+  
+  // Share operations
+  addShare(share: InsertShare): Promise<boolean>;
+  hasShared(topicId: number, fingerprint: string): Promise<boolean>;
   
   // Combined operations
   getWeekWithTopics(weekId: number, fingerprint?: string): Promise<WeekWithTopics | undefined>;
@@ -303,17 +310,34 @@ class PostgreSQLStorage implements IStorage {
       .where(inArray(stars.topicId, topicIds))
       .groupBy(stars.topicId);
     
-    // Create a map for quick lookup
+    // Get all share counts in a single query
+    const shareCounts = await db
+      .select({
+        topicId: shares.topicId,
+        count: count(shares.id).as('count')
+      })
+      .from(shares)
+      .where(inArray(shares.topicId, topicIds))
+      .groupBy(shares.topicId);
+    
+    // Create maps for quick lookup
     const starCountMap = new Map<number, number>();
     starCounts.forEach(row => {
       starCountMap.set(row.topicId, Number(row.count));
     });
     
-    // Enrich topics with star counts
+    const shareCountMap = new Map<number, number>();
+    shareCounts.forEach(row => {
+      shareCountMap.set(row.topicId, Number(row.count));
+    });
+    
+    // Enrich topics with star counts and share counts
     return topicsResult.map(topic => ({
       ...topic,
       starsCount: starCountMap.get(topic.id) || 0,
-      hasStarred: false // Will be set by the caller if fingerprint is provided
+      sharesCount: shareCountMap.get(topic.id) || 0,
+      hasStarred: false, // Will be set by the caller if fingerprint is provided
+      hasShared: false   // Will be set by the caller if fingerprint is provided
     }));
   }
 
@@ -442,6 +466,33 @@ class PostgreSQLStorage implements IStorage {
       
       return result.length > 0;
     }, 'hasStarred');
+  }
+
+  async addShare(share: InsertShare): Promise<boolean> {
+    return this.executeWithMonitoring(async () => {
+      try {
+        await db
+          .insert(shares)
+          .values(share);
+        
+        return true;
+      } catch (error) {
+        // Handle unique constraint violation (user already shared this topic)
+        return false;
+      }
+    }, 'addShare');
+  }
+
+  async hasShared(topicId: number, fingerprint: string): Promise<boolean> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .select({ id: shares.id })
+        .from(shares)
+        .where(and(eq(shares.topicId, topicId), eq(shares.fingerprint, fingerprint)))
+        .limit(1);
+      
+      return result.length > 0;
+    }, 'hasShared');
   }
 
   async getStarsCountByTopicId(topicId: number): Promise<number> {

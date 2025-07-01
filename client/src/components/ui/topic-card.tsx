@@ -60,14 +60,26 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
     starMutation.mutate();
   }, [topic.hasStarred, starMutation, topic.id, topic.starsCount]);
 
-  const handleShareToX = useCallback(() => {
+  const handleShareToX = useCallback(async () => {
     setShowShareDialog(false);
+    
+    // Record the share click
+    try {
+      const fingerprint = await getFingerprint();
+      await fetch(`/api/topics/${topic.id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fingerprint, platform: 'x' })
+      });
+    } catch (error) {
+      console.error('Failed to record share:', error);
+    }
     
     // X (Twitter) sharing
     const shareText = `このネタを聞きたい！「${topic.title}」 #backspacefm`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent('https://neta.backspace.fm/')}`;
     window.open(shareUrl, '_blank', 'width=550,height=420');
-  }, [topic.title]);
+  }, [topic.id, topic.title]);
 
   const handleSkipShare = useCallback(() => {
     setShowShareDialog(false);

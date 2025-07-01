@@ -1,9 +1,14 @@
 import React, { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Star, Sparkles, X, Crown, Medal } from "lucide-react";
+import { Trophy, Star, Sparkles, X, Crown, Medal, Info } from "lucide-react";
 import { TopicWithCommentsAndStars } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface TopicTop10BoardProps {
   topics: TopicWithCommentsAndStars[];
@@ -20,35 +25,55 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
 }) => {
   // Calculate submitter statistics - Top 10 only
   const submitterStats = useMemo(() => {
-    const stats = new Map<string, { count: number; totalStars: number }>();
+    const stats = new Map<string, { 
+      count: number; 
+      totalStars: number;
+      totalShares: number;
+      adoptedCount: number;
+    }>();
     
     topics.forEach((topic) => {
-      const current = stats.get(topic.submitter) || { count: 0, totalStars: 0 };
+      const current = stats.get(topic.submitter) || { 
+        count: 0, 
+        totalStars: 0,
+        totalShares: 0,
+        adoptedCount: 0,
+      };
       stats.set(topic.submitter, {
         count: current.count + 1,
         totalStars: current.totalStars + topic.starsCount,
+        totalShares: current.totalShares + (topic.sharesCount || 0),
+        adoptedCount: current.adoptedCount + (topic.status === "featured" ? 1 : 0),
       });
     });
     
-    // Convert to array and calculate composite scores
+    // Convert to array and calculate total scores (point addition system)
     return Array.from(stats.entries())
       .map(([submitter, data]) => ({
         submitter,
         ...data,
-        // Composite score: 30% for post count, 70% for total stars
-        score: (data.count * 0.3) + (data.totalStars * 0.7)
+        // Simple point addition system:
+        // Posts: 1 point each
+        // Stars: 2 points each  
+        // Shares: 3 points each
+        // Adopted topics: 10 points each
+        score: (data.count * 1) + (data.totalStars * 2) + (data.totalShares * 3) + (data.adoptedCount * 10)
       }))
       .sort((a, b) => {
-        // Sort by composite score
+        // Sort by total score
         const scoreDiff = b.score - a.score;
         
-        // If scores are equal (or very close due to floating point), use tiebreakers
-        if (Math.abs(scoreDiff) < 0.001) {
-          // First tiebreaker: total stars
+        // If scores are equal, use tiebreakers
+        if (scoreDiff === 0) {
+          // First tiebreaker: adopted count
+          if (a.adoptedCount !== b.adoptedCount) {
+            return b.adoptedCount - a.adoptedCount;
+          }
+          // Second tiebreaker: total stars
           if (a.totalStars !== b.totalStars) {
             return b.totalStars - a.totalStars;
           }
-          // Second tiebreaker: post count
+          // Third tiebreaker: post count
           return b.count - a.count;
         }
         
@@ -146,7 +171,7 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
           {/* Ranking list */}
           <div className="max-h-[calc(80vh-200px)] overflow-y-auto p-4">
             <div className="space-y-2">
-              {submitterStats.map(({ submitter, count, totalStars }, index) => {
+              {submitterStats.map(({ submitter, count, totalStars, totalShares, adoptedCount }, index) => {
                 const isSelected = selectedSubmitters.includes(submitter);
                 const rank = index + 1;
                 
@@ -174,7 +199,7 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
                         )}>
                           {submitter}
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-600">
                             {count}ネタ
                           </span>
@@ -183,6 +208,24 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
                               <Star className="h-3 w-3 text-orange-500 fill-current" />
                               <span className="text-xs font-semibold text-orange-600">
                                 {totalStars}
+                              </span>
+                            </div>
+                          )}
+                          {totalShares > 0 && (
+                            <div className="flex items-center gap-1">
+                              <svg className="h-3 w-3 text-blue-500 fill-current" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
+                              <span className="text-xs font-semibold text-blue-600">
+                                {totalShares}
+                              </span>
+                            </div>
+                          )}
+                          {adoptedCount > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Trophy className="h-3 w-3 text-green-600 fill-current" />
+                              <span className="text-xs font-semibold text-green-700">
+                                {adoptedCount}
                               </span>
                             </div>
                           )}
@@ -207,13 +250,69 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
             </div>
           </div>
 
-          {/* Footer message */}
+          {/* Footer with scoring rules popover */}
           <div className="border-t bg-gradient-to-r from-purple-50 to-pink-50 p-3">
-            <p className="text-xs text-center text-gray-700 font-medium">
-              <span className="inline-block animate-bounce">🎉</span>
-              {" "}クリックで投稿者のネタを見る{" "}
-              <span className="inline-block animate-bounce delay-100">🎉</span>
-            </p>
+            <div className="flex items-center justify-center">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs font-medium text-gray-700 hover:text-gray-900 hover:bg-transparent p-1"
+                  >
+                    <Info className="h-3 w-3 mr-1" />
+                    採点ルールについて
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="center">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">TOP10 採点ルール</h4>
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2 bg-blue-50 rounded">
+                        <p className="font-semibold text-blue-900 mb-1">加点ルール</p>
+                        <div className="space-y-1 text-blue-800">
+                          <p>📝 ネタ投稿: 1点/件</p>
+                          <p>⭐ 獲得スター: 2点/個</p>
+                          <p>🐦 X共有: 3点/件</p>
+                          <p>🏆 ネタ採用: 10点/件</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-orange-500 font-bold">1.</span>
+                        <div>
+                          <p className="font-medium">加点方式</p>
+                          <p className="text-gray-600">各要素のポイントを単純に合計</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-orange-500 font-bold">2.</span>
+                        <div>
+                          <p className="font-medium">X共有ボーナス</p>
+                          <p className="text-gray-600">「聞きたい」後に「Xで共有」ボタンを押すと加点(3点)</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-orange-500 font-bold">3.</span>
+                        <div>
+                          <p className="font-medium">ネタ採用ボーナス</p>
+                          <p className="text-gray-600">番組で実際に採用されたネタには大幅加点(10点)</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-orange-500 font-bold">4.</span>
+                        <div>
+                          <p className="font-medium">同点の場合</p>
+                          <p className="text-gray-600">①採用数 ②スター数 ③投稿数の順で順位決定</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t text-xs text-gray-500">
+                      <p>毎週月曜日リセット。みんなで盛り上げよう！</p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
     </div>
