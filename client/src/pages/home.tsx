@@ -242,7 +242,7 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen w-full">
       {/* Content wrapper for centering */}
-      <div className="w-full show-ranking:max-w-[1600px] mx-auto show-ranking:flex show-ranking:justify-center show-ranking:gap-8 transition-all duration-300">
+      <div className="w-full show-ranking:max-w-[1600px] show-ranking:flex show-ranking:gap-8 transition-all duration-300">
         {/* Main Content */}
         <div className="w-full max-w-7xl py-6 px-4 sm:px-6 lg:px-8" ref={contentHeaderRef}>
           <WeekSelector week={week as any} isLoading={isLoading} />
