@@ -77,6 +77,18 @@ export const shares = pgTable("shares", {
   createdAtIdx: index("shares_created_at_idx").on(table.createdAt),
 }));
 
+export const scripts = pgTable("scripts", {
+  id: serial("id").primaryKey(),
+  weekId: integer("week_id").references(() => weeks.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: text("updated_by"),
+}, (table) => ({
+  weekIdIdx: index("scripts_week_id_idx").on(table.weekId),
+  createdAtIdx: index("scripts_created_at_idx").on(table.createdAt),
+}));
+
 // Comments functionality removed
 
 // Insert schemas
@@ -115,6 +127,12 @@ export const insertShareSchema = createInsertSchema(shares).pick({
   platform: true,
 });
 
+export const insertScriptSchema = createInsertSchema(scripts).pick({
+  weekId: true,
+  content: true,
+  updatedBy: true,
+});
+
 // Comment schema removed
 
 // Types
@@ -132,6 +150,9 @@ export type InsertStar = z.infer<typeof insertStarSchema>;
 
 export type Share = typeof shares.$inferSelect;
 export type InsertShare = z.infer<typeof insertShareSchema>;
+
+export type Script = typeof scripts.$inferSelect;
+export type InsertScript = z.infer<typeof insertScriptSchema>;
 
 // Comment types removed
 

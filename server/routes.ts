@@ -1394,6 +1394,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Script routes (admin only)
+  app.get('/api/scripts/week/:weekId', isAdmin, async (req, res) => {
+    try {
+      const weekId = parseInt(req.params.weekId);
+      
+      if (isNaN(weekId)) {
+        return res.status(400).json({ message: 'Invalid week ID' });
+      }
+      
+      const script = await storage.getScriptByWeekId(weekId);
+      
+      if (!script) {
+        // Return 404 to indicate no script exists yet
+        return res.status(404).json({ message: 'Script not found' });
+      }
+      
+      res.json(script);
+    } catch (error) {
+      console.error('Get script error:', error);
+      res.status(500).json({ message: 'Failed to get script' });
+    }
+  });
+
+  app.post('/api/scripts', isAdmin, async (req, res) => {
+    try {
+      const { weekId, content } = req.body;
+      
+      if (!weekId || typeof weekId !== 'number') {
+        return res.status(400).json({ message: 'Invalid week ID' });
+      }
+      
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ message: 'Content is required' });
+      }
+      
+      // Get username from session
+      const updatedBy = (req.user as any)?.username || 'admin';
+      
+      // Check if script exists
+      const existingScript = await storage.getScriptByWeekId(weekId);
+      
+      let script;
+      if (existingScript) {
+        // Update existing script
+        script = await storage.updateScript(existingScript.id, {
+          content,
+          updatedBy,
+        });
+      } else {
+        // Create new script
+        script = await storage.createScript({
+          weekId,
+          content,
+          updatedBy,
+        });
+      }
+      
+      res.json(script);
+    } catch (error) {
+      console.error('Save script error:', error);
+      res.status(500).json({ message: 'Failed to save script' });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // WebSocketサーバーをセットアップ

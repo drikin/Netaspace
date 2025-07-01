@@ -20,10 +20,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, i
     { id: "featured", label: "採用" },
   ];
   
-  // Add performance tab for admin users
-  const tabs = isAdmin 
-    ? [...baseTabs, { id: "performance", label: "パフォーマンス" }]
-    : baseTabs;
+  // Add admin-only tabs for both home and admin contexts
+  const adminTabs = isAdmin
+    ? [
+        { id: "script", label: "台本" },
+        { id: "performance", label: "パフォーマンス" }
+      ]
+    : [];
+  
+  const tabs = [...baseTabs, ...adminTabs];
 
   return (
     <div className="px-4 sm:px-0 mb-4 border-b border-gray-200">

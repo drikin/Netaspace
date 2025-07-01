@@ -8,6 +8,7 @@ import { YouTubeLiveEmbed } from "@/components/youtube-live-embed";
 import TopicTop10Board from "@/components/topic-top10-board";
 import { PodcastPlayer } from "@/components/podcast-player";
 import PerformanceMonitor from "@/components/performance-monitor";
+import { ScriptEditor } from "@/components/script-editor";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useAuth } from "@/hooks/use-auth";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
@@ -427,6 +428,8 @@ const Home: React.FC = () => {
           {/* Performance Monitor for Admin Users */}
           {activeTab === "performance" && isAdmin ? (
             <PerformanceMonitor />
+          ) : activeTab === "script" && isAdmin ? (
+            <ScriptEditor />
           ) : (
             <div className="space-y-6 px-4 sm:px-0" ref={topicListRef}>
               {isLoading ? (

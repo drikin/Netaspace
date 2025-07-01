@@ -10,16 +10,19 @@ import {
   topics,
   stars,
   shares,
+  scripts,
   type User,
   type Week,
   type Topic,
   type Star,
   type Share,
+  type Script,
   type InsertUser,
   type InsertWeek,
   type InsertTopic,
   type InsertStar,
   type InsertShare,
+  type InsertScript,
   type TopicWithCommentsAndStars,
   type WeekWithTopics
 } from '@shared/schema';
@@ -115,6 +118,11 @@ export interface IStorage {
   // Share operations
   addShare(share: InsertShare): Promise<boolean>;
   hasShared(topicId: number, fingerprint: string): Promise<boolean>;
+  
+  // Script operations
+  getScriptByWeekId(weekId: number): Promise<Script | undefined>;
+  createScript(script: InsertScript): Promise<Script>;
+  updateScript(id: number, data: Partial<InsertScript>): Promise<Script | undefined>;
   
   // Combined operations
   getWeekWithTopics(weekId: number, fingerprint?: string): Promise<WeekWithTopics | undefined>;
@@ -493,6 +501,44 @@ class PostgreSQLStorage implements IStorage {
       
       return result.length > 0;
     }, 'hasShared');
+  }
+
+  async getScriptByWeekId(weekId: number): Promise<Script | undefined> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .select()
+        .from(scripts)
+        .where(eq(scripts.weekId, weekId))
+        .limit(1);
+      
+      return result[0];
+    }, 'getScriptByWeekId');
+  }
+
+  async createScript(script: InsertScript): Promise<Script> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .insert(scripts)
+        .values(script)
+        .returning();
+      
+      return result[0];
+    }, 'createScript');
+  }
+
+  async updateScript(id: number, data: Partial<InsertScript>): Promise<Script | undefined> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .update(scripts)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(scripts.id, id))
+        .returning();
+      
+      return result[0];
+    }, 'updateScript');
   }
 
   async getStarsCountByTopicId(topicId: number): Promise<number> {
