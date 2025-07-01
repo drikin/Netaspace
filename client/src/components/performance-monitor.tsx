@@ -122,3 +122,5 @@ export function PerformanceMonitor() {
     </Card>
   );
 }
+
+export default PerformanceMonitor;

@@ -14,20 +14,16 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, i
     return null;
   }
 
-  // Define tabs based on context
-  const homeTabs = [
+  // Define base tabs
+  const baseTabs = [
     { id: "all", label: "すべて" },
     { id: "featured", label: "採用" },
   ];
   
-  const adminTabs = [
-    { id: "all", label: "すべて" },
-    { id: "featured", label: "採用" },
-    { id: "performance", label: "パフォーマンス" },
-  ];
-  
-  // Show different tabs based on context
-  let tabs = context === 'admin' && isAdmin ? adminTabs : homeTabs;
+  // Add performance tab for admin users
+  const tabs = isAdmin 
+    ? [...baseTabs, { id: "performance", label: "パフォーマンス" }]
+    : baseTabs;
 
   return (
     <div className="px-4 sm:px-0 mb-4 border-b border-gray-200">

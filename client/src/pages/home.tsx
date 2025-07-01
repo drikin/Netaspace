@@ -7,7 +7,9 @@ import TopicCard from "@/components/ui/topic-card";
 import { YouTubeLiveEmbed } from "@/components/youtube-live-embed";
 import TopicTop10Board from "@/components/topic-top10-board";
 import { PodcastPlayer } from "@/components/podcast-player";
+import PerformanceMonitor from "@/components/performance-monitor";
 import { useFingerprint } from "@/hooks/use-fingerprint";
+import { useAuth } from "@/hooks/use-auth";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Heart, Clock, Eye, EyeOff } from "lucide-react";
@@ -30,6 +32,7 @@ const Home: React.FC = () => {
   const fingerprint = useFingerprint();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
+  const { isAdmin, isAuthenticated } = useAuth();
 
   // Star functionality verified and working correctly
 
@@ -123,8 +126,6 @@ const Home: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
-  const isAdmin = auth?.user?.isAdmin;
-  const isAuthenticated = !!auth?.user;
 
   // Memoize expensive filtering and sorting operations
   const topics = useMemo((): TopicWithCommentsAndStars[] => {
@@ -143,6 +144,9 @@ const Home: React.FC = () => {
           (topic) => !topic.status || topic.status === "pending"
         );
         break;
+      case "performance":
+        // Performance tab doesn't show topics
+        return [];
       case "all":
       default:
         filteredTopics = week.topics;
@@ -283,8 +287,9 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Sort Controls and Total Count */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+          {/* Sort Controls and Total Count - Hide on performance tab */}
+          {activeTab !== "performance" && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={sortOrder === "stars" ? "default" : "outline"}
@@ -319,6 +324,7 @@ const Home: React.FC = () => {
               )}
             </div>
           </div>
+          )}
 
           {/* Error State */}
           {error && (
@@ -365,8 +371,12 @@ const Home: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-6 px-4 sm:px-0" ref={topicListRef}>
-            {isLoading ? (
+          {/* Performance Monitor for Admin Users */}
+          {activeTab === "performance" && isAdmin ? (
+            <PerformanceMonitor />
+          ) : (
+            <div className="space-y-6 px-4 sm:px-0" ref={topicListRef}>
+              {isLoading ? (
               // Loading state
               Array.from({ length: 3 }).map((_, i) => (
                 <div
@@ -401,7 +411,8 @@ const Home: React.FC = () => {
                 </p>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
         
         {/* Top 10 Board - Part of flex layout on wide screens */}

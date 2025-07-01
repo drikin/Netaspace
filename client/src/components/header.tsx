@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { ReleaseNotesDialog } from "@/components/ui/release-notes-dialog";
+import { LoginDialog } from "@/components/login-dialog";
 
 const Header = () => {
   const [location] = useLocation();
@@ -77,28 +78,15 @@ const Header = () => {
               </Button>
               
               {isAdmin ? (
-                <div className="flex items-center space-x-4">
-                  <Link 
-                    href="/admin"
-                    className={`inline-flex items-center px-3 py-1 rounded-md ${isActive("/admin") ? "bg-gray-100" : "hover:bg-gray-50"} text-gray-700 text-sm font-medium`}
-                  >
-                    管理ページ
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleLogout}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ログアウト
-                  </Button>
-                </div>
-              ) : (
-                <Link 
-                  href="/admin"
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                <Button 
+                  variant="ghost" 
+                  onClick={handleLogout}
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  <User className="h-6 w-6" />
-                </Link>
+                  ログアウト
+                </Button>
+              ) : (
+                <LoginDialog />
               )}
             </div>
           </div>
@@ -140,11 +128,6 @@ const Header = () => {
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200">
           <div className="flex items-center px-4">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className="h-6 w-6 text-gray-500" />
-              </div>
-            </div>
             <div className="ml-3">
               <div className="text-base font-medium text-gray-800">
                 {isAdmin ? "管理者" : "ゲスト"}
@@ -163,27 +146,26 @@ const Header = () => {
               更新履歴
             </button>
             {isAdmin ? (
-              <>
-                <Link 
-                  href="/admin"
-                  className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                >
-                  管理ページ
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                >
-                  ログアウト
-                </button>
-              </>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+              >
+                ログアウト
+              </button>
             ) : (
-              <Link 
-                href="/admin"
-                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  // モバイルではログインダイアログを開くための処理が必要
+                  const loginButton = document.querySelector('[data-login-trigger]');
+                  if (loginButton) {
+                    (loginButton as HTMLElement).click();
+                  }
+                }}
+                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
               >
                 管理者ログイン
-              </Link>
+              </button>
             )}
           </div>
         </div>
