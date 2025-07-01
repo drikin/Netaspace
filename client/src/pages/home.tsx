@@ -12,7 +12,8 @@ import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useAuth } from "@/hooks/use-auth";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Heart, Clock, Eye, EyeOff } from "lucide-react";
+import { RefreshCw, AlertCircle, Heart, Clock, Eye, EyeOff, Copy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type SortOrder = "stars" | "newest";
 
@@ -33,6 +34,7 @@ const Home: React.FC = () => {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const { isAdmin, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   // Star functionality verified and working correctly
 
@@ -243,6 +245,46 @@ const Home: React.FC = () => {
     setSelectedSubmitters([]);
   };
 
+  // Generate markdown list for featured topics
+  const generateMarkdownList = () => {
+    const featuredTopics = week?.topics
+      ?.filter(topic => topic.status === "featured")
+      ?.sort((a, b) => {
+        const aTime = a.featuredAt ? new Date(a.featuredAt).getTime() : 0;
+        const bTime = b.featuredAt ? new Date(b.featuredAt).getTime() : 0;
+        return aTime - bTime;
+      }) || [];
+
+    if (featuredTopics.length === 0) {
+      return "採用されたトピックがありません。";
+    }
+
+    const markdown = featuredTopics
+      .map(topic => `- [${topic.title}](${topic.url})`)
+      .join('\n');
+
+    return markdown;
+  };
+
+  // Copy markdown to clipboard
+  const copyMarkdownToClipboard = async () => {
+    const markdown = generateMarkdownList();
+    try {
+      await navigator.clipboard.writeText(markdown);
+      toast({
+        title: "コピーしました",
+        description: "マークダウンリストをクリップボードにコピーしました。",
+      });
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast({
+        title: "エラー",
+        description: "クリップボードへのコピーに失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen w-full">
       {/* Content wrapper for centering */}
@@ -263,6 +305,17 @@ const Home: React.FC = () => {
           <div className="flex justify-between items-center mb-4">
             <TabNavigation onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isAdmin} isAuthenticated={isAuthenticated} context="home" />
             <div className="flex items-center gap-2">
+              {activeTab === "featured" && isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyMarkdownToClipboard}
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  採用リストをコピー
+                </Button>
+              )}
               {!isLiveVisible && hasLiveContent && (
                 <Button
                   variant="outline"
