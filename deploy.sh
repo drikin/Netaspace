@@ -168,6 +168,49 @@ sudo -u postgres psql -c "CREATE DATABASE neta_local;" 2>/dev/null || log "Datab
 
 # Database setup/migration
 log "Setting up database..."
+
+# Check for migration files specific to this version
+MIGRATION_DIR="$PROJECT_DIR/scripts"
+if [[ -d "$MIGRATION_DIR" ]]; then
+    # Find SQL migration files
+    for migration_file in "$MIGRATION_DIR"/migrate-*.sql; do
+        if [[ -f "$migration_file" ]]; then
+            migration_name=$(basename "$migration_file")
+            log "Found migration file: $migration_name"
+            
+            # Check if migration has already been applied
+            MIGRATION_APPLIED=$(sudo -u postgres psql -d neta_local -tAc "SELECT 1 FROM pg_tables WHERE tablename = 'migrations' LIMIT 1;" 2>/dev/null || echo "0")
+            
+            if [[ "$MIGRATION_APPLIED" != "1" ]]; then
+                # Create migrations tracking table if it doesn't exist
+                log "Creating migrations tracking table..."
+                sudo -u postgres psql -d neta_local -c "CREATE TABLE IF NOT EXISTS migrations (
+                    id SERIAL PRIMARY KEY,
+                    filename VARCHAR(255) UNIQUE NOT NULL,
+                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );" 2>/dev/null || warn "Failed to create migrations table"
+            fi
+            
+            # Check if this specific migration has been applied
+            ALREADY_APPLIED=$(sudo -u postgres psql -d neta_local -tAc "SELECT 1 FROM migrations WHERE filename = '$migration_name' LIMIT 1;" 2>/dev/null || echo "0")
+            
+            if [[ "$ALREADY_APPLIED" != "1" ]]; then
+                log "Applying migration: $migration_name"
+                if sudo -u postgres psql -d neta_local < "$migration_file" 2>/dev/null; then
+                    # Record successful migration
+                    sudo -u postgres psql -d neta_local -c "INSERT INTO migrations (filename) VALUES ('$migration_name');" 2>/dev/null
+                    log "Migration applied successfully: $migration_name"
+                else
+                    warn "Failed to apply migration: $migration_name. Please check manually."
+                fi
+            else
+                log "Migration already applied: $migration_name"
+            fi
+        fi
+    done
+fi
+
+# Run Drizzle migration
 if [[ "$INITIAL_SETUP" == true ]]; then
     # Run database migration for initial setup
     npm run db:push || warn "Database migration failed. Please check DATABASE_URL in .env"
