@@ -637,7 +637,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/topics', async (req, res) => {
     try {
-      const weekId = req.query.weekId ? parseInt(req.query.weekId as string) : undefined;
+      let weekId: number | undefined;
+      
+      if (req.query.weekId) {
+        weekId = parseInt(req.query.weekId as string);
+        if (isNaN(weekId)) {
+          return res.status(400).json({ message: 'Invalid weekId: must be a number' });
+        }
+      }
+      
       const status = req.query.status as string;
       
       if (status) {
@@ -645,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(topics);
       }
       
-      if (weekId) {
+      if (weekId !== undefined) {
         const topics = await storage.getTopicsByWeekId(weekId);
         return res.json(topics);
       }
@@ -827,12 +835,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For now, use a hardcoded latest scheduled video
       // In production, this could be updated manually or through a simple config
       const latestVideo: any = {
-        id: 'S_PZkOIxiHY', // Extract from https://www.youtube.com/watch?v=S_PZkOIxiHY
-        url: 'https://www.youtube.com/watch?v=S_PZkOIxiHY',
+        id: 'MNGCerJlYwc', // Extract from https://www.youtube.com/watch?v=MNGCerJlYwc
+        url: 'https://www.youtube.com/watch?v=MNGCerJlYwc',
         title: 'backspace.fm ライブ配信',
         liveBroadcastContent: 'upcoming', // Could be 'live', 'upcoming', or 'none'
         scheduledStartTime: '2025-06-21T12:00:00Z', // Add scheduled start time for upcoming streams
-        thumbnailUrl: `https://img.youtube.com/vi/S_PZkOIxiHY/maxresdefault.jpg`,
+        thumbnailUrl: `https://img.youtube.com/vi/MNGCerJlYwc/maxresdefault.jpg`,
         channelTitle: 'backspace.fm',
         viewerCount: undefined // Will be populated if available
       };

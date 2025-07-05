@@ -289,9 +289,9 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen w-full">
       {/* Content wrapper for centering */}
-      <div className="w-full show-ranking:max-w-[1600px] show-ranking:flex show-ranking:gap-8 transition-all duration-300">
+      <div className="w-full show-ranking:max-w-[1280px] show-ranking:mx-auto show-ranking:flex show-ranking:gap-4 transition-all duration-300">
         {/* Main Content */}
-        <div className="w-full max-w-7xl py-6 px-4 sm:px-6 lg:px-8" ref={contentHeaderRef}>
+        <div className="w-full py-6 px-4 sm:px-6 lg:px-8" ref={contentHeaderRef}>
           <WeekSelector week={week as any} isLoading={isLoading} />
 
           {/* YouTube Live Embed - above tabs */}
@@ -473,13 +473,13 @@ const Home: React.FC = () => {
         
         {/* Top 10 Board - Part of flex layout on wide screens */}
         {week?.topics && week.topics.length > 0 && (
-          <div className="hidden show-ranking:block">
+          <div className="hidden show-ranking:block w-80 flex-shrink-0">
             {/* Dynamic spacer to align with first topic card */}
             <div 
               style={{ height: `${rankingBoardOffset}px` }} 
               aria-hidden="true"
             />
-            <div className="sticky top-6 space-y-4">
+            <div className="sticky top-6 space-y-3">
               <TopicTop10Board
                 topics={week.topics}
                 selectedSubmitters={selectedSubmitters}

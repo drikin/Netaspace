@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { PlusIcon, Calendar, RefreshCw } from "lucide-react";
+import { PlusIcon, Calendar, RefreshCw, Pencil } from "lucide-react";
 import { Week, WeekWithTopics } from "@shared/schema";
 import { formatDateRange } from "@/lib/date-utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,12 +39,19 @@ const weekSchema = z.object({
   endDate: z.string().min(1, "終了日は必須です"),
 });
 
+const editWeekSchema = z.object({
+  title: z.string().min(1, "タイトルは必須です"),
+});
+
 type WeekFormValues = z.infer<typeof weekSchema>;
+type EditWeekFormValues = z.infer<typeof editWeekSchema>;
 
 const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) => {
   const { isAdmin } = useAuth();
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
   const [isSwitchWeekDialogOpen, setIsSwitchWeekDialogOpen] = useState(false);
+  const [isEditWeekDialogOpen, setIsEditWeekDialogOpen] = useState(false);
+  const [editingWeek, setEditingWeek] = useState<Week | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -61,6 +68,14 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
       title: "",
       startDate: "",
       endDate: "",
+    },
+  });
+
+  // Form for editing week
+  const editWeekForm = useForm<EditWeekFormValues>({
+    resolver: zodResolver(editWeekSchema),
+    defaultValues: {
+      title: "",
     },
   });
 
@@ -106,12 +121,50 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
     },
   });
 
+  // Update week mutation
+  const updateWeekMutation = useMutation({
+    mutationFn: async ({ weekId, title }: { weekId: number; title: string }) => {
+      const response = await fetch(`/api/weeks/${weekId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!response.ok) throw new Error("Failed to update week");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "週のタイトルを更新しました" });
+      setIsEditWeekDialogOpen(false);
+      setEditingWeek(null);
+      editWeekForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+    },
+    onError: () => {
+      toast({ title: "週のタイトルの更新に失敗しました", variant: "destructive" });
+    },
+  });
+
   const handleCreateWeek = async (values: WeekFormValues) => {
     await createWeekMutation.mutateAsync(values);
   };
 
   const handleSwitchWeek = async (weekId: number) => {
     await switchWeekMutation.mutateAsync(weekId);
+  };
+
+  const handleEditWeek = (week: Week) => {
+    setEditingWeek(week);
+    editWeekForm.setValue("title", week.title);
+    setIsEditWeekDialogOpen(true);
+  };
+
+  const handleUpdateWeek = async (values: EditWeekFormValues) => {
+    if (!editingWeek) return;
+    await updateWeekMutation.mutateAsync({
+      weekId: editingWeek.id,
+      title: values.title,
+    });
   };
   if (isLoading) {
     return (
@@ -167,6 +220,14 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEditWeek(w)}
+                            title="タイトルを編集"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           {w.isActive ? (
                             <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                               アクティブ
@@ -269,6 +330,47 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                       <p className="text-xs text-muted-foreground">
                         新しい週を作成すると、ユーザーはその期間のネタを投稿できるようになります。
                       </p>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEditWeekDialogOpen} onOpenChange={setIsEditWeekDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>週のタイトルを編集</DialogTitle>
+                  <DialogDescription>
+                    週のタイトルを変更します
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...editWeekForm}>
+                  <form onSubmit={editWeekForm.handleSubmit(handleUpdateWeek)} className="space-y-4">
+                    <FormField
+                      control={editWeekForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>タイトル</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="例: 2025年7月第1週"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={updateWeekMutation.isPending}
+                      >
+                        {updateWeekMutation.isPending ? "更新中..." : "更新"}
+                      </Button>
                     </div>
                   </form>
                 </Form>
