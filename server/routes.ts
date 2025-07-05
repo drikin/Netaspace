@@ -641,8 +641,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.query.weekId) {
         weekId = parseInt(req.query.weekId as string);
-        if (isNaN(weekId)) {
-          return res.status(400).json({ message: 'Invalid weekId: must be a number' });
+        if (isNaN(weekId) || weekId < 0 || !Number.isInteger(weekId)) {
+          return res.status(400).json({ message: 'Invalid weekId: must be a positive integer' });
         }
       }
       

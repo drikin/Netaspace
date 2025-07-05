@@ -17,7 +17,7 @@ module.exports = {
       TRUSTED_PROXIES: '127.0.0.1,153.127.201.139',
       LOG_LEVEL: 'info',
       RATE_LIMIT_WINDOW_MS: 60000,
-      RATE_LIMIT_MAX_REQUESTS: 100,
+      RATE_LIMIT_MAX_REQUESTS: 200,
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'default_admin_pass'
     }
   }]

@@ -287,6 +287,12 @@ class PostgreSQLStorage implements IStorage {
 
   async getTopicsByStatus(status: string, weekId?: number): Promise<TopicWithCommentsAndStars[]> {
     return this.executeWithMonitoring(async () => {
+      // Validate weekId if provided
+      if (weekId !== undefined && (!Number.isInteger(weekId) || weekId < 0)) {
+        console.error(`Invalid weekId provided to getTopicsByStatus: ${weekId}`);
+        return [];
+      }
+      
       let query = db
         .select()
         .from(topics)

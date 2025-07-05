@@ -244,7 +244,12 @@ if [[ -f ecosystem.config.cjs ]]; then
     sed -i "s|DATABASE_URL: '[^']*'|DATABASE_URL: 'postgresql://postgres:netapass123@localhost:5432/neta_local'|g" ecosystem.config.cjs
     # Ensure ADMIN_PASSWORD uses environment variable
     sed -i "s|ADMIN_PASSWORD: '[^']*'|ADMIN_PASSWORD: process.env.ADMIN_PASSWORD \|\| 'default_admin_pass'|g" ecosystem.config.cjs
-    log "Updated ecosystem.config.cjs with local PostgreSQL and admin settings"
+    # Ensure RATE_LIMIT is set to 200
+    sed -i "s|RATE_LIMIT_MAX_REQUESTS: [0-9]*|RATE_LIMIT_MAX_REQUESTS: 200|g" ecosystem.config.cjs
+    # Ensure cluster mode is set to 'max'
+    sed -i "s|instances: [0-9]*|instances: 'max'|g" ecosystem.config.cjs
+    sed -i "s|exec_mode: '[^']*'|exec_mode: 'cluster'|g" ecosystem.config.cjs
+    log "Updated ecosystem.config.cjs with local PostgreSQL, admin settings, and optimizations"
 fi
 
 # Start application with PM2
@@ -274,6 +279,20 @@ fi
 
 # Configure Nginx
 log "Configuring Nginx..."
+
+# Configure Nginx rate limiting if not already configured
+if ! grep -q "limit_req_zone" /etc/nginx/nginx.conf; then
+    log "Adding rate limiting to Nginx configuration..."
+    sudo sed -i '/^http {/a\
+\
+	##\
+	# Rate Limiting\
+	##\
+	limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;\
+	limit_req_zone $binary_remote_addr zone=general_limit:10m rate=30r/s;\
+	limit_req_status 429;\
+' /etc/nginx/nginx.conf
+fi
 
 # Create Nginx configuration
 sudo tee /etc/nginx/sites-available/$DOMAIN > /dev/null <<EOF
@@ -328,8 +347,26 @@ server {
         try_files \$uri @nodejs;
     }
     
-    # Main application proxy
+    # API endpoints with stricter rate limiting
+    location /api/ {
+        limit_req zone=api_limit burst=20 nodelay;
+        
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+    
+    # Main application proxy with general rate limiting
     location / {
+        limit_req zone=general_limit burst=50 nodelay;
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
