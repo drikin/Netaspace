@@ -105,7 +105,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
   // Switch week mutation
   const switchWeekMutation = useMutation({
     mutationFn: async (weekId: number) => {
-      const response = await fetch(`/api/weeks/${weekId}/activate`, {
+      const response = await fetch(`/api/weeks/${weekId}/setActive`, {
         method: "POST",
       });
       if (!response.ok) throw new Error("Failed to switch week");
