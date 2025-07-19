@@ -26,7 +26,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { User } from "lucide-react";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "ユーザー名は必須です"),
   password: z.string().min(1, "パスワードは必須です"),
 });
 
@@ -40,14 +39,17 @@ export function LoginDialog() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
       password: "",
     },
   });
 
   const loginMutation = useMutation({
     mutationFn: async (values: LoginFormValues) => {
-      return apiRequest("POST", "/api/auth/login", values);
+      // Always login as admin user
+      return apiRequest("POST", "/api/auth/login", {
+        username: "admin",
+        password: values.password,
+      });
     },
     onSuccess: () => {
       toast({ title: "ログインしました" });
@@ -59,7 +61,7 @@ export function LoginDialog() {
     onError: (error: any) => {
       toast({
         title: "ログインに失敗しました",
-        description: error.message || "ユーザー名またはパスワードが正しくありません",
+        description: error.message || "パスワードが正しくありません",
         variant: "destructive",
       });
     },
@@ -92,29 +94,10 @@ export function LoginDialog() {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ユーザー名</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      placeholder="ユーザー名を入力"
-                      autoComplete="username"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>パスワード</FormLabel>
+                  <FormLabel>管理者パスワード</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -133,7 +116,7 @@ export function LoginDialog() {
               className="w-full"
               disabled={loginMutation.isPending}
             >
-              {loginMutation.isPending ? "ログイン中..." : "ログイン"}
+              {loginMutation.isPending ? "ログイン中..." : "管理者としてログイン"}
             </Button>
           </form>
         </Form>
