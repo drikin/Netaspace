@@ -34,3 +34,6 @@ README.local.md
 # Log files
 *.log
 dev.log
+
+# Attached assets folder (not tracked in git)
+attached_assets/

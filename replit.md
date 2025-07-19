@@ -95,6 +95,8 @@ Core entities with optimized indexing:
 - June 21, 2025. YouTube live video display/hide toggle functionality implemented with localStorage persistence
 - July 19, 2025. PM2 production environment code successfully integrated to Replit - version 2.9.0 with complete feature parity including shares table, scripts management, and performance optimizations
 - July 19, 2025. Enhanced week management system - added liveRecordingDate and liveUrl fields, password-only authentication, admin editing with datetime picker, conditional YouTube embed display
+- July 19, 2025. Extended week selector access to all users - non-admin users can temporarily view different weeks while maintaining admin-only active week switching
+- July 19, 2025. Repository cleanup - removed unused attached_assets folder and added to .gitignore to prevent future tracking
 
 ## User Preferences
 
