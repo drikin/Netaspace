@@ -44,6 +44,15 @@ export function WeekEditForm({ week }: WeekEditFormProps) {
     },
   });
 
+  // Update form values when week prop changes
+  React.useEffect(() => {
+    form.reset({
+      title: week.title,
+      liveRecordingDate: formatDateTimeForInput(week.liveRecordingDate || ""),
+      liveUrl: week.liveUrl || "",
+    });
+  }, [week.id, week.title, week.liveRecordingDate, week.liveUrl, form]);
+
   const updateWeekMutation = useMutation({
     mutationFn: async (values: UpdateWeek) => {
       return apiRequest("PATCH", `/api/weeks/${week.id}`, values);
