@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { updateWeekSchema, type UpdateWeek, type Week } from "@shared/schema";
+import { formatDateTimeForInput } from "@/lib/date-format";
 import { Edit } from "lucide-react";
 
 interface WeekEditFormProps {
@@ -38,7 +39,7 @@ export function WeekEditForm({ week }: WeekEditFormProps) {
     resolver: zodResolver(updateWeekSchema),
     defaultValues: {
       title: week.title,
-      liveRecordingDate: week.liveRecordingDate || "",
+      liveRecordingDate: formatDateTimeForInput(week.liveRecordingDate || ""),
       liveUrl: week.liveUrl || "",
     },
   });
@@ -52,7 +53,7 @@ export function WeekEditForm({ week }: WeekEditFormProps) {
       setOpen(false);
       form.reset({
         title: updatedWeek.title,
-        liveRecordingDate: updatedWeek.liveRecordingDate || "",
+        liveRecordingDate: formatDateTimeForInput(updatedWeek.liveRecordingDate || ""),
         liveUrl: updatedWeek.liveUrl || "",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/weeks"] });
@@ -114,10 +115,10 @@ export function WeekEditForm({ week }: WeekEditFormProps) {
               name="liveRecordingDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ライブ収録日</FormLabel>
+                  <FormLabel>ライブ収録日時</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="例: 2025年7月20日 20:00〜"
+                      type="datetime-local"
                       {...field}
                     />
                   </FormControl>

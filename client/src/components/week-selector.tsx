@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { PlusIcon, Calendar, RefreshCw, Pencil } from "lucide-react";
 import { Week, WeekWithTopics } from "@shared/schema";
 import { formatDateRange } from "@/lib/date-utils";
+import { formatLiveRecordingDate } from "@/lib/date-format";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -38,6 +39,8 @@ const weekSchema = z.object({
   title: z.string().min(1, "タイトルは必須です"),
   startDate: z.string().min(1, "開始日は必須です"),
   endDate: z.string().min(1, "終了日は必須です"),
+  liveRecordingDate: z.string().optional(),
+  liveUrl: z.string().optional(),
 });
 
 const editWeekSchema = z.object({
@@ -69,6 +72,8 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
       title: "",
       startDate: "",
       endDate: "",
+      liveRecordingDate: "",
+      liveUrl: "",
     },
   });
 
@@ -193,16 +198,9 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
             <p className="text-sm text-gray-600">
               {formatDateRange(new Date(week.startDate), new Date(week.endDate))}
             </p>
-            {week.liveRecordingDate && (
-              <p className="text-sm text-blue-600 font-medium">
-                ライブ収録: {week.liveRecordingDate}
-              </p>
-            )}
-            {!week.liveRecordingDate && (
-              <p className="text-sm text-gray-500">
-                ライブ収録: TBD
-              </p>
-            )}
+            <p className="text-sm text-blue-600 font-medium">
+              ライブ収録: {formatLiveRecordingDate(week.liveRecordingDate || '')}
+            </p>
           </div>
         ) : (
           <p className="mt-1 text-sm text-gray-600">
@@ -333,6 +331,47 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                             />
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={weekForm.control}
+                      name="liveRecordingDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ライブ収録日時（任意）</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                              placeholder="収録日時を選択"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <p className="text-sm text-gray-500">
+                            例: 2025年7月20日 20:00 - 未設定の場合は「TBD」と表示されます
+                          </p>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={weekForm.control}
+                      name="liveUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ライブ配信URL（任意）</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://youtube.com/live/..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <p className="text-sm text-gray-500">
+                            設定するとライブ配信パネルが表示されます
+                          </p>
                         </FormItem>
                       )}
                     />
