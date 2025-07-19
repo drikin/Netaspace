@@ -209,9 +209,22 @@ class PostgreSQLStorage implements IStorage {
 
   async createWeek(week: InsertWeek): Promise<Week> {
     return this.executeWithMonitoring(async () => {
+      // Generate default start and end dates for compatibility
+      const now = new Date();
+      const defaultStartDate = now.toISOString().split('T')[0];
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const defaultEndDate = nextWeek.toISOString().split('T')[0];
+      
+      const weekData = {
+        ...week,
+        startDate: defaultStartDate,
+        endDate: defaultEndDate,
+        isActive: false
+      };
+      
       const result = await db
         .insert(weeks)
-        .values(week)
+        .values(weekData)
         .returning();
       
       return result[0];

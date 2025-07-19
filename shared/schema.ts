@@ -102,12 +102,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertWeekSchema = createInsertSchema(weeks).pick({
-  startDate: true,
-  endDate: true,
   title: true,
   liveRecordingDate: true,
   liveUrl: true,
-  isActive: true,
 });
 
 export const updateWeekSchema = createInsertSchema(weeks).pick({

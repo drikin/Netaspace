@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { PlusIcon, Calendar, RefreshCw, Pencil } from "lucide-react";
 import { Week, WeekWithTopics } from "@shared/schema";
-import { formatDateRange } from "@/lib/date-utils";
+
 import { formatLiveRecordingDate } from "@/lib/date-format";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -37,8 +37,6 @@ interface WeekSelectorProps {
 
 const weekSchema = z.object({
   title: z.string().min(1, "タイトルは必須です"),
-  startDate: z.string().min(1, "開始日は必須です"),
-  endDate: z.string().min(1, "終了日は必須です"),
   liveRecordingDate: z.string().optional(),
   liveUrl: z.string().optional(),
 });
@@ -70,8 +68,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
     resolver: zodResolver(weekSchema),
     defaultValues: {
       title: "",
-      startDate: "",
-      endDate: "",
       liveRecordingDate: "",
       liveUrl: "",
     },
@@ -194,14 +190,9 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
           )}
         </div>
         {week ? (
-          <div className="mt-1 space-y-1">
-            <p className="text-sm text-gray-600">
-              {formatDateRange(new Date(week.startDate), new Date(week.endDate))}
-            </p>
-            <p className="text-sm text-blue-600 font-medium">
-              ライブ収録: {formatLiveRecordingDate(week.liveRecordingDate || '')}
-            </p>
-          </div>
+          <p className="mt-1 text-sm text-blue-600 font-medium">
+            ライブ収録: {formatLiveRecordingDate(week.liveRecordingDate || '')}
+          </p>
         ) : (
           <p className="mt-1 text-sm text-gray-600">
             アクティブな週がありません
@@ -232,7 +223,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                         <div className="flex-1">
                           <h4 className="font-medium">{w.title}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {formatDateRange(new Date(w.startDate), new Date(w.endDate))}
+                            ライブ収録: {formatLiveRecordingDate(w.liveRecordingDate || '')}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -301,40 +292,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                       )}
                     />
                     
-                    <FormField
-                      control={weekForm.control}
-                      name="startDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>開始日</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={weekForm.control}
-                      name="endDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>終了日</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
                     <FormField
                       control={weekForm.control}
                       name="liveRecordingDate"
