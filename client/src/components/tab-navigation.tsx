@@ -9,19 +9,16 @@ interface TabNavigationProps {
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({ onTabChange, activeTab, isAdmin = false, isAuthenticated = false, context = 'home' }) => {
-  // Don't show any tabs if user is not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  // Define base tabs
+  // Define base tabs (always visible)
   const baseTabs = [
     { id: "all", label: "すべて" },
     { id: "featured", label: "採用" },
+    { id: "ranking", label: "ランキング" },
+    { id: "podcast", label: "ポッドキャスト" },
   ];
   
   // Add admin-only tabs for both home and admin contexts
-  const adminTabs = isAdmin
+  const adminTabs = isAdmin && isAuthenticated
     ? [
         { id: "script", label: "台本" },
         { id: "performance", label: "パフォーマンス" }

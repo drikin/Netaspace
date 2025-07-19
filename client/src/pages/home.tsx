@@ -430,6 +430,33 @@ const Home: React.FC = () => {
             <PerformanceMonitor />
           ) : activeTab === "script" && isAdmin ? (
             <ScriptEditor />
+          ) : activeTab === "ranking" ? (
+            <div className="px-4 sm:px-0">
+              {week?.topics && week.topics.length > 0 ? (
+                <TopicTop10Board
+                  topics={week.topics}
+                  selectedSubmitters={selectedSubmitters}
+                  onSubmitterToggle={(submitter) => {
+                    setSelectedSubmitters((prev) =>
+                      prev.includes(submitter)
+                        ? prev.filter((s) => s !== submitter)
+                        : [...prev, submitter]
+                    );
+                  }}
+                  onClearFilters={() => setSelectedSubmitters([])}
+                />
+              ) : (
+                <div className="bg-white rounded-lg shadow p-6 text-center">
+                  <p className="text-gray-500">
+                    ランキングを表示するには、この週にトピックが必要です。
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : activeTab === "podcast" ? (
+            <div className="px-4 sm:px-0">
+              <PodcastPlayer />
+            </div>
           ) : (
             <div className="space-y-6 px-4 sm:px-0" ref={topicListRef}>
               {isLoading ? (
