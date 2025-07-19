@@ -190,23 +190,26 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                             <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                               アクティブ
                             </span>
-                          ) : isAdmin ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleSwitchWeek(w.id)}
-                              disabled={switchWeekMutation.isPending}
-                            >
-                              アクティブにする
-                            </Button>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewWeek(w.id)}
-                            >
-                              表示
-                            </Button>
+                            <>
+                              {isAdmin && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleSwitchWeek(w.id)}
+                                  disabled={switchWeekMutation.isPending}
+                                >
+                                  アクティブにする
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant={isAdmin ? "ghost" : "outline"}
+                                onClick={() => handleViewWeek(w.id)}
+                              >
+                                表示
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>
