@@ -105,6 +105,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
       toast({ title: "週を切り替えました" });
       setIsSwitchWeekDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/weeks"] });
     },
     onError: () => {
       toast({ title: "週の切り替えに失敗しました", variant: "destructive" });
