@@ -140,7 +140,7 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent, liveUrl }: Yo
               asChild
               className="h-8 px-2"
             >
-              <a href={YOUTUBE_CONFIG.LIVE_URL} target="_blank" rel="noopener noreferrer">
+              <a href={liveUrl || YOUTUBE_CONFIG.LIVE_URL} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
               </a>
             </Button>
@@ -165,7 +165,7 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent, liveUrl }: Yo
             <div className="flex-grow lg:w-2/3">
               <div ref={videoRef} className="relative w-full aspect-video rounded-lg overflow-hidden">
                 <iframe
-                  src={`${YOUTUBE_CONFIG.EMBED_BASE_URL}${YOUTUBE_CONFIG.LIVE_VIDEO_ID}?autoplay=0&rel=0&modestbranding=1`}
+                  src={`${YOUTUBE_CONFIG.EMBED_BASE_URL}${videoId}?autoplay=0&rel=0&modestbranding=1`}
                   title="backspace.fm ライブ配信"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -180,7 +180,7 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent, liveUrl }: Yo
               <div className="lg:w-1/3">
                 <div ref={chatRef} className="relative w-full rounded-lg overflow-hidden border bg-white">
                   <iframe
-                    src={`${YOUTUBE_CONFIG.LIVE_CHAT_BASE_URL}?v=${YOUTUBE_CONFIG.LIVE_VIDEO_ID}&embed_domain=${encodeURIComponent(window.location.hostname)}&theme=light`}
+                    src={`${YOUTUBE_CONFIG.LIVE_CHAT_BASE_URL}?v=${videoId}&embed_domain=${encodeURIComponent(window.location.hostname)}&theme=light`}
                     title="ライブチャット"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

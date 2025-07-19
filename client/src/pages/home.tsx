@@ -73,7 +73,7 @@ const Home: React.FC = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Only trigger if no input elements are focused and no modifiers are pressed
       if (
-        event.key.toLowerCase() === 'n' && 
+        event.key && event.key.toLowerCase() === 'n' && 
         !event.ctrlKey && 
         !event.metaKey && 
         !event.altKey &&
