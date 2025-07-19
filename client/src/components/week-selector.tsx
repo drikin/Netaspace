@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { PlusIcon, Calendar, RefreshCw, Pencil } from "lucide-react";
+import { PlusIcon, Calendar, RefreshCw } from "lucide-react";
 import { Week, WeekWithTopics } from "@shared/schema";
 
 import { formatLiveRecordingDate } from "@/lib/date-format";
@@ -41,19 +41,13 @@ const weekSchema = z.object({
   liveUrl: z.string().optional(),
 });
 
-const editWeekSchema = z.object({
-  title: z.string().min(1, "タイトルは必須です"),
-});
-
 type WeekFormValues = z.infer<typeof weekSchema>;
-type EditWeekFormValues = z.infer<typeof editWeekSchema>;
 
 const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) => {
   const { isAdmin } = useAuth();
   const [isCreateWeekDialogOpen, setIsCreateWeekDialogOpen] = useState(false);
   const [isSwitchWeekDialogOpen, setIsSwitchWeekDialogOpen] = useState(false);
-  const [isEditWeekDialogOpen, setIsEditWeekDialogOpen] = useState(false);
-  const [editingWeek, setEditingWeek] = useState<Week | null>(null);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,13 +67,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
     },
   });
 
-  // Form for editing week
-  const editWeekForm = useForm<EditWeekFormValues>({
-    resolver: zodResolver(editWeekSchema),
-    defaultValues: {
-      title: "",
-    },
-  });
+
 
   // Create week mutation
   const createWeekMutation = useMutation({
@@ -123,29 +111,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
     },
   });
 
-  // Update week mutation
-  const updateWeekMutation = useMutation({
-    mutationFn: async ({ weekId, title }: { weekId: number; title: string }) => {
-      const response = await fetch(`/api/weeks/${weekId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      if (!response.ok) throw new Error("Failed to update week");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "週のタイトルを更新しました" });
-      setIsEditWeekDialogOpen(false);
-      setEditingWeek(null);
-      editWeekForm.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/weeks"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/weeks/active"] });
-    },
-    onError: () => {
-      toast({ title: "週のタイトルの更新に失敗しました", variant: "destructive" });
-    },
-  });
+
 
   const handleCreateWeek = async (values: WeekFormValues) => {
     await createWeekMutation.mutateAsync(values);
@@ -155,19 +121,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
     await switchWeekMutation.mutateAsync(weekId);
   };
 
-  const handleEditWeek = (week: Week) => {
-    setEditingWeek(week);
-    editWeekForm.setValue("title", week.title);
-    setIsEditWeekDialogOpen(true);
-  };
 
-  const handleUpdateWeek = async (values: EditWeekFormValues) => {
-    if (!editingWeek) return;
-    await updateWeekMutation.mutateAsync({
-      weekId: editingWeek.id,
-      title: values.title,
-    });
-  };
   if (isLoading) {
     return (
       <div className="mb-6 flex justify-between items-center">
@@ -227,14 +181,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleEditWeek(w)}
-                            title="タイトルを編集"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
                           {w.isActive ? (
                             <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                               アクティブ
