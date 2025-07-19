@@ -249,6 +249,22 @@ class PostgreSQLStorage implements IStorage {
     }, 'updateWeekTitle');
   }
 
+  async updateWeek(weekId: number, updateData: { title?: string; liveRecordingDate?: string; liveUrl?: string }): Promise<Week> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .update(weeks)
+        .set(updateData)
+        .where(eq(weeks.id, weekId))
+        .returning();
+      
+      if (!result || result.length === 0) {
+        throw new Error('Week not found');
+      }
+      
+      return result[0];
+    }, 'updateWeek');
+  }
+
   async getTopicsByWeekId(weekId: number): Promise<TopicWithCommentsAndStars[]> {
     return this.executeWithMonitoring(async () => {
       console.log('PostgreSQL connection acquired from pool');

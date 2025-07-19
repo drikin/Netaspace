@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { WeekEditForm } from "@/components/week-edit-form";
 
 interface WeekSelectorProps {
   week: WeekWithTopics | Week | null;
@@ -180,12 +181,29 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
 
   return (
     <div className="mb-6 flex justify-between items-center">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{week?.title || "今週のネタ候補"}</h1>
+      <div className="flex-1">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold text-gray-900">{week?.title || "今週のネタ候補"}</h1>
+          {isAdmin && week && (
+            <WeekEditForm week={week} />
+          )}
+        </div>
         {week ? (
-          <p className="mt-1 text-sm text-gray-600">
-            {formatDateRange(new Date(week.startDate), new Date(week.endDate))}
-          </p>
+          <div className="mt-1 space-y-1">
+            <p className="text-sm text-gray-600">
+              {formatDateRange(new Date(week.startDate), new Date(week.endDate))}
+            </p>
+            {week.liveRecordingDate && (
+              <p className="text-sm text-blue-600 font-medium">
+                ライブ収録: {week.liveRecordingDate}
+              </p>
+            )}
+            {!week.liveRecordingDate && (
+              <p className="text-sm text-gray-500">
+                ライブ収録: TBD
+              </p>
+            )}
+          </div>
         ) : (
           <p className="mt-1 text-sm text-gray-600">
             アクティブな週がありません

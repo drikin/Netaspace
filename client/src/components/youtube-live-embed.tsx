@@ -20,22 +20,43 @@ interface YouTubeLiveEmbedProps {
   className?: string;
   onHide?: () => void;
   onNoContent?: () => void;
+  liveUrl?: string | null; // 週のライブURL
 }
 
-export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLiveEmbedProps) {
+export function YouTubeLiveEmbed({ className, onHide, onNoContent, liveUrl }: YouTubeLiveEmbedProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
-  // Always show the fixed live stream
+  // Extract video ID from liveUrl or use default
+  const getVideoIdFromUrl = (url: string): string => {
+    // Extract video ID from various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/live\/)([^?&]+)/,
+      /(?:youtube\.com\/watch\?v=)([^&]+)/,
+      /(?:youtu\.be\/)([^?]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    
+    return YOUTUBE_CONFIG.LIVE_VIDEO_ID; // fallback
+  };
+
+  // Show content only if liveUrl is provided
+  const hasLiveUrl = Boolean(liveUrl);
+  const videoId = liveUrl ? getVideoIdFromUrl(liveUrl) : YOUTUBE_CONFIG.LIVE_VIDEO_ID;
+  
   const isLoading = false;
   const error = null;
-  const videos = [{
-    id: YOUTUBE_CONFIG.LIVE_VIDEO_ID,
+  const videos = hasLiveUrl ? [{
+    id: videoId,
     title: 'backspace.fm ライブ配信',
     liveBroadcastContent: 'live' as const,
     thumbnailUrl: '',
     channelTitle: 'backspace.fm'
-  }];
+  }] : [];
 
   // Sync heights between video and chat
   useEffect(() => {
@@ -63,10 +84,15 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLive
 
   // Notify parent when no content is available
   useEffect(() => {
-    if ((error || !videos || videos.length === 0) && !isLoading) {
+    if (!hasLiveUrl || (error || !videos || videos.length === 0) && !isLoading) {
       onNoContent?.();
     }
-  }, [error, videos, isLoading, onNoContent]);
+  }, [hasLiveUrl, error, videos, isLoading, onNoContent]);
+
+  // Return null if no live URL is provided
+  if (!hasLiveUrl) {
+    return null;
+  }
 
   if (isLoading) {
     return (

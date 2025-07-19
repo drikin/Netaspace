@@ -227,6 +227,16 @@ const Home: React.FC = () => {
     setIsLiveVisible(false);
   };
 
+  // Update hasLiveContent based on week's liveUrl
+  useEffect(() => {
+    if (week?.liveUrl) {
+      setHasLiveContent(true);
+    } else {
+      setHasLiveContent(false);
+      setIsLiveVisible(false);
+    }
+  }, [week?.liveUrl]);
+
   // Wrapper for refetch function
   const refetchTopics = () => {
     return refetch();
@@ -300,6 +310,7 @@ const Home: React.FC = () => {
               className="mb-6" 
               onHide={() => handleLiveVisibilityChange(false)}
               onNoContent={handleNoLiveContent}
+              liveUrl={week?.liveUrl}
             />
           )}
 

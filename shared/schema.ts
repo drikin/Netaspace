@@ -27,6 +27,8 @@ export const weeks = pgTable("weeks", {
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
   title: text("title").notNull(),
+  liveRecordingDate: text("live_recording_date"), // ライブ収録日 (nullable)
+  liveUrl: text("live_url"), // ライブURL (nullable)
   isActive: boolean("is_active").default(false).notNull(),
 });
 
@@ -103,7 +105,19 @@ export const insertWeekSchema = createInsertSchema(weeks).pick({
   startDate: true,
   endDate: true,
   title: true,
+  liveRecordingDate: true,
+  liveUrl: true,
   isActive: true,
+});
+
+export const updateWeekSchema = createInsertSchema(weeks).pick({
+  title: true,
+  liveRecordingDate: true,
+  liveUrl: true,
+}).extend({
+  title: z.string().min(1, "タイトルは必須です"),
+  liveRecordingDate: z.string().optional(),
+  liveUrl: z.string().url("有効なURLを入力してください").optional().or(z.literal("")),
 });
 
 export const insertTopicSchema = createInsertSchema(topics).pick({
@@ -141,6 +155,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Week = typeof weeks.$inferSelect;
 export type InsertWeek = z.infer<typeof insertWeekSchema>;
+export type UpdateWeek = z.infer<typeof updateWeekSchema>;
 
 export type Topic = typeof topics.$inferSelect;
 export type InsertTopic = z.infer<typeof insertTopicSchema>;

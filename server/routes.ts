@@ -8,6 +8,7 @@ import {
   insertTopicSchema, 
   insertStarSchema,
   insertWeekSchema,
+  updateWeekSchema,
   submitTopicSchema,
 } from "@shared/schema";
 import { z } from "zod";
@@ -556,26 +557,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/weeks/:id', isAdmin, async (req, res) => {
     try {
       const weekId = parseInt(req.params.id);
-      const { title } = req.body;
       
       if (isNaN(weekId)) {
         return res.status(400).json({ message: 'Invalid week ID' });
       }
       
-      if (!title || typeof title !== 'string' || title.trim().length === 0) {
-        return res.status(400).json({ message: 'Valid title is required' });
+      // Validate using the updateWeekSchema
+      const validationResult = updateWeekSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: validationResult.error.flatten().fieldErrors
+        });
       }
       
-      const updatedWeek = await storage.updateWeekTitle(weekId, title.trim());
+      const updateData = validationResult.data;
+      
+      // Convert empty strings to null for optional fields
+      if (updateData.liveRecordingDate === '') {
+        updateData.liveRecordingDate = undefined;
+      }
+      if (updateData.liveUrl === '') {
+        updateData.liveUrl = undefined;
+      }
+      
+      const updatedWeek = await storage.updateWeek(weekId, updateData);
       res.setHeader('Content-Type', 'application/json');
       res.json(updatedWeek);
     } catch (error) {
-      console.error('Error updating week title:', error);
+      console.error('Error updating week:', error);
       if (error instanceof Error && error.message === 'Week not found') {
         return res.status(404).json({ message: 'Week not found' });
       }
       res.status(500).json({ 
-        message: 'Failed to update week title',
+        message: 'Failed to update week',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
