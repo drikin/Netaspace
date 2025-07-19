@@ -3,8 +3,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
@@ -68,23 +66,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
-            <Header />
-            <main className="flex-grow flex">
-              <div className="flex-1">
-                <Router />
-              </div>
-            </main>
-            <Footer />
-            {/* キーボードショートカットヘルプダイアログ */}
-            <KeyboardShortcutsDialog 
-              open={showKeyboardShortcuts} 
-              onOpenChange={setShowKeyboardShortcuts} 
-            />
-          </div>
-        </SidebarProvider>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <Header />
+          <main className="flex-grow">
+            <Router />
+          </main>
+          <Footer />
+          {/* キーボードショートカットヘルプダイアログ */}
+          <KeyboardShortcutsDialog 
+            open={showKeyboardShortcuts} 
+            onOpenChange={setShowKeyboardShortcuts} 
+          />
+        </div>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
