@@ -39,9 +39,34 @@ const Home: React.FC = () => {
 
   // Star functionality verified and working correctly
 
+  // Check for week parameter in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const weekParam = urlParams.get('week');
+  const viewingSpecificWeek = weekParam ? parseInt(weekParam, 10) : null;
+
   // Fetch active week with topics - optimized refresh strategy
   const { data: week, isLoading, refetch, error } = useQuery<WeekWithTopics>({
-    queryKey: ["/api/weeks/active", fingerprint],
+    queryKey: viewingSpecificWeek 
+      ? ["/api/weeks/", viewingSpecificWeek, "with-topics", fingerprint]
+      : ["/api/weeks/active", fingerprint],
+    queryFn: async () => {
+      if (viewingSpecificWeek) {
+        const response = await fetch(`/api/weeks/${viewingSpecificWeek}`);
+        if (!response.ok) throw new Error('Failed to fetch week');
+        const weekData = await response.json();
+        
+        // Fetch topics for this week
+        const topicsResponse = await fetch(`/api/topics?weekId=${viewingSpecificWeek}&fingerprint=${fingerprint}`);
+        if (!topicsResponse.ok) throw new Error('Failed to fetch topics');
+        const topics = await topicsResponse.json();
+        
+        return { ...weekData, topics };
+      }
+      // Default to active week
+      const response = await fetch(`/api/weeks/active?fingerprint=${fingerprint}`);
+      if (!response.ok) throw new Error('Failed to fetch active week');
+      return response.json();
+    },
     enabled: !!fingerprint,
     // Use global staleTime from queryClient (2 minutes)
     refetchInterval: false, // Disable automatic polling for better performance
@@ -303,6 +328,27 @@ const Home: React.FC = () => {
         {/* Main Content */}
         <div className="w-full py-6 px-4 sm:px-6 lg:px-8" ref={contentHeaderRef}>
           <WeekSelector week={week as any} isLoading={isLoading} />
+          
+          {/* Show notice when viewing specific week */}
+          {viewingSpecificWeek && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-blue-800">
+                  特定の週を表示中: {week?.title || `週 #${viewingSpecificWeek}`}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = '/';
+                  }}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  アクティブ週に戻る
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* YouTube Live Embed - above tabs */}
           {isLiveVisible && hasLiveContent && (

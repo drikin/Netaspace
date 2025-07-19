@@ -51,10 +51,9 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all weeks for switching
+  // Fetch all weeks for switching (available for all users)
   const { data: weeks } = useQuery<Week[]>({
     queryKey: ["/api/weeks"],
-    enabled: isAdmin,
   });
 
   // Form for creating new week
@@ -122,6 +121,12 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
     await switchWeekMutation.mutateAsync(weekId);
   };
 
+  const handleViewWeek = (weekId: number) => {
+    // For non-admin users, temporarily navigate to view the week
+    // This would trigger a URL change to show the specific week
+    window.location.href = `/?week=${weekId}`;
+  };
+
 
   if (isLoading) {
     return (
@@ -155,9 +160,8 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
         )}
       </div>
       <div className="flex items-center gap-2">
-        {isAdmin && (
-          <>
-            <Dialog open={isSwitchWeekDialogOpen} onOpenChange={setIsSwitchWeekDialogOpen}>
+        {/* Week switcher available for all users */}
+        <Dialog open={isSwitchWeekDialogOpen} onOpenChange={setIsSwitchWeekDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <RefreshCw className="h-4 w-4 mr-1" />
@@ -168,7 +172,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                 <DialogHeader>
                   <DialogTitle>週を切り替え</DialogTitle>
                   <DialogDescription>
-                    アクティブにする週を選択してください
+                    {isAdmin ? 'アクティブにする週を選択してください' : '表示する週を選択してください'}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -186,7 +190,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                             <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                               アクティブ
                             </span>
-                          ) : (
+                          ) : isAdmin ? (
                             <Button
                               size="sm"
                               variant="outline"
@@ -194,6 +198,14 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                               disabled={switchWeekMutation.isPending}
                             >
                               アクティブにする
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewWeek(w.id)}
+                            >
+                              表示
                             </Button>
                           )}
                         </div>
@@ -206,13 +218,14 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
               </DialogContent>
             </Dialog>
 
-            <Dialog open={isCreateWeekDialogOpen} onOpenChange={setIsCreateWeekDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  新しい週を作成
-                </Button>
-              </DialogTrigger>
+            {isAdmin && (
+              <Dialog open={isCreateWeekDialogOpen} onOpenChange={setIsCreateWeekDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    新しい週を作成
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>新しい週を作成</DialogTitle>
@@ -294,24 +307,23 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
                     </div>
                   </form>
                 </Form>
-              </DialogContent>
-            </Dialog>
-
-          </>
-        )}
+                </DialogContent>
+              </Dialog>
+            )}
+        
         <Link href="/submit">
-        <Button
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary relative group"
-          title="ネタを投稿 (キーボードショートカット: N)"
-        >
-          <PlusIcon className="h-4 w-4 mr-1" />
-          ネタを投稿
-          {/* Tooltip for keyboard shortcut */}
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-            <kbd className="px-1 py-0.5 text-xs font-semibold bg-gray-700 rounded">N</kbd> を押してネタを投稿
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-          </div>
-        </Button>
+          <Button
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary relative group"
+            title="ネタを投稿 (キーボードショートカット: N)"
+          >
+            <PlusIcon className="h-4 w-4 mr-1" />
+            ネタを投稿
+            {/* Tooltip for keyboard shortcut */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+              <kbd className="px-1 py-0.5 text-xs font-semibold bg-gray-700 rounded">N</kbd> を押してネタを投稿
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </Button>
         </Link>
       </div>
     </div>
