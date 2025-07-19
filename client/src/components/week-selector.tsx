@@ -296,46 +296,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({ week, isLoading = false }) 
               </DialogContent>
             </Dialog>
 
-            <Dialog open={isEditWeekDialogOpen} onOpenChange={setIsEditWeekDialogOpen}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>週のタイトルを編集</DialogTitle>
-                  <DialogDescription>
-                    週のタイトルを変更します
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...editWeekForm}>
-                  <form onSubmit={editWeekForm.handleSubmit(handleUpdateWeek)} className="space-y-4">
-                    <FormField
-                      control={editWeekForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>タイトル</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="例: 2025年7月第1週"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="flex flex-col gap-2">
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={updateWeekMutation.isPending}
-                      >
-                        {updateWeekMutation.isPending ? "更新中..." : "更新"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
           </>
         )}
         <Link href="/submit">
