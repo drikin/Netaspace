@@ -11,7 +11,6 @@ import Submit from "@/pages/submit";
 import Extension from "@/pages/extension";
 import { useEffect, useState } from "react";
 
-import { WelcomeNotification } from "@/components/welcome-notification";
 import KeyboardShortcutsDialog from "@/components/keyboard-shortcuts-dialog";
 
 function Router() {
@@ -73,8 +72,6 @@ function App() {
             <Router />
           </main>
           <Footer />
-          {/* 新機能のお知らせコンポーネント */}
-          <WelcomeNotification />
           {/* キーボードショートカットヘルプダイアログ */}
           <KeyboardShortcutsDialog 
             open={showKeyboardShortcuts} 

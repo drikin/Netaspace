@@ -11,11 +11,13 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  // Simple configuration for local development
-  max: 10,
-  min: 2,
-  idleTimeoutMillis: 60000,
+  // Optimized for production with 20 PM2 instances
+  max: 50, // Increased from 10 to support high concurrency
+  min: 10, // Increased from 2 for better performance
+  idleTimeoutMillis: 30000, // Reduced from 60s to 30s
   connectionTimeoutMillis: 5000,
+  statement_timeout: 30000, // Added to prevent long-running queries
+  query_timeout: 30000, // Added query timeout
 });
 
 // Handle pool errors gracefully

@@ -53,5 +53,47 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    
+    // Production optimizations
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks for better caching
+          vendor: ['react', 'react-dom', 'wouter'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover'],
+          query: ['@tanstack/react-query'],
+          utils: ['clsx', 'tailwind-merge', 'date-fns', 'class-variance-authority'],
+        },
+        // Optimize chunk names
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+          return `assets/js/${facadeModuleId}-[hash].js`;
+        }
+      },
+    },
+    
+    // Minification settings
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
+        passes: 2,
+      },
+      mangle: {
+        safari10: true,
+      },
+      format: {
+        comments: false,
+      },
+    },
+    
+    // Performance settings
+    reportCompressedSize: false, // Faster builds
+    chunkSizeWarningLimit: 1000,
+    
+    // Source maps for production debugging
+    sourcemap: false, // Disable for production
   },
 });

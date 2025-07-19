@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users, EyeOff } from 'lucide-react';
+import { Calendar, Clock, Users, EyeOff, ExternalLink } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { YOUTUBE_CONFIG } from '@shared/config';
 
 interface YouTubeVideo {
   id: string;
@@ -26,11 +26,16 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLive
   const videoRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
-  const { data: videos, isLoading, error } = useQuery<YouTubeVideo[]>({
-    queryKey: ['/api/youtube/live-videos'],
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
-  });
+  // Always show the fixed live stream
+  const isLoading = false;
+  const error = null;
+  const videos = [{
+    id: YOUTUBE_CONFIG.LIVE_VIDEO_ID,
+    title: 'backspace.fm ライブ配信',
+    liveBroadcastContent: 'live' as const,
+    thumbnailUrl: '',
+    channelTitle: 'backspace.fm'
+  }];
 
   // Sync heights between video and chat
   useEffect(() => {
@@ -89,39 +94,6 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLive
 
   const latestVideo = videos[0];
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return null; // Return null for invalid dates
-    }
-    return date.toLocaleDateString('ja-JP', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusBadge = (video: YouTubeVideo) => {
-    switch (video.liveBroadcastContent) {
-      case 'live':
-        return (
-          <Badge variant="destructive" className="animate-pulse">
-            <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
-            ライブ配信中
-          </Badge>
-        );
-      case 'upcoming':
-        return (
-          <Badge variant="secondary">
-            <Calendar className="w-3 h-3 mr-1" />
-            配信予定
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <Card className={className}>
@@ -135,16 +107,28 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLive
             }`}></div>
             backspace.fm ライブ配信
           </div>
-          {onHide && (
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={onHide}
-              className="h-8 w-8 p-0"
+              asChild
+              className="h-8 px-2"
             >
-              <EyeOff className="h-4 w-4" />
+              <a href={YOUTUBE_CONFIG.LIVE_URL} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </Button>
-          )}
+            {onHide && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onHide}
+                className="h-8 w-8 p-0"
+              >
+                <EyeOff className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -155,8 +139,8 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLive
             <div className="flex-grow lg:w-2/3">
               <div ref={videoRef} className="relative w-full aspect-video rounded-lg overflow-hidden">
                 <iframe
-                  src={`https://www.youtube.com/embed/${latestVideo.id}?autoplay=0&rel=0&modestbranding=1`}
-                  title={latestVideo.title}
+                  src={`${YOUTUBE_CONFIG.EMBED_BASE_URL}${YOUTUBE_CONFIG.LIVE_VIDEO_ID}?autoplay=0&rel=0&modestbranding=1`}
+                  title="backspace.fm ライブ配信"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -170,7 +154,7 @@ export function YouTubeLiveEmbed({ className, onHide, onNoContent }: YouTubeLive
               <div className="lg:w-1/3">
                 <div ref={chatRef} className="relative w-full rounded-lg overflow-hidden border bg-white">
                   <iframe
-                    src={`https://www.youtube.com/live_chat?v=${latestVideo.id}&embed_domain=${encodeURIComponent(window.location.hostname)}&theme=light`}
+                    src={`${YOUTUBE_CONFIG.LIVE_CHAT_BASE_URL}?v=${YOUTUBE_CONFIG.LIVE_VIDEO_ID}&embed_domain=${encodeURIComponent(window.location.hostname)}&theme=light`}
                     title="ライブチャット"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
