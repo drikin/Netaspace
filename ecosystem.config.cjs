@@ -20,7 +20,7 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 5000,
-      DATABASE_URL: 'postgresql://postgres:netapass123@localhost:5432/neta_local',
+      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:netapass123@localhost:5432/neta_local',
       SESSION_SECRET: 'neta-backspace-fm-super-secret-session-key-2025',
       DOMAIN: 'neta.backspace.fm',
       PROTOCOL: 'https',

@@ -105,6 +105,9 @@ export const insertWeekSchema = createInsertSchema(weeks).pick({
   title: true,
   liveRecordingDate: true,
   liveUrl: true,
+}).extend({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 });
 
 export const updateWeekSchema = createInsertSchema(weeks).pick({
