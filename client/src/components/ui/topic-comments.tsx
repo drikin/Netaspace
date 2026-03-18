@@ -18,7 +18,7 @@ interface TopicCommentsProps {
 const TopicComments: React.FC<TopicCommentsProps> = ({ topicId, isAdmin = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [commenter, setCommenter] = useState(() => {
-    return localStorage.getItem("neta-commenter-name") || "";
+    return localStorage.getItem("submitterName") || "";
   });
   const [content, setContent] = useState("");
   const { toast } = useToast();
@@ -44,7 +44,7 @@ const TopicComments: React.FC<TopicCommentsProps> = ({ topicId, isAdmin = false 
     },
     onSuccess: () => {
       setContent("");
-      localStorage.setItem("neta-commenter-name", commenter);
+      localStorage.setItem("submitterName", commenter);
       queryClient.invalidateQueries({ queryKey: ["/api/topics", topicId, "comments"] });
       toast({ title: "コメントを投稿しました" });
     },
