@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import WeekSelector from "@/components/week-selector";
@@ -10,12 +10,13 @@ import { PodcastPlayer } from "@/components/podcast-player";
 import LatestComments from "@/components/latest-comments";
 import RecommendedArticles from "@/components/recommended-articles";
 import PerformanceMonitor from "@/components/performance-monitor";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScriptEditor } from "@/components/script-editor";
 import { useFingerprint } from "@/hooks/use-fingerprint";
 import { useAuth } from "@/hooks/use-auth";
 import { TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Heart, Clock, Eye, EyeOff, Copy } from "lucide-react";
+import { RefreshCw, AlertCircle, Heart, Clock, Eye, EyeOff, Copy, LayoutDashboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type SortOrder = "stars" | "newest";
@@ -535,8 +536,8 @@ const Home: React.FC = () => {
         {week?.topics && week.topics.length > 0 && (
           <div className="hidden show-ranking:block w-80 flex-shrink-0">
             {/* Dynamic spacer to align with first topic card */}
-            <div 
-              style={{ height: `${rankingBoardOffset}px` }} 
+            <div
+              style={{ height: `${rankingBoardOffset}px` }}
               aria-hidden="true"
             />
             <div className="sticky top-6 space-y-3">
@@ -548,13 +549,39 @@ const Home: React.FC = () => {
                 onSubmitterToggle={handleSubmitterToggle}
                 onClearFilters={handleClearFilters}
               />
-              
+
               {/* Podcast Player */}
               <PodcastPlayer />
             </div>
           </div>
         )}
       </div>
+
+      {/* Mobile sidebar drawer - visible only below show-ranking breakpoint */}
+      {week?.topics && week.topics.length > 0 && (
+        <div className="show-ranking:hidden fixed bottom-4 right-4 z-50">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+                <LayoutDashboard className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[340px] sm:w-[380px] p-0 overflow-y-auto">
+              <div className="p-4 space-y-3 pt-10">
+                <LatestComments />
+                {week?.id && <RecommendedArticles weekId={week.id} />}
+                <TopicTop10Board
+                  topics={week.topics}
+                  selectedSubmitters={selectedSubmitters}
+                  onSubmitterToggle={handleSubmitterToggle}
+                  onClearFilters={handleClearFilters}
+                />
+                <PodcastPlayer />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
     </div>
   );
 };
