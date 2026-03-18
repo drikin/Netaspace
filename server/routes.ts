@@ -24,6 +24,7 @@ import fs from 'fs';
 import archiver from 'archiver';
 import { XMLParser } from 'fast-xml-parser';
 import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
+import { isGrokEnabled, summarizeXReactions, getRecommendedArticles, type GrokXSummary, type GrokRecommendation } from './grok';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -32,6 +33,14 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 // Cache for web reactions search results
 const reactionsCache = new Map<number, { results: Array<{ title: string; url: string; source: string }>; cached: number }>();
 const REACTIONS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
+// Cache for Grok X summaries
+const grokSummaryCache = new Map<number, { summary: GrokXSummary; cached: number }>();
+const GROK_SUMMARY_CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+
+// Cache for Grok recommended articles
+const grokRecommendationsCache = new Map<number, { recommendations: GrokRecommendation[]; cached: number }>();
+const GROK_RECOMMENDATIONS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
 // Cache for podcast episodes
 const podcastCache = {
@@ -1729,6 +1738,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Reactions fetch error:', error);
       res.status(500).json({ message: 'Failed to fetch reactions' });
+    }
+  });
+
+  // Grok-powered X/Twitter reaction summary for a topic
+  app.get('/api/topics/:id/x-summary', async (req, res) => {
+    try {
+      if (!isGrokEnabled()) {
+        return res.json({ available: false, reason: 'not_configured' });
+      }
+
+      const topicId = parseInt(req.params.id);
+      if (isNaN(topicId)) {
+        return res.status(400).json({ message: 'Invalid topic ID' });
+      }
+
+      // Check cache
+      const cached = grokSummaryCache.get(topicId);
+      if (cached && (Date.now() - cached.cached) < GROK_SUMMARY_CACHE_TTL) {
+        return res.json({ available: true, summary: cached.summary, cachedAt: cached.cached });
+      }
+
+      const topic = await storage.getTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({ message: 'Topic not found' });
+      }
+
+      const summary = await summarizeXReactions(topic.title, topic.url);
+      if (!summary) {
+        return res.json({ available: false, reason: 'api_error' });
+      }
+
+      grokSummaryCache.set(topicId, { summary, cached: Date.now() });
+      res.json({ available: true, summary, cachedAt: Date.now() });
+    } catch (error) {
+      console.error('Grok X summary error:', error);
+      res.json({ available: false, reason: 'api_error' });
+    }
+  });
+
+  // Grok-powered recommended articles for a week
+  app.get('/api/weeks/:id/recommended-articles', async (req, res) => {
+    try {
+      if (!isGrokEnabled()) {
+        return res.json({ available: false, reason: 'not_configured' });
+      }
+
+      const weekId = parseInt(req.params.id);
+      if (isNaN(weekId)) {
+        return res.status(400).json({ message: 'Invalid week ID' });
+      }
+
+      // Check cache
+      const cached = grokRecommendationsCache.get(weekId);
+      if (cached && (Date.now() - cached.cached) < GROK_RECOMMENDATIONS_CACHE_TTL) {
+        return res.json({ available: true, recommendations: cached.recommendations, cachedAt: cached.cached });
+      }
+
+      const topics = await storage.getTopicsByWeekId(weekId);
+      if (!topics || topics.length === 0) {
+        return res.json({ available: false, reason: 'no_topics' });
+      }
+
+      // Use top topics by stars as context
+      const sortedTopics = [...topics]
+        .sort((a, b) => (b.starsCount || 0) - (a.starsCount || 0))
+        .slice(0, 10)
+        .map(t => ({ title: t.title, url: t.url, description: t.description }));
+
+      const recommendations = await getRecommendedArticles(sortedTopics);
+      if (recommendations.length === 0) {
+        return res.json({ available: false, reason: 'no_results' });
+      }
+
+      grokRecommendationsCache.set(weekId, { recommendations, cached: Date.now() });
+      res.json({ available: true, recommendations, cachedAt: Date.now() });
+    } catch (error) {
+      console.error('Grok recommendations error:', error);
+      res.json({ available: false, reason: 'api_error' });
+    }
+  });
+
+  // Recent comments across all topics
+  app.get('/api/comments/recent', async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+      const recentComments = await storage.getRecentComments(limit);
+      res.json(recentComments);
+    } catch (error) {
+      console.error('Get recent comments error:', error);
+      res.status(500).json({ message: 'Failed to get recent comments' });
     }
   });
 

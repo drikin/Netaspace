@@ -7,6 +7,8 @@ import TopicCard from "@/components/ui/topic-card";
 import { YouTubeLiveEmbed } from "@/components/youtube-live-embed";
 import TopicTop10Board from "@/components/topic-top10-board";
 import { PodcastPlayer } from "@/components/podcast-player";
+import LatestComments from "@/components/latest-comments";
+import RecommendedArticles from "@/components/recommended-articles";
 import PerformanceMonitor from "@/components/performance-monitor";
 import { ScriptEditor } from "@/components/script-editor";
 import { useFingerprint } from "@/hooks/use-fingerprint";
@@ -538,6 +540,8 @@ const Home: React.FC = () => {
               aria-hidden="true"
             />
             <div className="sticky top-6 space-y-3">
+              <LatestComments />
+              {week?.id && <RecommendedArticles weekId={week.id} />}
               <TopicTop10Board
                 topics={week.topics}
                 selectedSubmitters={selectedSubmitters}

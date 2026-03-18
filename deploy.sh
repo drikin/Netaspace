@@ -116,7 +116,21 @@ log "Built application with frontend and backend"
 # Setup environment file for local PostgreSQL
 log "Setting up environment variables for local PostgreSQL..."
 if [[ -f .env.production ]]; then
+    # Preserve existing API keys before overwriting
+    EXISTING_XAI_KEY=""
+    if [[ -f .env ]]; then
+        EXISTING_XAI_KEY=$(grep '^XAI_API_KEY=' .env 2>/dev/null | head -1 || true)
+    fi
     cp .env.production .env
+    # Re-append preserved API keys
+    if [[ -n "$EXISTING_XAI_KEY" ]]; then
+        echo "" >> .env
+        echo "# Grok (xAI) API" >> .env
+        echo "$EXISTING_XAI_KEY" >> .env
+        echo "GROK_MODEL=${GROK_MODEL:-grok-3-mini}" >> .env
+        echo "GROK_DAILY_LIMIT=${GROK_DAILY_LIMIT:-100}" >> .env
+        log "Preserved XAI_API_KEY in .env"
+    fi
     log "Copied .env.production to .env"
 else
     cat > .env << EOF
@@ -260,6 +274,10 @@ export NODE_ENV="production"
 export PORT="5000"
 export SESSION_SECRET="neta-backspace-fm-super-secret-session-key-2025"
 export ADMIN_PASSWORD="${ADMIN_PASSWORD:-default_admin_pass}"
+# Load XAI_API_KEY from .env if set
+if grep -q '^XAI_API_KEY=' .env 2>/dev/null; then
+    export $(grep '^XAI_API_KEY=' .env)
+fi
 
 if [[ -f ecosystem.config.cjs ]]; then
     pm2 start ecosystem.config.cjs

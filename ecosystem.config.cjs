@@ -32,6 +32,11 @@ module.exports = {
       RATE_LIMIT_MAX_REQUESTS: 200,
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'default_admin_pass',
       
+      // Grok (xAI) API settings
+      XAI_API_KEY: process.env.XAI_API_KEY || '',
+      GROK_MODEL: process.env.GROK_MODEL || 'grok-3-mini',
+      GROK_DAILY_LIMIT: process.env.GROK_DAILY_LIMIT || '100',
+
       // Node.js performance settings
       NODE_OPTIONS: '--max-http-header-size=16384',
       UV_THREADPOOL_SIZE: '16' // Increase thread pool for better I/O
