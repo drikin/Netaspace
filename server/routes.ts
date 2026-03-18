@@ -1643,6 +1643,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comment routes
+  app.get('/api/topics/:id/comments', async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.id);
+      if (isNaN(topicId)) {
+        return res.status(400).json({ message: 'Invalid topic ID' });
+      }
+      const topicComments = await storage.getCommentsByTopicId(topicId);
+      res.json(topicComments);
+    } catch (error) {
+      console.error('Get comments error:', error);
+      res.status(500).json({ message: 'Failed to get comments' });
+    }
+  });
+
+  app.post('/api/topics/:id/comments', async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.id);
+      if (isNaN(topicId)) {
+        return res.status(400).json({ message: 'Invalid topic ID' });
+      }
+
+      const { content, commenter, fingerprint } = req.body;
+      if (!content || typeof content !== 'string' || content.trim().length === 0) {
+        return res.status(400).json({ message: 'コメント内容は必須です' });
+      }
+      if (!commenter || typeof commenter !== 'string' || commenter.trim().length === 0) {
+        return res.status(400).json({ message: '名前は必須です' });
+      }
+      if (!fingerprint) {
+        return res.status(400).json({ message: 'Fingerprint is required' });
+      }
+
+      const hashedFingerprint = createHash('sha256').update(fingerprint).digest('hex');
+      const comment = await storage.createComment({
+        topicId,
+        content: content.trim(),
+        commenter: commenter.trim(),
+        fingerprint: hashedFingerprint,
+      });
+
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error('Create comment error:', error);
+      res.status(500).json({ message: 'Failed to create comment' });
+    }
+  });
+
+  app.delete('/api/comments/:id', isAdmin, async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      if (isNaN(commentId)) {
+        return res.status(400).json({ message: 'Invalid comment ID' });
+      }
+      const success = await storage.deleteComment(commentId);
+      if (!success) {
+        return res.status(404).json({ message: 'Comment not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete comment error:', error);
+      res.status(500).json({ message: 'Failed to delete comment' });
+    }
+  });
+
   // Script routes (admin only)
   app.get('/api/scripts/week/:weekId', isAdmin, async (req, res) => {
     try {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExternalLink, Link, Calendar, User, Ear } from "lucide-react";
 import AdminControls from "@/components/admin-controls";
+import TopicComments from "@/components/ui/topic-comments";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TopicWithCommentsAndStars } from "@shared/schema";
@@ -186,6 +187,8 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics, weekLiveUrl }: Topic
                   {topic.description}
                 </p>
               )}
+
+              <TopicComments topicId={topic.id} isAdmin={isAdmin} />
             </div>
 
             {/* Vote button */}

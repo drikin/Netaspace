@@ -11,18 +11,21 @@ import {
   stars,
   shares,
   scripts,
+  comments,
   type User,
   type Week,
   type Topic,
   type Star,
   type Share,
   type Script,
+  type Comment,
   type InsertUser,
   type InsertWeek,
   type InsertTopic,
   type InsertStar,
   type InsertShare,
   type InsertScript,
+  type InsertComment,
   type TopicWithCommentsAndStars,
   type WeekWithTopics
 } from '@shared/schema';
@@ -119,6 +122,11 @@ export interface IStorage {
   addShare(share: InsertShare): Promise<boolean>;
   hasShared(topicId: number, fingerprint: string): Promise<boolean>;
   
+  // Comment operations
+  getCommentsByTopicId(topicId: number): Promise<Comment[]>;
+  createComment(comment: InsertComment): Promise<Comment>;
+  deleteComment(id: number): Promise<boolean>;
+
   // Script operations
   getScriptByWeekId(weekId: number): Promise<Script | undefined>;
   createScript(script: InsertScript): Promise<Script>;
@@ -536,6 +544,30 @@ class PostgreSQLStorage implements IStorage {
       
       return result.length > 0;
     }, 'hasShared');
+  }
+
+  async getCommentsByTopicId(topicId: number): Promise<Comment[]> {
+    return this.executeWithMonitoring(async () => {
+      return await db
+        .select()
+        .from(comments)
+        .where(eq(comments.topicId, topicId))
+        .orderBy(desc(comments.createdAt));
+    }, 'getCommentsByTopicId');
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    return this.executeWithMonitoring(async () => {
+      const [result] = await db.insert(comments).values(comment).returning();
+      return result;
+    }, 'createComment');
+  }
+
+  async deleteComment(id: number): Promise<boolean> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db.delete(comments).where(eq(comments.id, id)).returning();
+      return result.length > 0;
+    }, 'deleteComment');
   }
 
   async getScriptByWeekId(weekId: number): Promise<Script | undefined> {

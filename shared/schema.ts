@@ -91,7 +91,17 @@ export const scripts = pgTable("scripts", {
   createdAtIdx: index("scripts_created_at_idx").on(table.createdAt),
 }));
 
-// Comments functionality removed
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  topicId: integer("topic_id").references(() => topics.id).notNull(),
+  content: text("content").notNull(),
+  commenter: text("commenter").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  topicIdIdx: index("comments_topic_id_idx").on(table.topicId),
+  createdAtIdx: index("comments_created_at_idx").on(table.createdAt),
+}));
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -147,7 +157,12 @@ export const insertScriptSchema = createInsertSchema(scripts).pick({
   updatedBy: true,
 });
 
-// Comment schema removed
+export const insertCommentSchema = createInsertSchema(comments).pick({
+  topicId: true,
+  content: true,
+  commenter: true,
+  fingerprint: true,
+});
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -169,7 +184,8 @@ export type InsertShare = z.infer<typeof insertShareSchema>;
 export type Script = typeof scripts.$inferSelect;
 export type InsertScript = z.infer<typeof insertScriptSchema>;
 
-// Comment types removed
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
 
 // Extended schemas for form validation
 export const submitTopicSchema = insertTopicSchema.omit({ weekId: true, status: true, fingerprint: true }).extend({
@@ -184,7 +200,7 @@ export const createTopicSchema = insertTopicSchema.extend({
 
 export type CreateTopicData = z.infer<typeof createTopicSchema>;
 
-// Comment submission schema removed
+export const submitCommentSchema = insertCommentSchema.omit({ fingerprint: true });
 
 // Extended types for API responses
 export type TopicWithCommentsAndStars = Topic & {
@@ -192,6 +208,7 @@ export type TopicWithCommentsAndStars = Topic & {
   sharesCount?: number;
   hasStarred?: boolean;
   hasShared?: boolean;
+  comments?: Comment[];
 };
 
 export type WeekWithTopics = Week & {
