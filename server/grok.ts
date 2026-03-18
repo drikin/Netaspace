@@ -31,7 +31,7 @@ export function isGrokEnabled(): boolean {
   return !!process.env.XAI_API_KEY;
 }
 
-const MODEL = () => process.env.GROK_MODEL || "grok-3-mini";
+const MODEL = () => process.env.GROK_MODEL || "grok-4.20-beta-0309-non-reasoning";
 
 // Daily API call counter
 let dailyCallCount = 0;

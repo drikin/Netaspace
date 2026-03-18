@@ -34,7 +34,7 @@ module.exports = {
       
       // Grok (xAI) API settings
       XAI_API_KEY: process.env.XAI_API_KEY || '',
-      GROK_MODEL: process.env.GROK_MODEL || 'grok-3-mini',
+      GROK_MODEL: process.env.GROK_MODEL || 'grok-4.20-beta-0309-non-reasoning',
       GROK_DAILY_LIMIT: process.env.GROK_DAILY_LIMIT || '100',
 
       // Node.js performance settings
