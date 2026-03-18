@@ -36,11 +36,11 @@ const REACTIONS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
 // Cache for Grok X summaries
 const grokSummaryCache = new Map<number, { summary: GrokXSummary; cached: number }>();
-const GROK_SUMMARY_CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const GROK_SUMMARY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Cache for Grok recommended articles
 const grokRecommendationsCache = new Map<number, { recommendations: GrokRecommendation[]; cached: number }>();
-const GROK_RECOMMENDATIONS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+const GROK_RECOMMENDATIONS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Cache for podcast episodes
 const podcastCache = {

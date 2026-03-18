@@ -53,7 +53,7 @@ const TopicReactions: React.FC<TopicReactionsProps> = ({ topicId }) => {
       return await res.json();
     },
     enabled: isOpen,
-    staleTime: 1000 * 60 * 60, // 1時間キャッシュ
+    staleTime: 1000 * 60 * 60 * 24, // 24時間キャッシュ
   });
 
   const results = data?.results || [];

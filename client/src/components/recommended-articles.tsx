@@ -25,7 +25,7 @@ const RecommendedArticles: React.FC<RecommendedArticlesProps> = ({ weekId }) => 
       const res = await apiRequest("GET", `/api/weeks/${weekId}/recommended-articles`);
       return await res.json();
     },
-    staleTime: 1000 * 60 * 30, // 30分キャッシュ
+    staleTime: 1000 * 60 * 60 * 24, // 24時間キャッシュ
   });
 
   // Hide entirely when not available or loading
