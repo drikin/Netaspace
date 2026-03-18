@@ -13,6 +13,18 @@ export interface ReleaseNote {
 // リリース履歴データ（新しい順）
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "2026-03-18-v3.0.1",
+    version: "3.0.1",
+    date: "2026年3月18日",
+    title: "重複ネタ投稿時の「聞きたい」投票提案",
+    description: "既に投稿済みのネタと同じURLを投稿しようとした際、ダイアログで「聞きたい投票しますか？」と提案するようになりました。ワンクリックで投票でき、わざわざネタを探す手間が省けます。",
+    features: [
+      "🗳️ 重複ネタ投稿時に「聞きたい投票する」ダイアログを表示",
+      "⚡ ワンクリックで既存ネタへの「聞きたい」投票が可能"
+    ],
+    isNew: true
+  },
+  {
     id: "2026-03-18-v3.0.0",
     version: "3.0.0",
     date: "2026年3月18日",
@@ -29,7 +41,7 @@ export const releaseNotes: ReleaseNote[] = [
       "💾 台本の保存・読込機能の修正",
       "🎯 ネタ採用時のXシェア機能"
     ],
-    isNew: true
+    isNew: false
   },
   {
     id: "2025-07-01-v2.9.0",
