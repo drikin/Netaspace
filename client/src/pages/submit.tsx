@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { submitTopicSchema, TopicWithCommentsAndStars, WeekWithTopics } from "@shared/schema";
@@ -19,6 +20,8 @@ const Submit: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGoogleNewsLink, setIsGoogleNewsLink] = React.useState(false);
   const [originalNewsUrl, setOriginalNewsUrl] = React.useState('');
+  const [duplicateTopic, setDuplicateTopic] = useState<{ id: number; title: string; submitter: string } | null>(null);
+  const [isStarring, setIsStarring] = useState(false);
   const queryClient = useQueryClient();
   const fingerprint = useFingerprint();
   
@@ -262,14 +265,9 @@ const Submit: React.FC = () => {
       
       console.error("Failed to submit topic:", err);
       
-      // 重複URLエラーの場合は専用メッセージを表示
+      // 重複URLエラーの場合はダイアログを表示して「聞きたい」投票を提案
       if (err?.response?.status === 409 && err?.response?.data?.code === 'DUPLICATE_URL') {
-        const existingTopic = err.response.data.existingTopic;
-        toast({
-          title: "重複したURL",
-          description: `このURLは既に「${existingTopic.title}」として${existingTopic.submitter}さんが投稿済みです。`,
-          variant: "destructive",
-        });
+        setDuplicateTopic(err.response.data.existingTopic);
       } else {
         toast({
           title: "エラー",
@@ -313,6 +311,28 @@ const Submit: React.FC = () => {
 
     // 楽観的UI更新を使ったミューテーション実行
     createTopicMutation.mutate(values);
+  };
+
+  const handleStarDuplicate = async () => {
+    if (!duplicateTopic) return;
+    setIsStarring(true);
+    try {
+      await apiRequest("POST", `/api/topics/${duplicateTopic.id}/star`, { fingerprint });
+      toast({
+        title: "「聞きたい」に投票しました！",
+        description: `「${duplicateTopic.title}」に投票しました。`,
+      });
+      setDuplicateTopic(null);
+      navigate("/");
+    } catch {
+      toast({
+        title: "エラー",
+        description: "投票に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsStarring(false);
+    }
   };
 
   return (
@@ -504,6 +524,25 @@ const Submit: React.FC = () => {
           )}
         </div>
       </div>
+      {/* 重複URL検出ダイアログ */}
+      <Dialog open={!!duplicateTopic} onOpenChange={(open) => { if (!open) setDuplicateTopic(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>このネタは既に投稿されています</DialogTitle>
+            <DialogDescription>
+              「{duplicateTopic?.title}」として{duplicateTopic?.submitter}さんが投稿済みです。代わりに「聞きたい」投票しませんか？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDuplicateTopic(null)}>
+              閉じる
+            </Button>
+            <Button onClick={handleStarDuplicate} disabled={isStarring}>
+              {isStarring ? "投票中..." : "聞きたい投票する"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
