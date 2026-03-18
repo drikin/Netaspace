@@ -162,6 +162,61 @@ async function fetchWithFallbackService(url: string) {
   }
 }
 
+// X (Twitter) URLかチェックする関数
+function isTwitterURL(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.hostname === 'x.com' || u.hostname === 'www.x.com' ||
+           u.hostname === 'twitter.com' || u.hostname === 'www.twitter.com' ||
+           u.hostname === 'mobile.twitter.com' || u.hostname === 'mobile.x.com';
+  } catch {
+    return false;
+  }
+}
+
+// X (Twitter) oEmbed APIでツイート情報を取得する関数
+async function fetchTwitterInfo(url: string) {
+  try {
+    const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`;
+    const response = await fetchWithRetry(oembedUrl, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+      }
+    }, 2);
+
+    const data = await response.json() as any;
+    if (data?.author_name && data?.html) {
+      // oEmbedのHTMLからツイートテキストを抽出
+      const htmlContent = data.html as string;
+      const textMatch = htmlContent.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+      let tweetText = '';
+      if (textMatch) {
+        // HTMLタグを除去してプレーンテキストを取得
+        tweetText = textMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim();
+      }
+
+      const title = tweetText
+        ? `${data.author_name}: ${tweetText}`
+        : `${data.author_name}のポスト`;
+
+      return {
+        title,
+        description: tweetText || '',
+        finalUrl: url,
+        originalUrl: url,
+        ogImage: ''
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Twitter oEmbed API error:', error);
+    return null;
+  }
+}
+
 // URLから記事情報を取得する関数
 async function fetchArticleInfo(url: string) {
   // Check cache first
@@ -170,10 +225,22 @@ async function fetchArticleInfo(url: string) {
     performanceMetrics.urlCacheHits++;
     return { title: cached.title, description: cached.description };
   }
-  
+
   performanceMetrics.urlCacheMisses++;
 
   try {
+    // X (Twitter) のURLかチェック
+    if (isTwitterURL(url)) {
+      console.log('Twitter/X URL detected:', url);
+      const twitterResult = await fetchTwitterInfo(url);
+      if (twitterResult && twitterResult.title) {
+        urlCache.set(url, { title: twitterResult.title, description: twitterResult.description, cached: Date.now() });
+        return twitterResult;
+      }
+      // oEmbed失敗時は通常のフェッチにフォールバック
+      console.log('Twitter oEmbed failed, falling back to normal fetch');
+    }
+
     // Googleニュースのリンクかチェック
     if (isGoogleNewsURL(url)) {
       console.log('Google News URL detected:', url);
