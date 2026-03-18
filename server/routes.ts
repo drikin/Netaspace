@@ -25,6 +25,7 @@ import archiver from 'archiver';
 import { XMLParser } from 'fast-xml-parser';
 import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
 import { isGrokEnabled, summarizeXReactions, getRecommendedArticles, type GrokXSummary, type GrokRecommendation } from './grok';
+import { getCache, setCache } from './file-cache';
 
 // Performance optimization: Cache for URL metadata
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
@@ -34,12 +35,8 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const reactionsCache = new Map<number, { results: Array<{ title: string; url: string; source: string }>; cached: number }>();
 const REACTIONS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
-// Cache for Grok X summaries
-const grokSummaryCache = new Map<number, { summary: GrokXSummary; cached: number }>();
+// Grok cache TTLs (file-based, shared across cluster workers)
 const GROK_SUMMARY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-
-// Cache for Grok recommended articles
-const grokRecommendationsCache = new Map<number, { recommendations: GrokRecommendation[]; cached: number }>();
 const GROK_RECOMMENDATIONS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Cache for podcast episodes
@@ -1753,10 +1750,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid topic ID' });
       }
 
-      // Check cache
-      const cached = grokSummaryCache.get(topicId);
-      if (cached && (Date.now() - cached.cached) < GROK_SUMMARY_CACHE_TTL) {
-        return res.json({ available: true, summary: cached.summary, cachedAt: cached.cached });
+      // Check file-based cache (shared across cluster)
+      const cached = getCache<GrokXSummary>('grok_summary', topicId, GROK_SUMMARY_CACHE_TTL);
+      if (cached) {
+        return res.json({ available: true, summary: cached.data, cachedAt: cached.cached });
       }
 
       const topic = await storage.getTopic(topicId);
@@ -1769,8 +1766,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ available: false, reason: 'api_error' });
       }
 
-      grokSummaryCache.set(topicId, { summary, cached: Date.now() });
-      res.json({ available: true, summary, cachedAt: Date.now() });
+      const cachedAt = setCache('grok_summary', topicId, summary);
+      res.json({ available: true, summary, cachedAt });
     } catch (error) {
       console.error('Grok X summary error:', error);
       res.json({ available: false, reason: 'api_error' });
@@ -1789,10 +1786,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid week ID' });
       }
 
-      // Check cache
-      const cached = grokRecommendationsCache.get(weekId);
-      if (cached && (Date.now() - cached.cached) < GROK_RECOMMENDATIONS_CACHE_TTL) {
-        return res.json({ available: true, recommendations: cached.recommendations, cachedAt: cached.cached });
+      // Check file-based cache (shared across cluster)
+      const cached = getCache<GrokRecommendation[]>('grok_recs', weekId, GROK_RECOMMENDATIONS_CACHE_TTL);
+      if (cached) {
+        return res.json({ available: true, recommendations: cached.data, cachedAt: cached.cached });
       }
 
       const topics = await storage.getTopicsByWeekId(weekId);
@@ -1811,8 +1808,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ available: false, reason: 'no_results' });
       }
 
-      grokRecommendationsCache.set(weekId, { recommendations, cached: Date.now() });
-      res.json({ available: true, recommendations, cachedAt: Date.now() });
+      const cachedAt = setCache('grok_recs', weekId, recommendations);
+      res.json({ available: true, recommendations, cachedAt });
     } catch (error) {
       console.error('Grok recommendations error:', error);
       res.json({ available: false, reason: 'api_error' });

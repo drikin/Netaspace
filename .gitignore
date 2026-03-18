@@ -5,6 +5,9 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
+# Cache
+.cache/
+
 # Environment files
 .env
 .env.local
