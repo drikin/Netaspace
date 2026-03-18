@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ExternalLink, Link, Calendar, User, Ear } from "lucide-react";
 import AdminControls from "@/components/admin-controls";
 import TopicComments from "@/components/ui/topic-comments";
+import TopicReactions from "@/components/ui/topic-reactions";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TopicWithCommentsAndStars } from "@shared/schema";
@@ -188,6 +189,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics, weekLiveUrl }: Topic
                 </p>
               )}
 
+              <TopicReactions topicId={topic.id} />
               <TopicComments topicId={topic.id} commentsCount={topic.commentsCount} isAdmin={isAdmin} />
             </div>
 

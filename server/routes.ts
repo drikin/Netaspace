@@ -29,6 +29,10 @@ import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
 const urlCache = new Map<string, { title: string; description: string; cached: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
+// Cache for web reactions search results
+const reactionsCache = new Map<number, { results: Array<{ title: string; url: string; source: string }>; cached: number }>();
+const REACTIONS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
 // Cache for podcast episodes
 const podcastCache = {
   episodes: null as any[] | null,
@@ -1640,6 +1644,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Share operation error:', error);
       res.status(500).json({ message: 'Failed to process share operation' });
+    }
+  });
+
+  // Web reactions route — search for public discussions about a topic
+  app.get('/api/topics/:id/reactions', async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.id);
+      if (isNaN(topicId)) {
+        return res.status(400).json({ message: 'Invalid topic ID' });
+      }
+
+      // Check cache
+      const cached = reactionsCache.get(topicId);
+      if (cached && (Date.now() - cached.cached) < REACTIONS_CACHE_TTL) {
+        return res.json({ results: cached.results, cachedAt: cached.cached });
+      }
+
+      // Get topic title for search
+      const topic = await storage.getTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({ message: 'Topic not found' });
+      }
+
+      // Search DuckDuckGo Lite for web reactions
+      const searchQuery = topic.title.replace(/[【】「」『』（）\(\)\[\]]/g, ' ').trim();
+      const results: Array<{ title: string; url: string; source: string }> = [];
+
+      try {
+        const ddgResponse = await fetchWithRetry(
+          `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(searchQuery)}`,
+          {
+            signal: AbortSignal.timeout(10000),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+              'Accept': 'text/html',
+              'Accept-Language': 'ja,en;q=0.9'
+            }
+          }, 2
+        );
+
+        const html = await ddgResponse.text();
+        const dom = new JSDOM(html);
+        const doc = dom.window.document;
+
+        // Extract result links from DuckDuckGo Lite
+        const resultLinks = doc.querySelectorAll('a[rel="nofollow"]');
+        const topicUrlDomain = (() => {
+          try { return new URL(topic.url).hostname; } catch { return ''; }
+        })();
+
+        for (const link of resultLinks) {
+          if (results.length >= 5) break;
+
+          const href = link.getAttribute('href') || '';
+          const title = link.textContent?.trim() || '';
+          if (!title || title.length < 5) continue;
+
+          // Extract real URL from DDG redirect
+          const uddgMatch = href.match(/uddg=([^&]+)/);
+          if (!uddgMatch) continue;
+          const realUrl = decodeURIComponent(uddgMatch[1]);
+
+          // Skip the topic's own URL and DuckDuckGo internal links
+          try {
+            const urlObj = new URL(realUrl);
+            if (urlObj.hostname === topicUrlDomain) continue;
+            if (urlObj.hostname.includes('duckduckgo.com')) continue;
+          } catch { continue; }
+
+          // Determine source type
+          const source = (realUrl.includes('x.com') || realUrl.includes('twitter.com'))
+            ? 'x' : 'web';
+
+          results.push({ title, url: realUrl, source });
+        }
+      } catch (searchError) {
+        console.error('Web search failed:', searchError);
+      }
+
+      // Cache results
+      reactionsCache.set(topicId, { results, cached: Date.now() });
+      res.json({ results, cachedAt: Date.now() });
+    } catch (error) {
+      console.error('Reactions fetch error:', error);
+      res.status(500).json({ message: 'Failed to fetch reactions' });
     }
   });
 
