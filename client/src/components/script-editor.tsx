@@ -115,13 +115,27 @@ export const ScriptEditor: React.FC = () => {
   // Fetch active week
   const { data: activeWeek } = useQuery<Week>({
     queryKey: ["/api/weeks/active"],
-    queryFn: () => apiRequest("GET", "/api/weeks/active"),
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/weeks/active");
+      return await res.json();
+    },
   });
 
   // Fetch script for active week
-  const { data: script, isLoading } = useQuery<Script>({
+  const { data: script, isLoading } = useQuery<Script | null>({
     queryKey: ["/api/scripts", activeWeek?.id],
-    queryFn: () => apiRequest("GET", `/api/scripts/week/${activeWeek?.id}`),
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", `/api/scripts/week/${activeWeek?.id}`);
+        return await res.json();
+      } catch (error: any) {
+        // 404 = 台本未作成、エラーではなくnullを返す
+        if (error?.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
     enabled: !!activeWeek?.id,
   });
 
@@ -163,10 +177,11 @@ export const ScriptEditor: React.FC = () => {
 
     try {
       // Fetch featured topics for the active week
-      const topics = await apiRequest("GET", `/api/topics?weekId=${activeWeek.id}&status=featured`);
-      
+      const res = await apiRequest("GET", `/api/topics?weekId=${activeWeek.id}&status=featured`);
+      const topics = await res.json();
+
       // Generate topic list
-      const topicList = topics.map((topic: any) => 
+      const topicList = topics.map((topic: any) =>
         `- [${topic.title}](${topic.url}) by ${topic.submitter}`
       ).join('\n');
 

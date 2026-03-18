@@ -247,7 +247,7 @@ if [[ -f ecosystem.config.cjs ]]; then
     # Ensure RATE_LIMIT is set to 200
     sed -i "s|RATE_LIMIT_MAX_REQUESTS: [0-9]*|RATE_LIMIT_MAX_REQUESTS: 200|g" ecosystem.config.cjs
     # Ensure cluster mode is set to 'max'
-    sed -i "s|instances: [0-9]*|instances: 'max'|g" ecosystem.config.cjs
+    sed -i "s|instances: [0-9][0-9]*,|instances: 'max',|g" ecosystem.config.cjs
     sed -i "s|exec_mode: '[^']*'|exec_mode: 'cluster'|g" ecosystem.config.cjs
     log "Updated ecosystem.config.cjs with local PostgreSQL, admin settings, and optimizations"
 fi
