@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import fetch from "node-fetch";
 
 // Types
 export interface GrokXSummary {
@@ -111,15 +112,24 @@ export async function getRecommendedArticles(
       .map((t, i) => `${i + 1}. ${t.title}${t.description ? ` - ${t.description}` : ""}`)
       .join("\n");
 
+    const today = new Date().toISOString().split("T")[0];
+
     const response = await ai.chat.completions.create({
       model: MODEL(),
       temperature: 0.5,
-      max_tokens: 800,
+      max_tokens: 1200,
       messages: [
         {
           role: "system",
-          content: `あなたはテクノロジー系ポッドキャストのリスナー向けに関連記事を推薦するアシスタントです。
-与えられたトピック一覧を分析し、リスナーが興味を持ちそうな関連記事を3〜5件推薦してください。
+          content: `あなたはテクノロジー系ポッドキャスト「backspace.fm」のリスナー向けに関連記事を推薦するアシスタントです。
+与えられたネタ帳のトピック一覧を分析し、リスナーが興味を持ちそうな関連記事を8〜10件推薦してください。
+
+今日の日付: ${today}
+
+重要な優先順位:
+1. 直近1週間以内に公開された旬なニュース記事を最優先してください
+2. ネタ帳のトピックと関連性が高い記事を選んでください
+3. ネタ帳にまだ載っていない、話題になっている最新ニュースも含めてください
 
 以下のJSON配列形式のみで回答してください。マークダウンや説明文は不要です:
 [
@@ -131,9 +141,11 @@ export async function getRecommendedArticles(
 ]
 
 注意:
-- 実在する記事のURLのみを推薦してください
+- 確実に実在し、現在アクセス可能な記事のURLのみを推薦してください
+- 大手メディアサイト（Impress Watch, ITmedia, CNET Japan, Engadget日本版, GIGAZINE, TechCrunch Japan, PC Watch等）の記事を優先してください
 - 日本語の記事を優先してください
-- トピック一覧に既にある記事は除外してください`,
+- トピック一覧に既にある記事のURLは絶対に除外してください
+- 多めに候補を出してください（後でリンク切れを除外します）`,
         },
         {
           role: "user",
@@ -146,11 +158,61 @@ export async function getRecommendedArticles(
     if (!text) return [];
 
     const parsed = parseJsonResponse<GrokRecommendation[]>(text);
-    return Array.isArray(parsed) ? parsed.slice(0, 5) : [];
+    if (!Array.isArray(parsed)) return [];
+
+    // Verify links and filter out broken ones
+    const verified = await verifyLinks(parsed);
+    return verified.slice(0, 5);
   } catch (error) {
     console.error("Grok recommendations error:", error);
     return [];
   }
+}
+
+async function verifyLinks(
+  articles: GrokRecommendation[]
+): Promise<GrokRecommendation[]> {
+  const results = await Promise.allSettled(
+    articles.map(async (article) => {
+      try {
+        const res = await fetch(article.url, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(5000),
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          },
+          redirect: "follow",
+        });
+        // Accept 2xx and 3xx as valid
+        if (res.status < 400) return article;
+        // Some sites block HEAD, try GET
+        const getRes = await fetch(article.url, {
+          method: "GET",
+          signal: AbortSignal.timeout(5000),
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          },
+          redirect: "follow",
+        });
+        if (getRes.status < 400) return article;
+        console.log(`Link check failed (${getRes.status}): ${article.url}`);
+        return null;
+      } catch (err) {
+        console.log(`Link check error: ${article.url}`, err);
+        return null;
+      }
+    })
+  );
+
+  return results
+    .filter(
+      (r): r is PromiseFulfilledResult<GrokRecommendation | null> =>
+        r.status === "fulfilled"
+    )
+    .map((r) => r.value)
+    .filter((v): v is GrokRecommendation => v !== null);
 }
 
 function parseJsonResponse<T>(text: string): T | null {
