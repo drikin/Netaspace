@@ -205,6 +205,7 @@ export const submitCommentSchema = insertCommentSchema.omit({ fingerprint: true 
 // Extended types for API responses
 export type TopicWithCommentsAndStars = Topic & {
   starsCount: number;
+  commentsCount?: number;
   sharesCount?: number;
   hasStarred?: boolean;
   hasShared?: boolean;

@@ -12,10 +12,11 @@ import type { Comment } from "@shared/schema";
 
 interface TopicCommentsProps {
   topicId: number;
+  commentsCount?: number;
   isAdmin?: boolean;
 }
 
-const TopicComments: React.FC<TopicCommentsProps> = ({ topicId, isAdmin = false }) => {
+const TopicComments: React.FC<TopicCommentsProps> = ({ topicId, commentsCount = 0, isAdmin = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [commenter, setCommenter] = useState(() => {
     return localStorage.getItem("submitterName") || "";
@@ -79,7 +80,7 @@ const TopicComments: React.FC<TopicCommentsProps> = ({ topicId, isAdmin = false 
         className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
       >
         <MessageSquare className="h-3.5 w-3.5" />
-        <span>コメント{comments.length > 0 ? ` (${comments.length})` : ""}</span>
+        <span>コメント{(isOpen ? comments.length : commentsCount) > 0 ? ` (${isOpen ? comments.length : commentsCount})` : ""}</span>
       </button>
 
       {isOpen && (

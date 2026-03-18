@@ -305,18 +305,24 @@ class PostgreSQLStorage implements IStorage {
           stars: topics.stars,
           featuredAt: topics.featuredAt,
           starsCount: sql<number>`(
-            SELECT COUNT(*) 
-            FROM ${stars} 
+            SELECT COUNT(*)
+            FROM ${stars}
             WHERE ${stars.topicId} = ${topics.id}
-          )`.as('starsCount')
+          )`.as('starsCount'),
+          commentsCount: sql<number>`(
+            SELECT COUNT(*)
+            FROM ${comments}
+            WHERE ${comments.topicId} = ${topics.id}
+          )`.as('commentsCount')
         })
         .from(topics)
         .where(eq(topics.weekId, weekId))
         .orderBy(desc(topics.createdAt));
-      
+
       return results.map(row => ({
         ...row,
         starsCount: Number(row.starsCount),
+        commentsCount: Number(row.commentsCount),
         hasStarred: false
       }));
     }, 'getTopicsByWeekId');
@@ -370,25 +376,41 @@ class PostgreSQLStorage implements IStorage {
       .from(shares)
       .where(inArray(shares.topicId, topicIds))
       .groupBy(shares.topicId);
-    
+
+    // Get all comment counts in a single query
+    const commentCounts = await db
+      .select({
+        topicId: comments.topicId,
+        count: count(comments.id).as('count')
+      })
+      .from(comments)
+      .where(inArray(comments.topicId, topicIds))
+      .groupBy(comments.topicId);
+
     // Create maps for quick lookup
     const starCountMap = new Map<number, number>();
     starCounts.forEach(row => {
       starCountMap.set(row.topicId, Number(row.count));
     });
-    
+
     const shareCountMap = new Map<number, number>();
     shareCounts.forEach(row => {
       shareCountMap.set(row.topicId, Number(row.count));
     });
-    
-    // Enrich topics with star counts and share counts
+
+    const commentCountMap = new Map<number, number>();
+    commentCounts.forEach(row => {
+      commentCountMap.set(row.topicId, Number(row.count));
+    });
+
+    // Enrich topics with star counts, share counts, and comment counts
     return topicsResult.map(topic => ({
       ...topic,
       starsCount: starCountMap.get(topic.id) || 0,
       sharesCount: shareCountMap.get(topic.id) || 0,
-      hasStarred: false, // Will be set by the caller if fingerprint is provided
-      hasShared: false   // Will be set by the caller if fingerprint is provided
+      commentsCount: commentCountMap.get(topic.id) || 0,
+      hasStarred: false,
+      hasShared: false
     }));
   }
 
@@ -405,10 +427,16 @@ class PostgreSQLStorage implements IStorage {
       const topic = result[0];
       const starsCount = await this.getStarsCountByTopicId(topic.id);
       const hasStarred = fingerprint ? await this.hasStarred(topic.id, fingerprint) : false;
-      
+      const commentCountResult = await db
+        .select({ count: count(comments.id) })
+        .from(comments)
+        .where(eq(comments.topicId, topic.id));
+      const commentsCount = Number(commentCountResult[0]?.count || 0);
+
       return {
         ...topic,
         starsCount,
+        commentsCount,
         hasStarred
       };
     }, 'getTopic');

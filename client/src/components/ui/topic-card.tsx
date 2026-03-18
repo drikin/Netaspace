@@ -188,7 +188,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics, weekLiveUrl }: Topic
                 </p>
               )}
 
-              <TopicComments topicId={topic.id} isAdmin={isAdmin} />
+              <TopicComments topicId={topic.id} commentsCount={topic.commentsCount} isAdmin={isAdmin} />
             </div>
 
             {/* Vote button */}
