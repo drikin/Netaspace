@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Save, RefreshCw, Copy, Check } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Week, Script } from "@shared/schema";
 
 // Default script template
@@ -318,10 +319,12 @@ export const ScriptEditor: React.FC = () => {
             placeholder="台本を入力してください..."
           />
         ) : (
-          <div className="prose prose-sm max-w-none">
-            <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg overflow-x-auto text-gray-900 font-medium leading-relaxed text-base">
-              {content || "台本がまだ作成されていません。"}
-            </pre>
+          <div className="prose prose-sm max-w-none bg-gray-50 p-4 rounded-lg overflow-x-auto text-gray-900 leading-relaxed">
+            {content ? (
+              <ReactMarkdown>{content}</ReactMarkdown>
+            ) : (
+              <p className="text-gray-500">台本がまだ作成されていません。</p>
+            )}
           </div>
         )}
         {script && (
