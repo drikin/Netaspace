@@ -152,7 +152,7 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics, weekLiveUrl }: Topic
 
   return (
     <>
-      <Card className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
+      <Card id={`topic-${topic.id}`} className={`overflow-hidden ${cardBg.className}`} style={cardBg.style}>
         <CardContent className="p-4">
           {/* Optimized header with integrated meta information */}
           <div className="flex items-start justify-between">

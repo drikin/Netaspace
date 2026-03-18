@@ -124,6 +124,7 @@ export interface IStorage {
   
   // Comment operations
   getCommentsByTopicId(topicId: number): Promise<Comment[]>;
+  getRecentComments(limit: number): Promise<Array<Comment & { topicTitle: string }>>;
   createComment(comment: InsertComment): Promise<Comment>;
   deleteComment(id: number): Promise<boolean>;
 
@@ -582,6 +583,26 @@ class PostgreSQLStorage implements IStorage {
         .where(eq(comments.topicId, topicId))
         .orderBy(desc(comments.createdAt));
     }, 'getCommentsByTopicId');
+  }
+
+  async getRecentComments(limitCount: number): Promise<Array<Comment & { topicTitle: string }>> {
+    return this.executeWithMonitoring(async () => {
+      const result = await db
+        .select({
+          id: comments.id,
+          topicId: comments.topicId,
+          content: comments.content,
+          commenter: comments.commenter,
+          fingerprint: comments.fingerprint,
+          createdAt: comments.createdAt,
+          topicTitle: topics.title,
+        })
+        .from(comments)
+        .innerJoin(topics, eq(comments.topicId, topics.id))
+        .orderBy(desc(comments.createdAt))
+        .limit(limitCount);
+      return result;
+    }, 'getRecentComments');
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {

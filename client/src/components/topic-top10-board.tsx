@@ -135,22 +135,13 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
     <div className="relative">
         
         {/* Main board container */}
-        <div className="relative rounded-lg border bg-card shadow-sm overflow-hidden w-64 xl:w-72 2xl:w-80">
-          {/* Header with animated background */}
-          <div className="relative bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 p-4 text-white">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 animate-gradient-x"></div>
-            <div className="relative">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Trophy className="h-6 w-6 text-yellow-300 animate-pulse" />
-                <h3 className="font-black text-lg tracking-tight">
-                  ネタ投稿 TOP 10
-                </h3>
-                <Trophy className="h-6 w-6 text-yellow-300 animate-pulse" />
-              </div>
-              <p className="text-xs text-center text-white/90">
-                今週のMVPリスナーたち！
-              </p>
-            </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500">
+            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <Trophy className="h-4 w-4" />
+              ネタ投稿 TOP 10
+            </h3>
           </div>
 
           {/* Clear filters button if active */}
@@ -251,7 +242,7 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
           </div>
 
           {/* Footer with scoring rules popover */}
-          <div className="border-t bg-gradient-to-r from-purple-50 to-pink-50 p-3">
+          <div className="border-t bg-white p-3">
             <div className="flex items-center justify-center">
               <Popover>
                 <PopoverTrigger asChild>

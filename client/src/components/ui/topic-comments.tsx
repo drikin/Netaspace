@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,17 @@ const TopicComments: React.FC<TopicCommentsProps> = ({ topicId, commentsCount = 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fingerprint = useFingerprint();
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.topicId === topicId) {
+        setIsOpen(true);
+      }
+    };
+    window.addEventListener("open-topic-comments", handler);
+    return () => window.removeEventListener("open-topic-comments", handler);
+  }, [topicId]);
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: ["/api/topics", topicId, "comments"],
