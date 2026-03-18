@@ -174,6 +174,33 @@ function isTwitterURL(url: string): boolean {
   }
 }
 
+// t.co URLかチェックする関数
+function isTcoURL(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.hostname === 't.co';
+  } catch {
+    return false;
+  }
+}
+
+// t.co URLのリダイレクト先を解決する関数
+async function resolveTcoUrl(url: string): Promise<string | null> {
+  try {
+    const response = await fetchWithRetry(url, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+      }
+    }, 2);
+    return response.url;
+  } catch (error) {
+    console.error('Failed to resolve t.co URL:', error);
+    return null;
+  }
+}
+
 // X (Twitter) oEmbed APIでツイート情報を取得する関数
 async function fetchTwitterInfo(url: string) {
   try {
@@ -189,7 +216,7 @@ async function fetchTwitterInfo(url: string) {
 
     const data = await response.json() as any;
     if (data?.author_name && data?.html) {
-      // oEmbedのHTMLからツイートテキストを抽出
+      // oEmbedのHTMLからツイートテキストとURLを抽出
       const htmlContent = data.html as string;
       const textMatch = htmlContent.match(/<p[^>]*>([\s\S]*?)<\/p>/);
       let tweetText = '';
@@ -198,13 +225,65 @@ async function fetchTwitterInfo(url: string) {
         tweetText = textMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim();
       }
 
-      const title = tweetText
-        ? `${data.author_name}: ${tweetText}`
+      // ツイート内のt.co URLを抽出
+      const tcoUrls: string[] = [];
+      const hrefRegex = /href="(https?:\/\/t\.co\/[^"]+)"/g;
+      let hrefMatch;
+      while ((hrefMatch = hrefRegex.exec(htmlContent)) !== null) {
+        tcoUrls.push(hrefMatch[1]);
+      }
+
+      // t.co URLがある場合、リンク先の記事タイトルを取得してみる
+      if (tcoUrls.length > 0) {
+        for (const tcoUrl of tcoUrls) {
+          try {
+            const resolvedUrl = await resolveTcoUrl(tcoUrl);
+            if (resolvedUrl && !isTwitterURL(resolvedUrl) && !isTcoURL(resolvedUrl)) {
+              // 外部サイトのURLの場合、記事タイトルを取得
+              console.log(`Tweet contains external link: ${tcoUrl} -> ${resolvedUrl}`);
+              // fetchArticleInfoは再帰的に呼ばれるので、直接HTMLを取得
+              const articleResponse = await fetchWithRetry(resolvedUrl, {
+                redirect: 'follow',
+                signal: AbortSignal.timeout(10000),
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                  'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8'
+                }
+              }, 2);
+              const articleHtml = await articleResponse.text();
+              const articleDom = new JSDOM(articleHtml);
+              const articleDoc = articleDom.window.document;
+              const articleTitle = articleDoc.querySelector('meta[property="og:title"]')?.getAttribute('content')?.trim() ||
+                                   articleDoc.querySelector('title')?.textContent?.trim() || '';
+              if (articleTitle && articleTitle.trim() !== '') {
+                console.log(`Found linked article title: ${articleTitle}`);
+                return {
+                  title: articleTitle,
+                  description: tweetText || '',
+                  finalUrl: resolvedUrl,
+                  originalUrl: url,
+                  ogImage: articleDoc.querySelector('meta[property="og:image"]')?.getAttribute('content')?.trim() || ''
+                };
+              }
+            }
+          } catch (linkError) {
+            console.log(`Failed to fetch linked article from ${tcoUrl}:`, linkError);
+          }
+        }
+      }
+
+      // リンク先の記事タイトルが取れなかった場合、ツイートテキストを使用
+      // t.co URLをテキストから除去してクリーンアップ
+      const cleanTweetText = tweetText.replace(/https?:\/\/t\.co\/\S+/g, '').trim();
+
+      const title = cleanTweetText
+        ? `${data.author_name}: ${cleanTweetText}`
         : `${data.author_name}のポスト`;
 
       return {
         title,
-        description: tweetText || '',
+        description: cleanTweetText || '',
         finalUrl: url,
         originalUrl: url,
         ogImage: ''
@@ -229,6 +308,29 @@ async function fetchArticleInfo(url: string) {
   performanceMetrics.urlCacheMisses++;
 
   try {
+    // t.co URLの場合、リダイレクト先を解決してから処理
+    if (isTcoURL(url)) {
+      console.log('t.co URL detected, resolving redirect:', url);
+      const resolvedUrl = await resolveTcoUrl(url);
+      if (resolvedUrl && resolvedUrl !== url) {
+        console.log(`t.co resolved to: ${resolvedUrl}`);
+        if (isTwitterURL(resolvedUrl)) {
+          // x.com/twitter.comへのリダイレクトの場合はTwitter処理
+          const twitterResult = await fetchTwitterInfo(resolvedUrl);
+          if (twitterResult && twitterResult.title) {
+            urlCache.set(url, { title: twitterResult.title, description: twitterResult.description, cached: Date.now() });
+            return twitterResult;
+          }
+        }
+        // 外部サイトへのリダイレクトの場合は、解決済みURLで再帰的に取得
+        const result = await fetchArticleInfo(resolvedUrl);
+        if (result) {
+          urlCache.set(url, { title: result.title, description: result.description || '', cached: Date.now() });
+          return { ...result, originalUrl: url };
+        }
+      }
+    }
+
     // X (Twitter) のURLかチェック
     if (isTwitterURL(url)) {
       console.log('Twitter/X URL detected:', url);
