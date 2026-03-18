@@ -23,12 +23,16 @@ interface AdminControlsProps {
   topicId: number;
   currentStatus: string;
   onStatusChange: () => void;
+  topicTitle?: string;
+  weekLiveUrl?: string | null;
 }
 
 const AdminControls: React.FC<AdminControlsProps> = ({
   topicId,
   currentStatus,
   onStatusChange,
+  topicTitle,
+  weekLiveUrl,
 }) => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -46,6 +50,14 @@ const AdminControls: React.FC<AdminControlsProps> = ({
       await apiRequest("PATCH", `/api/topics/${topicId}/status`, {
         status: finalStatus,
       });
+      
+      // 採用に変更した場合、Xシェアを促す
+      if (finalStatus === "featured" && topicTitle && weekLiveUrl) {
+        const shareText = `いまこのネタについて語っています\n\n「${topicTitle}」\n\nYouTubeライブ配信中：`;
+        const shareUrl = `${weekLiveUrl}#neta${topicId}`;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
+      }
 
       const statusDisplayName = {
         pending: "保留",

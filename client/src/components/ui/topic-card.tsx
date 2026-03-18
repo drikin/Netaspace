@@ -16,9 +16,10 @@ interface TopicCardProps {
   topic: TopicWithCommentsAndStars;
   isAdmin?: boolean;
   refetchTopics: () => void;
+  weekLiveUrl?: string | null;
 }
 
-const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) => {
+const TopicCard = ({ topic, isAdmin = false, refetchTopics, weekLiveUrl }: TopicCardProps) => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -239,6 +240,8 @@ const TopicCard = ({ topic, isAdmin = false, refetchTopics }: TopicCardProps) =>
                     topicId={topic.id}
                     currentStatus={topic.status}
                     onStatusChange={refetchTopics}
+                    topicTitle={topic.title}
+                    weekLiveUrl={weekLiveUrl}
                   />
                 </div>
               )}

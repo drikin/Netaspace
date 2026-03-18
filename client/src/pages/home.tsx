@@ -509,6 +509,7 @@ const Home: React.FC = () => {
                   key={topic.id}
                   topic={topic}
                   isAdmin={isAdmin}
+                  weekLiveUrl={week?.liveUrl}
                   refetchTopics={refetchTopics}
                 />
               ))
