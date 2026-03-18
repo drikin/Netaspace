@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import fetch from "node-fetch";
+import { JSDOM } from "jsdom";
 
 // Types
 export interface GrokXSummary {
@@ -101,55 +102,196 @@ X上で議論が見つからない場合は:
   }
 }
 
+// RSS feeds from major Japanese tech news sites
+const RSS_FEEDS = [
+  "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml",
+  "https://rss.itmedia.co.jp/rss/2.0/ait.xml",
+  "https://pc.watch.impress.co.jp/data/rss/1.0/pcw/feed.rdf",
+  "https://av.watch.impress.co.jp/data/rss/1.0/avw/feed.rdf",
+  "https://dc.watch.impress.co.jp/data/rss/1.0/dcw/feed.rdf",
+  "https://k-tai.watch.impress.co.jp/data/rss/1.0/ktw/feed.rdf",
+  "https://internet.watch.impress.co.jp/data/rss/1.0/iw/feed.rdf",
+  "https://forest.watch.impress.co.jp/data/rss/1.0/wf/feed.rdf",
+  "https://gigazine.net/news/rss_2.0/",
+  "https://www.publickey1.jp/atom.xml",
+];
+
+interface RssArticle {
+  title: string;
+  url: string;
+  date?: string;
+}
+
+// Step 1: Fetch latest articles from RSS feeds (real URLs, real titles)
+// Step 2: Grok picks the most relevant ones for the podcast topics
 export async function getRecommendedArticles(
   topics: Array<{ title: string; url: string; description?: string | null }>
 ): Promise<GrokRecommendation[]> {
   if (!isGrokEnabled() || !checkAndIncrementDailyLimit()) return [];
 
   try {
+    // Collect existing topic URLs to exclude
+    const existingUrls = new Set(topics.map((t) => t.url));
+
+    // Step 1: Fetch RSS feeds in parallel
+    const feedResults = await Promise.allSettled(
+      RSS_FEEDS.map((url) => fetchRssFeed(url))
+    );
+
+    const allArticles: RssArticle[] = [];
+    const seenUrls = new Set<string>();
+
+    for (const result of feedResults) {
+      if (result.status !== "fulfilled") continue;
+      for (const article of result.value) {
+        if (existingUrls.has(article.url) || seenUrls.has(article.url)) continue;
+        seenUrls.add(article.url);
+        allArticles.push(article);
+      }
+    }
+
+    console.log(`RSS feeds: fetched ${allArticles.length} articles from ${RSS_FEEDS.length} feeds`);
+
+    if (allArticles.length === 0) return [];
+
+    // Filter to recent articles (last 7 days)
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentArticles = allArticles.filter((a) => {
+      if (!a.date) return true; // include if no date
+      try {
+        return new Date(a.date).getTime() > weekAgo;
+      } catch {
+        return true;
+      }
+    });
+
+    const articlesToRank = recentArticles.length > 0 ? recentArticles : allArticles;
+
+    // Limit to ~60 articles to fit in context
+    const candidates = articlesToRank.slice(0, 60);
+
+    // Step 2: Ask Grok to pick the best 10
+    return await rankArticlesWithGrok(topics, candidates);
+  } catch (error) {
+    console.error("Grok recommendations error:", error);
+    return [];
+  }
+}
+
+async function fetchRssFeed(feedUrl: string): Promise<RssArticle[]> {
+  try {
+    const res = await fetch(feedUrl, {
+      signal: AbortSignal.timeout(8000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; NetaspaceBot/1.0)",
+        Accept: "application/rss+xml, application/xml, text/xml",
+      },
+    });
+
+    if (res.status >= 400) return [];
+
+    const xml = await res.text();
+    const articles: RssArticle[] = [];
+
+    // Simple XML parsing for RSS 2.0 and RSS 1.0/RDF
+    const itemRegex = /<item[\s>]([\s\S]*?)<\/item>/gi;
+    const entryRegex = /<entry[\s>]([\s\S]*?)<\/entry>/gi;
+    const items = [...xml.matchAll(itemRegex), ...xml.matchAll(entryRegex)];
+
+    for (const match of items) {
+      const itemXml = match[1];
+      const title = extractXmlTag(itemXml, "title");
+      const link =
+        extractXmlTag(itemXml, "link") ||
+        extractXmlAttr(itemXml, "link", "href");
+      const date =
+        extractXmlTag(itemXml, "pubDate") ||
+        extractXmlTag(itemXml, "dc:date") ||
+        extractXmlTag(itemXml, "published") ||
+        extractXmlTag(itemXml, "updated");
+
+      if (title && link && title.length >= 5) {
+        articles.push({ title: cleanXmlText(title), url: link.trim(), date: date || undefined });
+      }
+    }
+
+    return articles;
+  } catch {
+    return [];
+  }
+}
+
+function extractXmlTag(xml: string, tag: string): string | null {
+  // Handle CDATA
+  const cdataRegex = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>`, "i");
+  const cdataMatch = xml.match(cdataRegex);
+  if (cdataMatch) return cdataMatch[1].trim();
+
+  const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, "i");
+  const match = xml.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+function extractXmlAttr(xml: string, tag: string, attr: string): string | null {
+  const regex = new RegExp(`<${tag}[^>]*${attr}="([^"]*)"`, "i");
+  const match = xml.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+function cleanXmlText(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+async function rankArticlesWithGrok(
+  topics: Array<{ title: string; url: string; description?: string | null }>,
+  candidates: RssArticle[]
+): Promise<GrokRecommendation[]> {
+  try {
     const ai = getClient();
+
     const topicList = topics
-      .map((t, i) => `${i + 1}. ${t.title}${t.description ? ` - ${t.description}` : ""}`)
+      .map((t, i) => `${i + 1}. ${t.title}`)
       .join("\n");
 
-    const today = new Date().toISOString().split("T")[0];
+    const articleList = candidates
+      .map((a, i) => `[${i}] ${a.title}`)
+      .join("\n");
 
     const response = await ai.chat.completions.create({
       model: MODEL(),
-      temperature: 0.5,
-      max_tokens: 1200,
+      temperature: 0.3,
+      max_tokens: 1500,
       messages: [
         {
           role: "system",
-          content: `あなたはテクノロジー系ポッドキャスト「backspace.fm」のリスナー向けに関連記事を推薦するアシスタントです。
-与えられたネタ帳のトピック一覧を分析し、リスナーが興味を持ちそうな関連記事を8〜10件推薦してください。
+          content: `あなたはテクノロジー系ポッドキャスト「backspace.fm」のリスナー向けに記事を選ぶアシスタントです。
 
-今日の日付: ${today}
+以下の候補記事リストから、ネタ帳のトピックと関連性が高く、リスナーが興味を持ちそうな記事を10件選んでください。
 
-重要な優先順位:
-1. 直近1週間以内に公開された旬なニュース記事を最優先してください
-2. ネタ帳のトピックと関連性が高い記事を選んでください
-3. ネタ帳にまだ載っていない、話題になっている最新ニュースも含めてください
+選び方の基準:
+1. ネタ帳のトピックと関連性が高い記事を優先
+2. テクノロジー、ガジェット、AI、科学、宇宙などbackspace.fmのリスナーが好むジャンル
+3. なるべく多様なジャンルから選ぶ（同じサイトの記事ばかりにしない）
 
-以下のJSON配列形式のみで回答してください。マークダウンや説明文は不要です:
+以下のJSON配列形式のみで回答してください:
 [
   {
-    "title": "記事タイトル",
-    "url": "記事URL",
+    "index": 候補記事の番号,
     "reason": "なぜおすすめか（1文、日本語）"
   }
 ]
 
-注意:
-- 確実に実在し、現在アクセス可能な記事のURLのみを推薦してください
-- 大手メディアサイト（Impress Watch, ITmedia, CNET Japan, Engadget日本版, GIGAZINE, TechCrunch Japan, PC Watch等）の記事を優先してください
-- 日本語の記事を優先してください
-- トピック一覧に既にある記事のURLは絶対に除外してください
-- 多めに候補を出してください（後でリンク切れを除外します）`,
+必ず10件選んでください。`,
         },
         {
           role: "user",
-          content: `今週のトピック一覧:\n${topicList}`,
+          content: `■ ネタ帳のトピック:\n${topicList}\n\n■ 候補記事:\n${articleList}`,
         },
       ],
     });
@@ -157,62 +299,26 @@ export async function getRecommendedArticles(
     const text = response.choices[0]?.message?.content?.trim();
     if (!text) return [];
 
-    const parsed = parseJsonResponse<GrokRecommendation[]>(text);
+    const parsed = parseJsonResponse<Array<{ index: number; reason: string }>>(text);
     if (!Array.isArray(parsed)) return [];
 
-    // Verify links and filter out broken ones
-    const verified = await verifyLinks(parsed);
-    return verified.slice(0, 5);
+    const results: GrokRecommendation[] = [];
+    for (const pick of parsed) {
+      if (pick.index >= 0 && pick.index < candidates.length) {
+        const article = candidates[pick.index];
+        results.push({
+          title: article.title,
+          url: article.url,
+          reason: pick.reason,
+        });
+      }
+    }
+
+    return results.slice(0, 10);
   } catch (error) {
-    console.error("Grok recommendations error:", error);
+    console.error("Grok ranking error:", error);
     return [];
   }
-}
-
-async function verifyLinks(
-  articles: GrokRecommendation[]
-): Promise<GrokRecommendation[]> {
-  const results = await Promise.allSettled(
-    articles.map(async (article) => {
-      try {
-        const res = await fetch(article.url, {
-          method: "HEAD",
-          signal: AbortSignal.timeout(5000),
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-          },
-          redirect: "follow",
-        });
-        // Accept 2xx and 3xx as valid
-        if (res.status < 400) return article;
-        // Some sites block HEAD, try GET
-        const getRes = await fetch(article.url, {
-          method: "GET",
-          signal: AbortSignal.timeout(5000),
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-          },
-          redirect: "follow",
-        });
-        if (getRes.status < 400) return article;
-        console.log(`Link check failed (${getRes.status}): ${article.url}`);
-        return null;
-      } catch (err) {
-        console.log(`Link check error: ${article.url}`, err);
-        return null;
-      }
-    })
-  );
-
-  return results
-    .filter(
-      (r): r is PromiseFulfilledResult<GrokRecommendation | null> =>
-        r.status === "fulfilled"
-    )
-    .map((r) => r.value)
-    .filter((v): v is GrokRecommendation => v !== null);
 }
 
 function parseJsonResponse<T>(text: string): T | null {
