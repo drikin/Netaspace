@@ -535,12 +535,7 @@ const Home: React.FC = () => {
         
         {/* Top 10 Board - Part of flex layout on wide screens */}
         {week?.topics && week.topics.length > 0 && (
-          <div className="hidden show-ranking:block w-80 flex-shrink-0">
-            {/* Dynamic spacer to align with first topic card */}
-            <div
-              style={{ height: `${rankingBoardOffset}px` }}
-              aria-hidden="true"
-            />
+          <div className="hidden show-ranking:block w-80 flex-shrink-0 py-6">
             <div className="sticky top-6 space-y-3">
               <BsmPromotion />
               <LatestComments />
