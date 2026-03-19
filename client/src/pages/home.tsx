@@ -9,6 +9,7 @@ import TopicTop10Board from "@/components/topic-top10-board";
 import { PodcastPlayer } from "@/components/podcast-player";
 import LatestComments from "@/components/latest-comments";
 import RecommendedArticles from "@/components/recommended-articles";
+import BsmPromotion from "@/components/bsm-promotion";
 import PerformanceMonitor from "@/components/performance-monitor";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScriptEditor } from "@/components/script-editor";
@@ -541,6 +542,7 @@ const Home: React.FC = () => {
               aria-hidden="true"
             />
             <div className="sticky top-6 space-y-3">
+              <BsmPromotion />
               <LatestComments />
               {week?.id && <RecommendedArticles weekId={week.id} />}
               <TopicTop10Board
@@ -568,6 +570,7 @@ const Home: React.FC = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[340px] sm:w-[380px] p-0 overflow-y-auto">
               <div className="p-4 space-y-3 pt-10">
+                <BsmPromotion />
                 <LatestComments />
                 {week?.id && <RecommendedArticles weekId={week.id} />}
                 <TopicTop10Board
