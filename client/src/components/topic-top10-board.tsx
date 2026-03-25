@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Star, Sparkles, X, Crown, Medal, Info } from "lucide-react";
+import { Trophy, Star, Sparkles, X, Crown, Medal, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { TopicWithCommentsAndStars } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import {
@@ -82,6 +82,18 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
       .slice(0, 10);
   }, [topics]);
 
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar-top10-collapsed') === 'true';
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar-top10-collapsed', String(next));
+      return next;
+    });
+  };
+
   // Helper function to get rank display
   const getRankDisplay = (rank: number) => {
     switch (rank) {
@@ -137,13 +149,23 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
         {/* Main board container */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500">
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-between cursor-pointer"
+          >
             <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
               <Trophy className="h-4 w-4" />
               ネタ投稿 TOP 10
             </h3>
-          </div>
+            {collapsed ? (
+              <ChevronDown className="h-4 w-4 text-white/80" />
+            ) : (
+              <ChevronUp className="h-4 w-4 text-white/80" />
+            )}
+          </button>
 
+          {!collapsed && <>
           {/* Clear filters button if active */}
           {hasActiveFilters && (
             <div className="px-4 pt-3">
@@ -305,6 +327,7 @@ const TopicTop10Board: React.FC<TopicTop10BoardProps> = ({
               </Popover>
             </div>
           </div>
+          </>}
         </div>
     </div>
   );

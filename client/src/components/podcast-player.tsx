@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { 
-  Play, 
-  Pause, 
-  SkipForward, 
-  SkipBack, 
-  Shuffle, 
+import {
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  Shuffle,
   Repeat,
   Volume2,
-  Podcast
+  Podcast,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +29,19 @@ type PlayMode = 'single' | 'continuous' | 'random';
 
 export const PodcastPlayer: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  
+
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar-podcast-collapsed') === 'true';
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar-podcast-collapsed', String(next));
+      return next;
+    });
+  };
+
   // Player state
   const [currentEpisode, setCurrentEpisode] = useState<PodcastEpisode | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -189,14 +203,37 @@ export const PodcastPlayer: React.FC = () => {
     }
   };
   
+  const headerButton = (
+    <button
+      type="button"
+      onClick={toggleCollapsed}
+      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-between cursor-pointer"
+    >
+      <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+        <Podcast className="h-4 w-4" />
+        Backspace.fm ポッドキャスト
+      </h3>
+      {collapsed ? (
+        <ChevronDown className="h-4 w-4 text-white/80" />
+      ) : (
+        <ChevronUp className="h-4 w-4 text-white/80" />
+      )}
+    </button>
+  );
+
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="h-10 bg-gray-200 rounded mb-2"></div>
-          <div className="h-10 bg-gray-200 rounded"></div>
-        </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {headerButton}
+        {!collapsed && (
+          <div className="p-4">
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-10 bg-gray-200 rounded mb-2"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -204,14 +241,9 @@ export const PodcastPlayer: React.FC = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500">
-        <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-          <Podcast className="h-4 w-4" />
-          Backspace.fm ポッドキャスト
-        </h3>
-      </div>
-      
-      <div className="p-4">
+      {headerButton}
+
+      {!collapsed && <div className="p-4">
           {/* Current Episode */}
           {currentEpisode && (
             <div className="mb-4">
@@ -338,8 +370,8 @@ export const PodcastPlayer: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
-      
+        </div>}
+
       {/* Hidden audio element */}
       <audio ref={audioRef} />
       
