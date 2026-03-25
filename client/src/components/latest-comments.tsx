@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 
 interface RecentComment {
   id: number;
@@ -17,6 +17,18 @@ interface LatestCommentsProps {
 }
 
 const LatestComments: React.FC<LatestCommentsProps> = ({ weekId }) => {
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar-comments-collapsed') === 'true';
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar-comments-collapsed', String(next));
+      return next;
+    });
+  };
+
   const { data: comments = [] } = useQuery<RecentComment[]>({
     queryKey: ["/api/comments/recent", weekId],
     queryFn: async () => {
@@ -47,13 +59,22 @@ const LatestComments: React.FC<LatestCommentsProps> = ({ weekId }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500">
+      <button
+        type="button"
+        onClick={toggleCollapsed}
+        className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-between cursor-pointer"
+      >
         <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
           <MessageCircle className="h-4 w-4" />
           最新コメント
         </h3>
-      </div>
-      <div className="divide-y divide-gray-50">
+        {collapsed ? (
+          <ChevronDown className="h-4 w-4 text-white/80" />
+        ) : (
+          <ChevronUp className="h-4 w-4 text-white/80" />
+        )}
+      </button>
+      {!collapsed && <div className="divide-y divide-gray-50">
         {comments.map((comment) => (
           <button
             key={comment.id}
@@ -85,7 +106,7 @@ const LatestComments: React.FC<LatestCommentsProps> = ({ weekId }) => {
             </p>
           </button>
         ))}
-      </div>
+      </div>}
     </div>
   );
 };
