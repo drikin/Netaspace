@@ -12,11 +12,17 @@ interface RecentComment {
   topicTitle: string;
 }
 
-const LatestComments: React.FC = () => {
+interface LatestCommentsProps {
+  weekId?: number;
+}
+
+const LatestComments: React.FC<LatestCommentsProps> = ({ weekId }) => {
   const { data: comments = [] } = useQuery<RecentComment[]>({
-    queryKey: ["/api/comments/recent"],
+    queryKey: ["/api/comments/recent", weekId],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/comments/recent?limit=10");
+      const params = new URLSearchParams({ limit: "10" });
+      if (weekId) params.set("weekId", String(weekId));
+      const res = await apiRequest("GET", `/api/comments/recent?${params}`);
       return await res.json();
     },
     staleTime: 1000 * 60 * 2,

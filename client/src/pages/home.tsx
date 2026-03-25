@@ -538,7 +538,7 @@ const Home: React.FC = () => {
           <div className="hidden show-ranking:block w-80 flex-shrink-0 py-6">
             <div className="sticky top-6 space-y-3">
               <BsmPromotion />
-              <LatestComments />
+              <LatestComments weekId={week?.id} />
               {week?.id && <RecommendedArticles weekId={week.id} />}
               <TopicTop10Board
                 topics={week.topics}
@@ -566,7 +566,7 @@ const Home: React.FC = () => {
             <SheetContent side="right" className="w-[340px] sm:w-[380px] p-0 overflow-y-auto">
               <div className="p-4 space-y-3 pt-10">
                 <BsmPromotion />
-                <LatestComments />
+                <LatestComments weekId={week?.id} />
                 {week?.id && <RecommendedArticles weekId={week.id} />}
                 <TopicTop10Board
                   topics={week.topics}

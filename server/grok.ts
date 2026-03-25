@@ -16,6 +16,11 @@ export interface GrokRecommendation {
   reason: string;
 }
 
+export interface GrokTitleSuggestion {
+  title: string;
+  reasoning: string;
+}
+
 // Client singleton
 let client: OpenAI | null = null;
 
@@ -318,6 +323,76 @@ async function rankArticlesWithGrok(
   } catch (error) {
     console.error("Grok ranking error:", error);
     return [];
+  }
+}
+
+export async function generatePodcastTitles(
+  topics: Array<{ title: string; url: string; description?: string | null; status: string; starsCount: number }>
+): Promise<GrokTitleSuggestion[] | null> {
+  if (!isGrokEnabled() || !checkAndIncrementDailyLimit()) return null;
+
+  try {
+    const ai = getClient();
+
+    // Sort: featured first, then by stars descending
+    const featured = topics
+      .filter((t) => t.status === "featured")
+      .sort((a, b) => b.starsCount - a.starsCount);
+    const others = topics
+      .filter((t) => t.status !== "featured")
+      .sort((a, b) => b.starsCount - a.starsCount);
+
+    const sorted = [...featured, ...others].slice(0, 20);
+
+    const topicList = sorted
+      .map((t, i) => {
+        const badge = t.status === "featured" ? "★採用済み" : `☆${t.starsCount}`;
+        return `${i + 1}. [${badge}] ${t.title}`;
+      })
+      .join("\n");
+
+    const response = await ai.chat.completions.create({
+      model: MODEL(),
+      temperature: 0.5,
+      max_tokens: 500,
+      messages: [
+        {
+          role: "system",
+          content: `あなたはテクノロジー系ポッドキャスト「backspace.fm」のエピソードタイトルを考えるアシスタントです。
+以下のトピックリストを基に、魅力的なエピソードタイトルを3つ提案してください。
+
+タイトル作成のルール:
+1. 「★採用済み」トピックを最も重視してタイトルに反映する
+2. スター数の多い人気トピックも考慮する
+3. 簡潔で魅力的、リスナーが聞きたくなるタイトル
+4. backspace.fmらしいカジュアルなテイスト
+5. 日本語で作成
+6. エピソード番号（ep○○○）は含めないでください（自動で付与されます）
+
+以下のJSON配列形式のみで回答してください:
+[
+  {"title": "タイトル案", "reasoning": "選んだ理由（1文）"}
+]
+
+必ず3つ提案してください。`,
+        },
+        {
+          role: "user",
+          content: `■ 今週のトピック:\n${topicList}`,
+        },
+      ],
+    });
+
+    const text = response.choices[0]?.message?.content?.trim();
+    if (!text) return null;
+
+    const parsed = parseJsonResponse<GrokTitleSuggestion[]>(text);
+    if (!Array.isArray(parsed)) return null;
+
+    return parsed.slice(0, 3);
+  } catch (error) {
+    console.error("Grok title generation error:", error);
+    return null;
   }
 }
 

@@ -124,7 +124,7 @@ export interface IStorage {
   
   // Comment operations
   getCommentsByTopicId(topicId: number): Promise<Comment[]>;
-  getRecentComments(limit: number): Promise<Array<Comment & { topicTitle: string }>>;
+  getRecentComments(limit: number, weekId?: number): Promise<Array<Comment & { topicTitle: string }>>;
   createComment(comment: InsertComment): Promise<Comment>;
   deleteComment(id: number): Promise<boolean>;
 
@@ -585,9 +585,9 @@ class PostgreSQLStorage implements IStorage {
     }, 'getCommentsByTopicId');
   }
 
-  async getRecentComments(limitCount: number): Promise<Array<Comment & { topicTitle: string }>> {
+  async getRecentComments(limitCount: number, weekId?: number): Promise<Array<Comment & { topicTitle: string }>> {
     return this.executeWithMonitoring(async () => {
-      const result = await db
+      let query = db
         .select({
           id: comments.id,
           topicId: comments.topicId,
@@ -599,6 +599,11 @@ class PostgreSQLStorage implements IStorage {
         })
         .from(comments)
         .innerJoin(topics, eq(comments.topicId, topics.id))
+        .$dynamic();
+      if (weekId) {
+        query = query.where(eq(topics.weekId, weekId));
+      }
+      const result = await query
         .orderBy(desc(comments.createdAt))
         .limit(limitCount);
       return result;

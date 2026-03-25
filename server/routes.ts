@@ -24,7 +24,7 @@ import fs from 'fs';
 import archiver from 'archiver';
 import { XMLParser } from 'fast-xml-parser';
 import { EXTENSION_VERSION, getVersionInfo } from '@shared/version';
-import { isGrokEnabled, summarizeXReactions, getRecommendedArticles, type GrokXSummary, type GrokRecommendation } from './grok';
+import { isGrokEnabled, summarizeXReactions, getRecommendedArticles, generatePodcastTitles, type GrokXSummary, type GrokRecommendation, type GrokTitleSuggestion } from './grok';
 import { getCache, setCache } from './file-cache';
 
 // Performance optimization: Cache for URL metadata
@@ -1816,11 +1816,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Recent comments across all topics
+  // Grok-powered podcast title generation (admin only)
+  app.post('/api/weeks/:id/generate-title', isAdmin, async (req, res) => {
+    try {
+      if (!isGrokEnabled()) {
+        return res.json({ available: false, reason: 'not_configured' });
+      }
+
+      const weekId = parseInt(req.params.id);
+      if (isNaN(weekId)) {
+        return res.status(400).json({ message: 'Invalid week ID' });
+      }
+
+      const weekWithTopics = await storage.getWeekWithTopics(weekId);
+      if (!weekWithTopics || !weekWithTopics.topics || weekWithTopics.topics.length === 0) {
+        return res.json({ available: false, reason: 'no_topics' });
+      }
+
+      // Extract episode number from current week title (e.g., "ep648")
+      const epMatch = weekWithTopics.title.match(/ep\d+/i);
+      const epSuffix = epMatch ? ` ${epMatch[0]}` : '';
+
+      const topicsForGrok = weekWithTopics.topics.map(t => ({
+        title: t.title,
+        url: t.url,
+        description: t.description,
+        status: t.status,
+        starsCount: t.starsCount || 0,
+      }));
+
+      const suggestions = await generatePodcastTitles(topicsForGrok);
+      if (!suggestions || suggestions.length === 0) {
+        return res.json({ available: false, reason: 'api_error' });
+      }
+
+      // Append episode number to each suggestion
+      if (epSuffix) {
+        for (const s of suggestions) {
+          s.title = s.title.replace(/\s*ep\d+\s*$/i, '') + epSuffix;
+        }
+      }
+
+      res.json({ available: true, suggestions });
+    } catch (error) {
+      console.error('Grok title generation error:', error);
+      res.json({ available: false, reason: 'api_error' });
+    }
+  });
+
+  // Recent comments (optionally filtered by week)
   app.get('/api/comments/recent', async (req, res) => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
-      const recentComments = await storage.getRecentComments(limit);
+      const weekId = req.query.weekId ? parseInt(req.query.weekId as string) : undefined;
+      const recentComments = await storage.getRecentComments(limit, weekId);
       res.json(recentComments);
     } catch (error) {
       console.error('Get recent comments error:', error);
